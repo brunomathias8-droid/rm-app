@@ -1,0 +1,1781 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4E1730">
+<title>RM</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icones/icone-192.png">
+<link rel="apple-touch-icon" href="icones/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RM">
+<script src="config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Nunito+Sans:wght@400;600;700;800&display=swap">
+<style>
+/* ============ Tokens da marca RM Confeitaria do dia a dia ============ */
+:root{
+  --ameixa:#4E1730;--ameixa2:#6A2644;--rosa:#C98695;--rosaT:#E3B3BE;--rosaC:#F4E4E4;
+  --linho:#F4ECE2;--papel:#FFFCF8;--tinta:#231318;--sub:#6B5560;--sub2:#8C7A80;--linha:#E6DACE;--ouro:#7A5A1E;
+  --ok:#2E6B4F;--okC:#E1EFE6;--err:#A5281B;--errC:#FBE5E1;--av:#8A5A00;--avC:#FBEFD6;
+  --serif:'DM Serif Display',Georgia,serif;--sans:'Nunito Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+  --r:16px;--r2:12px;--sh:0 1px 2px rgba(35,19,24,.06),0 2px 10px rgba(35,19,24,.05);
+  --top:calc(54px + env(safe-area-inset-top,0px));--tab:64px;--safe:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--linho);color:var(--tinta);font:16px/1.45 var(--sans);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body.noscroll{overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--ameixa)}
+:focus-visible{outline:3px solid var(--rosa);outline-offset:2px;border-radius:8px}
+.hide{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+svg.i{width:22px;height:22px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+svg.i.s{width:18px;height:18px}
+
+/* ============ Barra superior ============ */
+.top{position:fixed;top:0;left:0;right:0;z-index:20;height:var(--top);padding-top:env(safe-area-inset-top,0px)!important;display:flex;align-items:center;gap:8px;padding:0 8px 0 14px;background:rgba(78,23,48,.97);color:var(--linho);backdrop-filter:saturate(1.4) blur(8px)}
+.top .bm{display:flex;align-items:center;gap:9px;flex:1;min-width:0}
+.top .bm-rm{font:22px/1 var(--serif);color:var(--linho)}
+.top .bm-t{font:italic 16px/1 var(--serif);color:var(--rosaT);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .tt{font:17px/1 var(--serif);flex:1;text-align:center}
+.ib{width:44px;height:44px;border:0;border-radius:12px;background:none;color:inherit;display:flex;align-items:center;justify-content:center}
+.ib:active{background:rgba(255,255,255,.12)}
+.ib.spin svg{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ============ Página ============ */
+main{padding:calc(var(--top) + 8px) 16px calc(var(--tab) + var(--safe) + 28px);max-width:600px;margin:0 auto}
+body.form main{padding-bottom:calc(var(--safe) + 150px)}
+.page{animation:in .18s ease-out}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.lt{padding:10px 2px 14px}
+.lt small{display:block;font-size:13px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--ouro)}
+.lt h1{margin:2px 0 0;font:32px/1.1 var(--serif);font-weight:400;color:var(--ameixa)}
+.lt p{margin:6px 0 0;color:var(--sub);font-size:15px}
+.sec{margin:22px 0 10px;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.sec h2{margin:0;font:21px/1.2 var(--serif);font-weight:400;color:var(--ameixa)}
+.sec .cnt{font-size:14px;color:var(--sub);font-weight:700}
+.sec button.lk{border:0;background:none;color:var(--ameixa);font-weight:700;font-size:15px;padding:8px 0}
+.card{background:var(--papel);border-radius:var(--r);box-shadow:var(--sh);padding:14px 16px;margin:0 0 10px}
+.card.flat{box-shadow:none;border:1px solid var(--linha)}
+.list{background:var(--papel);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;margin:0 0 10px}
+.muted{color:var(--sub);font-size:14px}
+.center{text-align:center}
+.row{display:flex;gap:10px;align-items:center}
+.grow{flex:1;min-width:0}
+
+/* ============ Hero (semana) ============ */
+.hero{background:var(--ameixa);color:var(--linho);border-radius:20px;padding:18px 18px 16px;position:relative;overflow:hidden;box-shadow:0 6px 20px rgba(78,23,48,.25)}
+.hero .lbl{font-size:12px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--rosaT)}
+.hero .big{font:40px/1.05 var(--serif);margin:8px 0 2px}
+.hero .big small{font:15px var(--sans);color:var(--rosaT);margin-left:4px}
+.bar{height:8px;border-radius:4px;background:rgba(255,255,255,.16);overflow:hidden;margin:12px 0 12px}
+.bar i{display:block;height:100%;border-radius:4px;background:var(--rosa);transition:width .6s ease}
+.bar.ok i{background:#8FD0AE}
+.hero .stats{display:flex;gap:18px;font-size:14px;color:var(--rosaT)}
+.hero .stats b{display:block;font:20px/1.1 var(--serif);color:var(--linho)}
+/* carimbo "Fornada nº" retirado em 03/10/2026 (marca final) */
+
+/* ============ Atalhos ============ */
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0 0}
+.tile{border:0;background:var(--papel);box-shadow:var(--sh);border-radius:var(--r);padding:12px 10px 11px;text-align:left;display:flex;flex-direction:column;gap:6px;min-height:96px}
+.tile .ic{width:34px;height:34px;border-radius:10px;background:var(--rosaC);color:var(--ameixa);display:flex;align-items:center;justify-content:center}
+.tile b{font:24px/1 var(--serif);font-weight:400}
+.tile span{font-size:13px;color:var(--sub);line-height:1.2}
+.tile.alert .ic{background:var(--errC);color:var(--err)}
+.tile.alert b{color:var(--err)}
+.tile:active{transform:scale(.98)}
+
+/* ============ Linhas de lista (tarefas, plano) ============ */
+.li{display:flex;gap:12px;align-items:flex-start;padding:13px 16px;border-bottom:1px solid var(--linha);min-height:52px}
+.li:last-child{border-bottom:0}
+.li .tx{flex:1;min-width:0;font-size:16px;line-height:1.35}
+.li .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px;font-size:13px;color:var(--sub);align-items:center}
+.li.done .tx>span:first-child{text-decoration:line-through;color:var(--sub2)}
+.li.tap{cursor:pointer}
+.li.tap:active{background:var(--rosaC)}
+.ck{width:28px;height:28px;flex:0 0 28px;border-radius:50%;border:2px solid var(--ameixa);background:#fff;display:flex;align-items:center;justify-content:center;color:#fff;margin-top:-2px;transition:background .15s,transform .15s;padding:0}
+.ck svg{width:16px;height:16px;stroke-width:3;opacity:0}
+.ck.on{background:var(--ameixa)}
+.ck.on svg{opacity:1}
+.ck:active{transform:scale(.9)}
+.dot{width:28px;flex:0 0 28px;display:flex;justify-content:center;padding-top:7px}
+.dot i{width:8px;height:8px;border-radius:50%;background:var(--rosa)}
+.star{width:28px;height:28px;flex:0 0 28px;border-radius:50%;background:var(--rosaC);color:var(--ameixa);display:flex;align-items:center;justify-content:center}
+.chev{color:var(--sub2);align-self:center}
+
+/* ============ Pills ============ */
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:800;padding:3px 8px;border-radius:999px;background:var(--rosaC);color:var(--ameixa);white-space:nowrap;line-height:1.3}
+.pill.ok{background:var(--okC);color:var(--ok)}
+.pill.err{background:var(--errC);color:var(--err)}
+.pill.av{background:var(--avC);color:var(--av)}
+.pill.nd{background:#EEE8E4;color:var(--sub)}
+
+/* ============ Pedido ============ */
+.ord{background:var(--papel);border-radius:var(--r);box-shadow:var(--sh);padding:14px 16px 12px;margin:0 0 10px}
+.ord .t{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.ord .t b{font-size:17px}
+.ord .t .v{font:19px/1 var(--serif);color:var(--ameixa);white-space:nowrap}
+.ord .it{margin:4px 0 8px;color:var(--tinta);font-size:15px;line-height:1.35}
+.ord .mt{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--sub)}
+.ord .ac{display:flex;gap:8px;margin-top:12px;align-items:center}
+.etp{display:flex;align-items:center;gap:0;margin:2px 0 10px}
+.etp .e{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--sub2);white-space:nowrap}
+.etp .e i{width:18px;height:18px;border-radius:50%;border:2px solid #D9CBBE;box-sizing:border-box;display:flex;align-items:center;justify-content:center;flex:0 0 18px}
+.etp .e.ok{color:var(--sub)} .etp .e.ok i{background:var(--ameixa);border-color:var(--ameixa)}
+.etp .e.ok i svg{width:11px;height:11px;stroke:#fff;stroke-width:3}
+.etp .e.at{color:var(--ameixa)} .etp .e.at i{border-color:var(--ameixa);background:var(--rosaC)}
+.etp .ln{flex:1;height:2px;background:#E3D6C8;margin:0 6px;min-width:10px}
+.etp .ln.ok{background:var(--ameixa)}
+.pixb{border:0;cursor:pointer;font-family:inherit}
+.stg{margin:14px 0 4px}
+.stg .lab{display:block;font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--sub);margin:0 0 8px}
+.stg .seg{margin:0}
+.ord.sai{animation:sai .28s ease-in forwards}
+@keyframes sai{to{opacity:0;transform:translateX(24px)}}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;border:0;border-radius:14px;padding:12px 18px;font-size:17px;font-weight:800;background:var(--ameixa);color:#fff;text-decoration:none}
+.btn:active{background:var(--ameixa2)}
+.btn:disabled{opacity:.45}
+.btn.sec{background:var(--rosaC);color:var(--ameixa)}
+.btn.ghost{background:none;color:var(--ameixa);border:1.5px solid var(--linha)}
+.btn.danger{background:var(--errC);color:var(--err)}
+.btn.sm{min-height:42px;font-size:15px;border-radius:12px;padding:8px 14px;width:auto;flex:1}
+.btn.ok{background:var(--ok)}
+.icb{width:42px;height:42px;flex:0 0 42px;border-radius:12px;border:1.5px solid var(--linha);background:var(--papel);color:var(--ameixa);display:flex;align-items:center;justify-content:center;text-decoration:none}
+.icb.wa{color:#1E7A45}
+.grp{position:sticky;top:var(--top);z-index:5;background:var(--linho);padding:12px 2px 8px;display:flex;justify-content:space-between;align-items:baseline}
+.grp b{font:19px/1.2 var(--serif);font-weight:400;color:var(--ameixa)}
+.grp span{font-size:13px;color:var(--sub);font-weight:700}
+
+/* ============ Controles ============ */
+.seg{display:flex;background:#EADFD3;border-radius:12px;padding:3px;margin:0 0 14px}
+.seg button{flex:1;border:0;background:none;min-height:38px;border-radius:9px;font-size:15px;font-weight:700;color:var(--sub)}
+.seg button.on{background:var(--papel);color:var(--ameixa);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips.scroll{flex-wrap:nowrap;overflow-x:auto;margin:0 -16px;padding:0 16px 2px;scrollbar-width:none}
+.chips.scroll::-webkit-scrollbar{display:none}
+.chip{border:1.5px solid var(--linha);background:var(--papel);border-radius:999px;min-height:40px;padding:8px 14px;font-size:15px;font-weight:700;color:var(--tinta);white-space:nowrap}
+.chip.on{background:var(--ameixa);border-color:var(--ameixa);color:#fff}
+.fld{margin:0 0 14px}
+.fld>label,.lab{display:block;font-size:13px;font-weight:800;color:var(--sub);letter-spacing:.3px;text-transform:uppercase;margin:0 0 6px}
+input,select,textarea{width:100%;font-size:17px;padding:13px 14px;border:1.5px solid var(--linha);border-radius:12px;background:#fff;color:var(--tinta);-webkit-appearance:none;appearance:none}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--rosa);box-shadow:0 0 0 3px rgba(201,134,149,.22)}
+textarea{min-height:84px;resize:vertical}
+.money{position:relative}
+.money span{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--sub);font-weight:700}
+.money input{padding-left:44px;font:26px var(--serif)}
+.falta{border-color:var(--err)!important;animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.tog{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px}
+.tog .tx b{display:block;font-size:16px}
+.tog .tx span{font-size:13px;color:var(--sub)}
+.sw{width:52px;height:32px;flex:0 0 52px;border-radius:16px;background:#D9CCC2;border:0;position:relative;transition:background .2s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .2s}
+.sw.on{background:var(--ok)}.sw.on::after{left:23px}
+details.more{margin:6px 0 0}
+details.more>summary{list-style:none;display:flex;align-items:center;gap:6px;min-height:44px;font-weight:800;color:var(--ameixa);cursor:pointer}
+details.more>summary::-webkit-details-marker{display:none}
+details.more>summary svg{transition:transform .2s}
+details.more[open]>summary svg{transform:rotate(90deg)}
+
+/* Autocomplete */
+.ac-list{margin:6px 0 0;border:1.5px solid var(--linha);border-radius:12px;background:#fff;overflow:hidden}
+.ac-list button{display:flex;width:100%;align-items:center;gap:10px;border:0;border-bottom:1px solid var(--linha);background:#fff;min-height:48px;padding:10px 14px;text-align:left;font-size:16px}
+.ac-list button:last-child{border-bottom:0}
+.ac-list button:active{background:var(--rosaC)}
+.ac-list .av{width:30px;height:30px;border-radius:50%;background:var(--rosaC);color:var(--ameixa);font:15px var(--serif);display:flex;align-items:center;justify-content:center}
+.aviso{display:flex;gap:10px;align-items:flex-start;background:var(--rosaC);color:var(--ameixa);border-radius:12px;padding:11px 12px;font-size:14px;font-weight:700;margin:10px 0 0}
+.aviso.av{background:var(--avC);color:var(--av)}
+.msgc{background:var(--papel);border-radius:var(--r);box-shadow:var(--sh);padding:16px;margin:0 0 14px}
+.msgc h2{margin:0;font:21px/1.2 var(--serif);font-weight:400;color:var(--ameixa)}
+.msgc .onde{margin:4px 0 12px;color:var(--sub);font-size:14px;line-height:1.4}
+.msgc textarea{min-height:110px;font-size:16px;line-height:1.45}
+.msgc .cps{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0;align-items:center}
+.msgc .cps span{font-size:13px;color:var(--sub);font-weight:700;margin-right:2px}
+.msgc .cps button{border:1.5px dashed var(--rosa);background:var(--rosaC);color:var(--ameixa);border-radius:999px;min-height:34px;padding:4px 12px;font-size:14px;font-weight:800}
+.bolha{background:#E3F6D8;border-radius:4px 14px 14px 14px;padding:10px 12px;font-size:15px;line-height:1.45;white-space:pre-wrap;color:#1f2a1b;margin:6px 0 0;max-width:92%}
+.prev{margin:14px 0 0}.prev .lab{font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--sub)}
+.msgc .acs{display:flex;gap:10px;align-items:center;margin-top:14px}
+
+/* Produtos */
+.prod{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--linha);transition:background .15s}
+.prod:last-child{border-bottom:0}
+.prod.sel{background:#FBF1F1}
+.prod .nm{font-size:16px;line-height:1.3}
+.prod .pr{font-size:14px;color:var(--sub)}
+.step{display:flex;align-items:center;gap:4px}
+.step button{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--linha);background:#fff;color:var(--ameixa);display:flex;align-items:center;justify-content:center;padding:0}
+.step button.plus{background:var(--ameixa);border-color:var(--ameixa);color:#fff}
+.step output{min-width:26px;text-align:center;font:20px var(--serif);visibility:hidden}
+.prod.sel .step output{visibility:visible}
+.step .mn{visibility:hidden}
+.prod.sel .step .mn{visibility:visible}
+
+/* Opções grandes (retirada, categoria) */
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{border:1.5px solid var(--linha);background:var(--papel);border-radius:14px;padding:12px;text-align:left;display:flex;flex-direction:column;gap:3px;min-height:64px}
+.opt b{font-size:16px}
+.opt span{font-size:13px;color:var(--sub)}
+.opt svg{color:var(--ameixa);margin-bottom:4px}
+.opt.on{border-color:var(--ameixa);background:#FBF1F1;box-shadow:inset 0 0 0 1px var(--ameixa)}
+
+/* Barra de ação fixa (formulários) */
+.actbar{position:fixed;left:0;right:0;bottom:0;z-index:15;background:rgba(255,252,248,.97);backdrop-filter:blur(8px);border-top:1px solid var(--linha);padding:10px 16px calc(10px + var(--safe))}
+.actbar .in{max-width:600px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.actbar .sum{flex:1;min-width:0}
+.actbar .sum b{display:block;font:24px/1.1 var(--serif);color:var(--ameixa)}
+.actbar .sum span{font-size:13px;color:var(--sub);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.actbar .sum span.err{color:var(--err);font-weight:700}
+.actbar .btn{width:auto;flex:0 0 auto;padding:12px 22px}
+
+/* ============ Tab bar ============ */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:15;background:rgba(255,252,248,.97);backdrop-filter:blur(8px);border-top:1px solid var(--linha);display:flex;justify-content:space-around;padding:6px 4px calc(6px + var(--safe));height:calc(var(--tab) + var(--safe))}
+body.form .tabs{display:none}
+.tabs button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:700;color:var(--sub2);min-width:0}
+.tabs button.on{color:var(--ameixa)}
+.tabs button.on svg{stroke-width:2.3}
+.tabs .fab{flex:0 0 auto;margin:-18px 6px 0;width:58px;height:58px;border-radius:50%;background:var(--ameixa);color:#fff;box-shadow:0 6px 16px rgba(78,23,48,.35);align-self:flex-start}
+.tabs .fab svg{width:28px;height:28px;stroke-width:2.4}
+.tabs .fab:active{transform:scale(.95)}
+
+/* ============ Sheet (painel que sobe) ============ */
+#sheet{position:fixed;inset:0;z-index:40;pointer-events:none}
+#sheet .bg{position:absolute;inset:0;background:rgba(35,19,24,.4);opacity:0;transition:opacity .22s}
+#sheet .sh{position:absolute;left:0;right:0;bottom:0;max-height:92vh;overflow-y:auto;background:var(--papel);border-radius:22px 22px 0 0;padding:8px 18px calc(18px + var(--safe));transform:translateY(100%);transition:transform .26s cubic-bezier(.2,.8,.2,1);max-width:600px;margin:0 auto}
+#sheet.open{pointer-events:auto}
+#sheet.open .bg{opacity:1}
+#sheet.open .sh{transform:none}
+.grab{width:40px;height:5px;border-radius:3px;background:#DDD0C6;margin:0 auto 12px}
+.sh h3{margin:2px 0 4px;font:24px/1.2 var(--serif);font-weight:400;color:var(--ameixa)}
+.sh .desc{margin:0 0 16px;color:var(--sub);font-size:15px}
+.menu{display:flex;flex-direction:column;gap:10px;margin:8px 0 0}
+.mi{display:flex;align-items:center;gap:14px;width:100%;border:0;background:#fff;border:1.5px solid var(--linha);border-radius:14px;padding:12px 14px;min-height:60px;text-align:left;text-decoration:none;color:var(--tinta)}
+.mi .ic{width:40px;height:40px;border-radius:12px;background:var(--rosaC);color:var(--ameixa);display:flex;align-items:center;justify-content:center;flex:0 0 40px}
+.mi b{display:block;font-size:16px}
+.mi span{font-size:13px;color:var(--sub)}
+.mi.danger .ic{background:var(--errC);color:var(--err)}
+.mi.danger b{color:var(--err)}
+.mi:active{background:var(--rosaC)}
+.sucesso{width:64px;height:64px;border-radius:50%;background:var(--okC);color:var(--ok);display:flex;align-items:center;justify-content:center;margin:8px auto 10px}
+.sucesso svg{width:34px;height:34px;stroke-width:2.6}
+.btns{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.why{background:var(--rosaC);border-radius:14px;padding:14px 16px;margin:4px 0 14px}
+.why .lab{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--ameixa);margin:0 0 6px}
+.why p{margin:0;font-size:16px;line-height:1.5;color:var(--tinta)}
+.why.vz p{color:var(--sub);font-size:15px}
+.dl{margin:0 0 14px;border-top:1px solid var(--linha)}
+.dl div{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--linha);font-size:15px;line-height:1.4}
+.dl dt{flex:0 0 96px;color:var(--sub);font-weight:700;font-size:13px;padding-top:1px}
+.dl dd{margin:0;flex:1;min-width:0}
+.ctx{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--linha)}
+.ctx .ic{width:34px;height:34px;flex:0 0 34px;border-radius:10px;background:var(--rosaC);color:var(--ameixa);display:flex;align-items:center;justify-content:center}
+.ctx small{display:block;font-size:12px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--ouro)}
+.ctx b{display:block;font-size:15px;color:var(--ameixa)}
+.ctx span{font-size:14px;color:var(--sub)}
+.sh .tipo{display:inline-block;margin:0 0 6px}
+.pdf{display:flex;align-items:center;gap:10px;margin:0 0 14px;padding:11px 14px;border:1.5px solid var(--linha);border-radius:14px;background:#fff;color:var(--ameixa);text-decoration:none;font-weight:800;font-size:15px}
+.pdf .grow{flex:1}
+.pdf span.s{display:block;font-weight:600;font-size:13px;color:var(--sub)}
+
+.addx{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;border:0;border-top:1px dashed var(--linha);background:#fff;color:var(--ameixa);font-weight:800;font-size:15px}
+.addx:active{background:var(--rosaC)}
+.xtra{align-items:flex-start}
+.xtra input{min-height:42px;padding:8px 12px;font-size:16px}
+.xtra .xp{width:88px;flex:0 0 88px}
+.xtra .xr{border:0;background:none;color:var(--sub);padding:8px;margin-left:auto}
+.xtra .step{margin-top:1px}
+.xtra .step output,.xtra .step .mn{visibility:visible}
+.hist{background:var(--papel);border-radius:var(--r);box-shadow:var(--sh);padding:12px 16px;margin:0 0 8px;display:block;width:100%;border:0;text-align:left;color:var(--tinta)}
+.hist:active{background:var(--rosaC)}
+.hist .t{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.hist .t b{font-size:16px}
+.hist .t .v{font:17px/1 var(--serif);color:var(--ameixa);white-space:nowrap}
+.hist .it{margin:3px 0 6px;font-size:14px;color:var(--sub);line-height:1.35}
+.hist.canc .t b,.hist.canc .t .v{color:var(--sub2);text-decoration:line-through}
+.itl{margin:0 0 14px;padding:0;list-style:none;border-top:1px solid var(--linha)}
+.itl li{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--linha);font-size:15px}
+.itl li b{min-width:30px;color:var(--ameixa)}
+/* Ajuda */
+.ask{position:relative}
+.ask textarea{min-height:52px;padding-right:58px;resize:none}
+.ask .send{position:absolute;right:6px;bottom:6px;width:44px;height:44px;border-radius:12px;border:0;background:var(--ameixa);color:#fff;display:flex;align-items:center;justify-content:center}
+.ask .send:disabled{opacity:.4}
+.sug{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+.sug button{border:1.5px solid var(--linha);background:var(--papel);border-radius:999px;padding:8px 12px;font-size:14px;font-weight:700;color:var(--ameixa);text-align:left}
+.chat{display:flex;flex-direction:column;gap:10px;margin:14px 0 0}
+.bol{max-width:88%;padding:11px 14px;border-radius:16px;font-size:15.5px;line-height:1.5;white-space:normal}
+.bol.eu{align-self:flex-end;background:var(--ameixa);color:#fff;border-bottom-right-radius:4px}
+.bol.ia{align-self:flex-start;background:#fff;border:1.5px solid var(--linha);border-bottom-left-radius:4px}
+.bol.ia small{display:block;margin-top:8px;font-size:12px;color:var(--sub)}
+.bol.ia ol,.bol.ia ul{margin:6px 0;padding-left:20px}
+.bol.ia p{margin:0 0 6px}.bol.ia p:last-of-type{margin:0}
+.dots3{display:inline-flex;gap:4px}.dots3 i{width:7px;height:7px;border-radius:50%;background:var(--rosa);animation:pul 1s infinite}.dots3 i:nth-child(2){animation-delay:.15s}.dots3 i:nth-child(3){animation-delay:.3s}
+@keyframes pul{0%,100%{opacity:.3}50%{opacity:1}}
+.faq{margin:0 0 8px}
+.faq details{background:#fff;border-bottom:1px solid var(--linha)}
+.faq details:last-child{border-bottom:0}
+.faq summary{list-style:none;padding:13px 16px;font-size:15.5px;font-weight:700;display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary svg{flex:0 0 auto;margin-top:2px;color:var(--sub2);transition:transform .15s}
+.faq details[open] summary svg{transform:rotate(90deg)}
+.faq details p{margin:0;padding:0 16px 14px 42px;font-size:15px;line-height:1.55;color:var(--tinta)}
+.faq .cat{font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--ouro);margin:18px 2px 8px}
+/* ============ Toast ============ */
+.toast{position:fixed;left:16px;right:16px;bottom:calc(var(--tab) + var(--safe) + 14px);z-index:50;background:var(--tinta);color:#fff;padding:12px 14px 12px 16px;border-radius:14px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;transform:translateY(12px);transition:.22s;pointer-events:none;max-width:568px;margin:0 auto;font-size:15px}
+body.form .toast{bottom:calc(var(--safe) + 96px)}
+.toast.show{opacity:1;transform:none;pointer-events:auto}
+.toast.err{background:var(--err)}
+.toast span{flex:1}
+.toast button{border:0;background:none;color:var(--rosaT);font-weight:800;font-size:15px;padding:6px}
+
+/* ============ Esqueleto, vazio, erro ============ */
+.sk{border-radius:var(--r);background:linear-gradient(90deg,#EDE3D8 25%,#F6EEE6 50%,#EDE3D8 75%);background-size:200% 100%;animation:sk 1.2s infinite;margin:0 0 10px}
+@keyframes sk{to{background-position:-200% 0}}
+.vazio{text-align:center;padding:26px 16px;color:var(--sub)}
+.vazio .ic{width:56px;height:56px;border-radius:50%;background:var(--rosaC);color:var(--ameixa);display:flex;align-items:center;justify-content:center;margin:0 auto 10px}
+.vazio b{display:block;color:var(--tinta);font-size:17px;margin-bottom:4px}
+.vazio .btn{margin-top:14px}
+
+/* ============ Entrada ============ */
+.hero-m{display:flex;flex-direction:column;align-items:center;padding:34px 0 18px;gap:8px}
+.hero-m .selo{width:132px;height:132px;display:block}
+.hero-m .selo-l{display:flex;align-items:center;gap:14px}
+.hero-m .n1{font:38px/1 var(--serif);color:var(--ameixa);margin-top:10px}
+.hero-m .n2{font:italic 30px/1 var(--serif);color:var(--ameixa)}
+.clube-p{width:40px;height:40px;flex:0 0 auto}
+.hero-m .n3{font-size:11px;font-weight:800;letter-spacing:3px;color:var(--ouro);margin-top:6px}
+.pinput{text-align:center;letter-spacing:14px;font:30px var(--serif);padding:14px}
+.quem{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.quem button{border:1.5px solid var(--linha);background:var(--papel);border-radius:18px;padding:20px 10px;display:flex;flex-direction:column;align-items:center;gap:10px;font-size:18px;font-weight:800;box-shadow:var(--sh)}
+.quem .av{width:58px;height:58px;border-radius:50%;background:var(--ameixa);color:var(--linho);font:28px var(--serif);display:flex;align-items:center;justify-content:center}
+.quem button:nth-child(2) .av{background:var(--rosa);color:var(--ameixa)}
+
+/* ============ Gestão ============ */
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpi{background:var(--papel);border-radius:14px;box-shadow:var(--sh);padding:12px 13px}
+.kpi .n{font-size:13px;color:var(--sub);font-weight:700;line-height:1.25}
+.kpi .v{font:26px/1.15 var(--serif);color:var(--ameixa);margin:4px 0 2px}
+.kpi .m{font-size:12px;color:var(--sub)}
+.kpi .pill{margin-top:6px}
+.tbl{width:100%;border-collapse:collapse;font-size:15px}
+.tbl td{padding:9px 2px;border-bottom:1px solid var(--linha)}
+.tbl td:last-child{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.tbl tr.b td{font-weight:800}
+.tbl tr.b td:first-child{color:var(--ameixa)}
+.painel{margin:0 -16px;border-radius:0;overflow:hidden}
+.pauta{margin:0;padding-left:22px}.pauta li{margin:6px 0}
+.mes{background:var(--papel);border-radius:var(--r);box-shadow:var(--sh);margin:0 0 12px;overflow:hidden}
+.mes>summary{list-style:none;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.mes>summary::-webkit-details-marker{display:none}
+.mes>summary .tt{flex:1;min-width:0}
+.mes>summary b{display:block;font:20px/1.2 var(--serif);font-weight:400;color:var(--ameixa);text-transform:capitalize}
+.mes>summary span{font-size:13px;color:var(--sub)}
+.mes>summary svg{transition:transform .2s;color:var(--sub2)}
+.mes[open]>summary svg{transform:rotate(90deg)}
+.mes.now{box-shadow:inset 0 0 0 2px var(--ameixa),var(--sh)}
+.ring{width:42px;height:42px;flex:0 0 42px}
+.wk{padding:10px 16px 4px;font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--ouro);border-top:1px solid var(--linha)}
+</style>
+</head>
+<body>
+<header class="top">
+  <button id="bBack" class="ib hide" aria-label="Fechar"></button>
+  <div class="bm" id="bm" aria-label="RM Confeitaria do dia a dia"><span class="bm-rm">RM</span><span class="bm-t">confeitaria do dia a dia</span></div>
+  <div class="tt hide" id="tTitle"></div>
+  <button id="bHelp" class="ib" aria-label="Ajuda"></button>
+  <button id="bRef" class="ib" aria-label="Atualizar"></button>
+</header>
+<main id="app"></main>
+<nav class="tabs hide" id="tabs" aria-label="Navegação">
+  <button data-v="hoje"></button>
+  <button data-v="pedidos"></button>
+  <button class="fab" id="fab" aria-label="Registrar"></button>
+  <button data-v="plano"></button>
+  <button data-v="gestao"></button>
+</nav>
+<div id="sheet" aria-hidden="true"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"><span></span><button class="hide"></button></div>
+
+<script>
+/* =================== Ícones =================== */
+var IC = {
+  home: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
+  bag: '<path d="M5.5 7.5h13l-1 13h-11z"/><path d="M9 7.5a3 3 0 0 1 6 0"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  cal: '<rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>',
+  chart: '<path d="M4 20V11M10 20V5M16 20v-6M3 20.5h18"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  refresh: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/>',
+  x: '<path d="M6 6l12 12M18 6 6 18"/>',
+  more: '<circle cx="5.5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18.5" cy="12" r="1.2"/>',
+  wa: '<path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 .8a4 4 0 0 1-2-2l.8-1-1-2z"/>',
+  pix: '<path d="M12 2.8 21.2 12 12 21.2 2.8 12z"/><path d="M8.5 12 12 8.5 15.5 12 12 15.5z"/>',
+  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  box: '<path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5 12 12l8.5-4.5M12 12v9"/>',
+  star: '<path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/>',
+  receipt: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
+  task: '<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8 12l3 3 5-6"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+  trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+  chev: '<path d="m9 6 6 6-6 6"/>',
+  back: '<path d="m15 6-6 6 6 6"/>',
+  alert: '<path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5M12 17.5v.3"/>',
+  gift: '<rect x="3.5" y="8" width="17" height="4.5" rx="1"/><path d="M5 12.5v8h14v-8M12 8v12.5M12 8S10.5 3.5 8 4.5 9 8 12 8zm0 0s1.5-4.5 4-3.5S15 8 12 8z"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  flame: '<path d="M12 3c1 4 5 5.5 5 10.5a5 5 0 0 1-10 0c0-3 2-4.2 2.3-7 1.5 1 2.2 2.4 2.2 4"/>',
+  mega: '<path d="M3 10v4h4l7 4.5V5.5L7 10z"/><path d="M18 9a4 4 0 0 1 0 6"/>',
+  tool: '<path d="M14.5 5.5a4 4 0 0 0 5 5l-9.5 9.5-3.5-3.5 9.5-9.5a4 4 0 0 0-1.5-1.5z"/>',
+  bank: '<path d="M3 10h18M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20.5h18M12 3l9 5H3z"/>',
+  dots: '<circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/>',
+  cake: '<path d="M4 20.5h16v-8H4z"/><path d="M4 15.5c2 1.5 4 1.5 6 0s4-1.5 6 0 3 1.5 4 0M12 12.5V9M12 6.5v-.1"/>',
+  week: '<rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 9.5h18M7.5 14h2M11 14h2M14.5 14h2M7.5 17.5h2"/>',
+  info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8v.2"/>',
+  doc: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
+  flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
+  help: '<circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.4M12 16.8v.2"/>',
+  send: '<path d="M4 12 20 4l-6 16-3-7z"/><path d="m11 13 9-9"/>',
+  repeat: '<path d="M17 2.5 20.5 6 17 9.5"/><path d="M3.5 11V9.5a3.5 3.5 0 0 1 3.5-3.5h13.5M7 21.5 3.5 18 7 14.5"/><path d="M20.5 13v1.5a3.5 3.5 0 0 1-3.5 3.5H3.5"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  out: '<path d="M14 4h5a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-5M10 16l4-4-4-4M14 12H4"/>'
+};
+function ic(n, cls) { return '<svg class="i' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (IC[n] || '') + '</svg>'; }
+
+/* =================== Utilitários =================== */
+var S = { pin: null, pessoa: null, boot: null, view: 'hoje', prev: 'hoje', h: null, ps: null, pf: { f: 'todos', q: '' } };
+var $ = function (s, el) { return (el || document).querySelector(s); };
+var $$ = function (s, el) { return Array.prototype.slice.call((el || document).querySelectorAll(s)); };
+function store(k, v) { try { if (v === undefined) return localStorage.getItem('rm_' + k); localStorage.setItem('rm_' + k, v); } catch (e) { return null; } }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function brl(v, curto) { var n = Number(v) || 0; var s = 'R$ ' + n.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); return curto ? s.replace(/,00$/, '') : s; }
+function fimMes(iso) { if (!iso) return false; var d = pd(iso); d.setDate(d.getDate() + 1); return d.getDate() === 1; }
+function num(s) { var v = parseFloat(String(s == null ? '' : s).replace(/\./g, '').replace(',', '.')); return isNaN(v) ? null : v; }
+function pd(iso) { var p = iso.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+var DS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], DL = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+var MS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+function dBR(iso) { if (!iso) return ''; var d = pd(iso); return DS[d.getDay()] + ' ' + iso.slice(8) + '/' + iso.slice(5, 7); }
+function dLong(iso) { var d = pd(iso); return DL[d.getDay()] + ', ' + d.getDate() + ' de ' + MS[d.getMonth()]; }
+function isoAdd(iso, n) { var d = pd(iso); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function dow(iso) { return pd(iso).getDay(); }
+function weekOf(iso) { return Math.floor((pd(iso) - new Date(2026, 8, 28)) / 864e5 / 7) + 1; }
+function rel(iso) { var h = S.boot ? S.boot.hoje : iso; if (iso === h) return 'Hoje'; if (iso === isoAdd(h, 1)) return 'Amanhã'; if (iso === isoAdd(h, -1)) return 'Ontem'; return dBR(iso); }
+function norm(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim(); }
+function primeiro(n) { return String(n || '').trim().split(' ')[0]; }
+function waLink(fone, msg) { var w = String(fone || '').replace(/\D/g, ''); if (!w) return ''; if (w.length <= 11) w = '55' + w; return 'https://wa.me/' + w + '?text=' + encodeURIComponent(msg); }
+function whatsDe(nome) { var c = ((S.boot && S.boot.clientes) || []).filter(function (x) { return norm(x.nome) === norm(nome); })[0]; return c ? c.whats : ''; }
+function saud() { var h = new Date().getHours(); return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'; }
+function itensCurto(t) { return String(t || '').split(';').map(function (s) { return s.trim().replace(/^(\d+)\s*x\s*/i, '$1× '); }).filter(String).join(' · '); }
+
+/* Toast com ação opcional (ex.: desfazer) */
+function toast(m, err, acao) {
+  var t = $('#toast'); $('span', t).textContent = m; var b = $('button', t);
+  if (acao) { b.textContent = acao.label; b.classList.remove('hide'); b.onclick = function () { t.className = 'toast'; acao.fn(); }; } else b.classList.add('hide');
+  t.className = 'toast show' + (err ? ' err' : ''); clearTimeout(toast.t); toast.t = setTimeout(function () { t.className = 'toast'; }, acao ? 5000 : 2800);
+}
+
+var REPASSE_RE = /\b(entrega|frete|uber|motoboy|99\s*pop|corrida)\b/i;   // igual ao Gestao.gs
+/* =================== Servidor =================== */
+var RECALC = { salvarPedido: 1, atualizarPedido: 1, editarPedido: 1, salvarDespesa: 1, salvarSemana: 1, salvarReuniao: 1, salvarContagem: 1 };
+var recT = null;
+function agendarRecalc() { clearTimeout(recT); recT = setTimeout(function () { call('posAlteracao').catch(function () {}); }, 1500); }
+function call(fn) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  var p = callRaw(fn, args);
+  if (RECALC[fn]) p.then(agendarRecalc, function () {});
+  return p;
+}
+function callRaw(fn, args) {
+  if (window.MOCK) return window.MOCK[fn].apply(null, ['tk'].concat(args));
+  return api({ acao: 'rpc', token: S.token, fn: fn, args: args || [] }).then(function (d) { guardarCache(fn, args, d); return d; });
+}
+/* API do Apps Script: POST com JSON em text/plain (evita a pré-verificação de CORS). Erro de sessão volta ao login. */
+function api(corpo) {
+  var url = (window.RM_CONFIG && RM_CONFIG.api) || '';
+  if (!url) return Promise.reject(new Error('Endereço do servidor não configurado (config.js).'));
+  var ctl = window.AbortController ? new AbortController() : null, tm = setTimeout(function () { if (ctl) ctl.abort(); }, 45000);
+  return fetch(url, { method: 'POST', body: JSON.stringify(corpo), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow', signal: ctl ? ctl.signal : undefined })
+    .then(function (r) { clearTimeout(tm); if (!r.ok) throw new Error('Servidor respondeu ' + r.status + '. Tente de novo.'); return r.json(); },
+      function (e) { clearTimeout(tm); throw new Error(e && e.name === 'AbortError' ? 'timeout' : 'Failed to fetch'); })
+    .then(function (j) {
+      if (j && j.ok) return j.dados;
+      var e = new Error((j && j.erro) || 'Erro no servidor'); e.codigo = j && j.codigo;
+      if (e.codigo === 'SESSAO' && S.token) { sairLocal(); telaPin(); toast('Sessão expirada. Digite o PIN de novo.', true); }
+      throw e;
+    });
+}
+/* Cache local: as telas abrem na hora com os últimos dados e atualizam quando o servidor responde */
+var CACHE_FNS = { getBootstrap: 1, getHoje: 1, getPedidosAbertos: 1, getPedidosHistorico: 1, getRoadmap: 1, getAcoes: 1, getPainel: 1, getMensagens: 1, getEstoque: 1, getAjuda: 1 };
+function chaveCache(fn, args) { return 'c_' + fn + ':' + JSON.stringify(args || []); }
+function guardarCache(fn, args, d) { if (CACHE_FNS[fn]) store(chaveCache(fn, args), JSON.stringify({ t: Date.now(), d: d })); }
+function lerCache(fn, args) { try { var o = JSON.parse(store(chaveCache(fn, args)) || 'null'); return o && o.d; } catch (e) { return null; } }
+function limparCache() { try { Object.keys(localStorage).forEach(function (k) { if (k.indexOf('rm_c_') === 0) localStorage.removeItem(k); }); } catch (e) {} }
+function sairLocal() { store('token', ''); S.token = null; limparCache(); S.boot = S.h = S.ps = S.hist = null; }
+function msgErro(e) { var m = (e && e.message) || String(e || ''); if (/network|NetworkError|Failed to fetch|timeout/i.test(m)) return 'Sem conexão. Confira a internet e tente de novo.'; return m.replace(/^Exception:\s*/, ''); }
+function fail(e) { if (e && e.codigo === 'SESSAO') return; toast(msgErro(e), true); }
+function erroTela(e, retry) {
+  if (e && e.codigo === 'SESSAO') return;
+  $('#app').innerHTML = '<div class="page"><div class="vazio"><div class="ic">' + ic('alert') + '</div><b>Não deu para carregar</b>' + esc(msgErro(e)) + '<button class="btn" id="tryAgain">Tentar de novo</button></div></div>';
+  $('#tryAgain').onclick = retry;
+}
+function esqueleto(alturas) { return '<div class="page">' + (alturas || [70, 150, 96, 60, 60, 60]).map(function (h) { return '<div class="sk" style="height:' + h + 'px"></div>'; }).join('') + '</div>'; }
+
+/* =================== Sheet (painel inferior) =================== */
+/* Janelas inferiores. shT guarda a limpeza agendada pelo fechamento: abrir uma janela nova cancela essa limpeza,
+   senão, num celular mais lento, a janela recém-aberta era apagada e a tela ficava travada (corrigido em 03/10/2026). */
+var shT = null;
+function sheet(html) {
+  var s = $('#sheet'); clearTimeout(shT);
+  s.innerHTML = '<div class="bg"></div><div class="sh" role="dialog" aria-modal="true"><div class="grab"></div>' + html + '</div>';
+  s.setAttribute('aria-hidden', 'false'); document.body.classList.add('noscroll'); $('#toast').className = 'toast';
+  requestAnimationFrame(function () { requestAnimationFrame(function () { s.classList.add('open'); }); });
+  $('.bg', s).onclick = fecharSheet;
+  var f = $('.sh input:not([type=date]), .sh textarea', s); if (f && f.dataset.auto) setTimeout(function () { f.focus(); }, 280);
+  return $('.sh', s);
+}
+function fecharSheet() {
+  var s = $('#sheet'); s.classList.remove('open'); s.setAttribute('aria-hidden', 'true'); document.body.classList.remove('noscroll');
+  clearTimeout(shT); shT = setTimeout(function () { if (!s.classList.contains('open')) s.innerHTML = ''; }, 280);
+}
+function confirmar(tit, msg, ok, perigo) {
+  return new Promise(function (res) {
+    var sh = sheet('<h3>' + esc(tit) + '</h3><p class="desc">' + esc(msg) + '</p><div class="btns"><button class="btn ' + (perigo ? 'danger' : '') + '" data-r="1">' + esc(ok) + '</button><button class="btn ghost" data-r="0">Voltar</button></div>');
+    $$('[data-r]', sh).forEach(function (b) { b.onclick = function () { fecharSheet(); res(b.dataset.r === '1'); }; });
+  });
+}
+function perguntar(tit, msg, ph) {
+  return new Promise(function (res) {
+    var sh = sheet('<h3>' + esc(tit) + '</h3><p class="desc">' + esc(msg) + '</p><div class="fld"><textarea id="qTx" data-auto="1" placeholder="' + esc(ph || '') + '"></textarea></div><div class="btns"><button class="btn" id="qOk">Salvar</button><button class="btn ghost" id="qNo">Voltar</button></div>');
+    $('#qOk', sh).onclick = function () { var v = $('#qTx', sh).value.trim(); fecharSheet(); res(v); };
+    $('#qNo', sh).onclick = function () { fecharSheet(); res(null); };
+  });
+}
+function seg(id, opts, on) { return '<div class="seg" id="' + id + '" role="tablist">' + opts.map(function (o) { return '<button role="tab" aria-selected="' + (o[0] === on) + '" data-k="' + o[0] + '" class="' + (o[0] === on ? 'on' : '') + '">' + o[1] + '</button>'; }).join('') + '</div>'; }
+function chipsSel(el, cb) { $$('.chip', el).forEach(function (c) { c.onclick = function () { $$('.chip', el).forEach(function (x) { x.classList.remove('on'); }); c.classList.add('on'); cb(c.dataset.v); }; }); }
+function chipsHtml(id, lista, on, cls) { return '<div class="chips ' + (cls || '') + '" id="' + id + '">' + lista.map(function (v) { var val = v[0] !== undefined && Array.isArray(v) ? v[0] : v, lab = Array.isArray(v) ? v[1] : v; return '<button type="button" class="chip' + (val === on ? ' on' : '') + '" data-v="' + esc(val) + '">' + esc(lab) + '</button>'; }).join('') + '</div>'; }
+function vazio(icone, tit, txt, cta, view) { return '<div class="vazio"><div class="ic">' + ic(icone) + '</div><b>' + esc(tit) + '</b>' + esc(txt || '') + (cta ? '<button class="btn sec" onclick="go(\'' + view + '\')">' + esc(cta) + '</button>' : '') + '</div>'; }
+
+/* Autocomplete simples (melhor que datalist no iPhone) */
+function autocompletar(input, box, fonte, onPick) {
+  function render() {
+    var v = norm(input.value); if (!v) { box.innerHTML = ''; box.classList.add('hide'); return; }
+    var itens = fonte().filter(function (n) { return norm(n).indexOf(v) >= 0 && norm(n) !== v; }).slice(0, 5);
+    if (!itens.length) { box.innerHTML = ''; box.classList.add('hide'); return; }
+    box.innerHTML = itens.map(function (n) { return '<button type="button" data-n="' + esc(n) + '"><span class="av">' + esc(n.charAt(0).toUpperCase()) + '</span>' + esc(n) + '</button>'; }).join('');
+    box.classList.remove('hide');
+    $$('button', box).forEach(function (b) { b.onclick = function () { input.value = b.dataset.n; box.classList.add('hide'); onPick(b.dataset.n); }; });
+  }
+  input.addEventListener('input', render);
+  input.addEventListener('blur', function () { setTimeout(function () { box.classList.add('hide'); }, 180); });
+}
+
+/* =================== Estrutura =================== */
+function montarChrome() {
+  $('#bRef').innerHTML = ic('refresh'); $('#bHelp').innerHTML = ic('help');
+  $('#bHelp').onclick = function () { go('ajuda'); };
+  $('#bBack').innerHTML = ic('x');
+  var tabs = { hoje: ['home', 'Hoje'], pedidos: ['bag', 'Pedidos'], plano: ['cal', 'Plano'], gestao: ['chart', 'Gestão'] };
+  $$('#tabs [data-v]').forEach(function (b) { var t = tabs[b.dataset.v]; b.innerHTML = ic(t[0]) + '<span>' + t[1] + '</span>'; b.setAttribute('aria-label', t[1]); b.onclick = function () { go(b.dataset.v); }; });
+  $('#fab').innerHTML = ic('plus');
+  $('#fab').onclick = menuRegistrar;
+  $('#bRef').onclick = function () { var b = this; b.classList.add('spin'); setTimeout(function () { b.classList.remove('spin'); }, 700); go(S.view, true); };
+  $('#bBack').onclick = function () { go(S.prev || 'hoje'); };
+}
+var FORM = { novo: 'Novo pedido', editar: 'Editar pedido', despesa: 'Nova despesa', semana: 'Fechar a semana', estoque: 'Contar o estoque', ajuda: 'Ajuda', mensagens: 'Mensagens do WhatsApp' };
+function go(v, refresh) {
+  if (FORM[v] && !FORM[S.view]) S.prev = S.view;
+  S.view = v; fecharSheet();
+  var form = !!FORM[v];
+  document.body.classList.toggle('form', form);
+  $('#bBack').classList.toggle('hide', !form); $('#bm').classList.toggle('hide', form);
+  $('#tTitle').classList.toggle('hide', !form); $('#tTitle').textContent = FORM[v] || '';
+  $('#bRef').classList.toggle('hide', form); $('#bHelp').classList.toggle('hide', form);
+  $$('#tabs [data-v]').forEach(function (b) { var on = b.dataset.v === v; b.classList.toggle('on', on); if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+  if (!refresh) window.scrollTo(0, 0);
+  ({ hoje: vHoje, pedidos: vPedidos, novo: vNovo, editar: vEditar, despesa: vDespesa, gestao: vGestao, semana: vSemana, estoque: vEstoque, plano: vPlano, ajuda: vAjuda, mensagens: vMensagens })[v]();
+}
+function menuRegistrar() {
+  var sex = S.boot && dow(S.boot.hoje) >= 5;
+  var sh = sheet('<h3>Registrar</h3><p class="desc">O que aconteceu?</p><div class="menu">' +
+    '<button class="mi" data-g="novo"><span class="ic">' + ic('bag') + '</span><span><b>Pedido</b><span>Cliente, itens, retirada e Pix</span></span></button>' +
+    '<button class="mi" data-g="despesa"><span class="ic">' + ic('receipt') + '</span><span><b>Despesa ou compra</b><span>Ingrediente, embalagem, conta do negócio</span></span></button>' +
+    '<button class="mi" data-g="tarefa"><span class="ic">' + ic('task') + '</span><span><b>Tarefa</b><span>Algo para fazer, com data</span></span></button>' +
+    '<button class="mi" data-g="semana"><span class="ic">' + ic('week') + '</span><span><b>Fechar a semana</b><span>' + (sex ? 'Hoje é dia: horas, sobra e quebra' : 'Horas, sobra e quebra (sexta)') + '</span></span></button>' +
+    '<button class="mi" data-g="estoque"><span class="ic">' + ic('box') + '</span><span><b>Contar o estoque</b><span>' + (S.boot && fimMes(S.boot.hoje) ? 'Hoje é dia: insumos caros do fim do mês' : 'Insumos caros, no fim do mês') + '</span></span></button></div>');
+  $$('[data-g]', sh).forEach(function (b) { b.onclick = function () { if (b.dataset.g === 'tarefa') { fecharSheet(); setTimeout(function () { tarefaSheet(); }, 260); } else go(b.dataset.g); }; });
+}
+
+/* =================== Entrada =================== */
+function start() {
+  S.token = store('token'); S.pessoa = store('pessoa');
+  if (!S.pessoa) return telaPessoa();
+  if (!S.token) return telaPin();
+  var cb = lerCache('getBootstrap', []);
+  if (cb && !S.boot) {   // abre na hora com os dados guardados
+    S.boot = cb; S.h = S.h || lerCache('getHoje', [S.pessoa]); S.ps = S.ps || lerCache('getPedidosAbertos', []);
+    $('#tabs').classList.remove('hide'); go(S.view);
+  } else if (!S.boot) $('#app').innerHTML = esqueleto();
+  call('getBootstrap').then(function (b) { var primeira = !S.boot || !$('#tabs') || $('#tabs').classList.contains('hide'); S.boot = b; $('#tabs').classList.remove('hide'); if (primeira) go(S.view); })
+    .catch(function (e) { if (e && e.codigo === 'SESSAO') return telaPin(); if (!S.boot) erroTela(e, start); else toast(msgErro(e), true); });
+}
+/* Marca final (03/10/2026): selo com o RM dentro do papel rendado. Mínimo 32 px. */
+var RENDADO = 'M60,10 A10.53,10.53 0 0,1 79.13,13.81 A10.53,10.53 0 0,1 95.36,24.64 A10.53,10.53 0 0,1 106.19,40.87 A10.53,10.53 0 0,1 110,60 A10.53,10.53 0 0,1 106.19,79.13 A10.53,10.53 0 0,1 95.36,95.36 A10.53,10.53 0 0,1 79.13,106.19 A10.53,10.53 0 0,1 60,110 A10.53,10.53 0 0,1 40.87,106.19 A10.53,10.53 0 0,1 24.64,95.36 A10.53,10.53 0 0,1 13.81,79.13 A10.53,10.53 0 0,1 10,60 A10.53,10.53 0 0,1 13.81,40.87 A10.53,10.53 0 0,1 24.64,24.64 A10.53,10.53 0 0,1 40.87,13.81 A10.53,10.53 0 0,1 60,10 Z';
+function selo(cls, escuro) {
+  return '<svg class="' + (cls || '') + '" viewBox="0 0 120 120" role="img" aria-label="RM"><path d="' + RENDADO + '" fill="' + (escuro ? '#F4ECE2' : '#E3B3BE') + '"/>' +
+    '<circle cx="60" cy="60" r="40" fill="none" stroke="' + (escuro ? '#C98695' : '#4E1730') + '" stroke-width="2.2" stroke-dasharray="0.1 6" stroke-linecap="round"/>' +
+    '<circle cx="60" cy="60" r="33" fill="#4E1730"/><text x="60" y="72" text-anchor="middle" font-family="DM Serif Display, serif" font-size="34" fill="#F4ECE2">RM</text></svg>';
+}
+/* Clube da Raquel: 5 pedacinhos; cheios = pedidos do ciclo atual; o 5º, dourado, é o mimo */
+function clubePedacos(n, cls) {
+  var feitos = n % 5 === 0 ? 5 : n % 5, pts = [[60, 26], [92.34, 49.49], [79.98, 87.51], [40.02, 87.51], [27.66, 49.49]], h = '';
+  for (var i = 0; i < 5; i++) {
+    var a = pts[i], b = pts[(i + 1) % 5], d = 'M60,60 L' + a[0] + ',' + a[1] + ' A34,34 0 0,1 ' + b[0] + ',' + b[1] + ' Z', ouro = i === 4;
+    h += i < feitos ? '<path d="' + d + '" fill="' + (ouro ? '#A57A2F' : '#4E1730') + '" stroke="#F2E1E1" stroke-width="3" stroke-linejoin="round"/>'
+      : '<path d="' + d + '" fill="none" stroke="' + (ouro ? '#A57A2F' : '#C98695') + '" stroke-width="2.2" stroke-dasharray="4 3" stroke-linejoin="round"/>';
+  }
+  return '<svg class="' + (cls || 'clube-p') + '" viewBox="0 0 120 120" role="img" aria-label="' + feitos + ' de 5 pedidos"><path d="' + RENDADO + '" fill="#FFFFFF"/>' + h + '</svg>';
+}
+function heroMarca() { return '<div class="hero-m">' + selo('selo') + '<div class="n1">Confeitaria</div><div class="n2">do dia a dia</div><div class="n3">POR RAQUEL MIRANDA</div></div>'; }
+function telaPin() {
+  $('#tabs').classList.add('hide');
+  if (!S.pessoa) return telaPessoa();
+  $('#app').innerHTML = '<div class="page">' + heroMarca() + avisoInstalar() + '<div class="card"><p class="muted" style="margin:0 0 10px">Entrando como <b>' + esc(S.pessoa) + '</b> · <button class="lk" id="outraP" style="border:0;background:none;color:var(--ameixa);padding:0;text-decoration:underline">trocar</button></p><div class="fld"><label for="pin">PIN de acesso</label><input id="pin" class="pinput" type="password" inputmode="numeric" maxlength="8" autocomplete="current-password" enterkeyhint="go"></div><button class="btn" id="okPin">Entrar</button></div></div>';
+  $('#outraP').onclick = function () { store('pessoa', ''); S.pessoa = null; telaPessoa(); };
+  var entrar = function () {
+    var v = $('#pin').value.trim(); if (!v) return $('#pin').focus();
+    var b = $('#okPin'); b.disabled = true; b.textContent = 'Entrando…';
+    var login = window.MOCK ? Promise.resolve({ token: 'tk', boot: null }) : api({ acao: 'login', pessoa: S.pessoa, pin: v, aparelho: (navigator.userAgent || '').slice(0, 120) });
+    login.then(function (r) { store('token', r.token); S.token = r.token; if (r.boot) { S.boot = r.boot; guardarCache('getBootstrap', [], r.boot); } $('#tabs').classList.remove('hide'); S.view = 'hoje'; go('hoje'); })
+      .catch(function (e) { b.disabled = false; b.textContent = 'Entrar'; var pi = $('#pin'); pi.value = ''; pi.classList.add('falta'); setTimeout(function () { pi.classList.remove('falta'); }, 400); toast(msgErro(e), true); });
+  };
+  $('#okPin').onclick = entrar;
+  $('#pin').onkeydown = function (e) { if (e.key === 'Enter') entrar(); };
+}
+/* No iPhone, só o app instalado na tela de início guarda os dados e (depois) recebe avisos */
+function avisoInstalar() {
+  var ios = /iphone|ipad|ipod/i.test(navigator.userAgent || ''), inst = window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  if (!ios || inst) return '';
+  return '<div class="card" style="background:var(--rosaC);border:0"><b>Instale o app na tela de início</b><p class="muted" style="margin:6px 0 0">No Safari, toque em Compartilhar (quadrado com seta) e depois em <b>Adicionar à Tela de Início</b>. Abra pelo ícone RM.</p></div>';
+}
+function telaPessoa() {
+  $('#tabs').classList.add('hide');
+  $('#app').innerHTML = '<div class="page">' + heroMarca() + '<p class="center muted" style="margin:0 0 14px">Quem está usando este celular?</p><div class="quem"><button data-p="Raquel"><span class="av">R</span>Raquel</button><button data-p="Bruno"><span class="av">B</span>Bruno</button></div></div>';
+  $$('[data-p]').forEach(function (b) { b.onclick = function () { var nova = b.dataset.p; if (nova !== store('pessoa')) { sairLocal(); } store('pessoa', nova); S.pessoa = nova; start(); }; });
+}
+
+/* =================== Pedido: cartão e ações =================== */
+/* Etapas do pedido: na planilha "Confirmado" = pedido recebido. Pagamento (Pix) é independente da etapa. */
+var ETAPAS = [['Confirmado', 'Recebido'], ['Produzido', 'Produzido'], ['Retirado', 'Retirado']];
+function etapaIdx(st) { for (var i = 0; i < ETAPAS.length; i++) if (ETAPAS[i][0] === st) return i; return 0; }
+function nomeEtapa(st) { return st === 'Cancelado' ? 'Cancelado' : ETAPAS[etapaIdx(st)][1]; }
+function proximoPasso(p) {
+  if (p.status === 'Retirado' || p.status === 'Cancelado') return null;
+  if (p.status === 'Produzido') return { lab: 'Marcar como retirado', campo: 'status', val: 'Retirado', ic: 'box', curto: 'retirado' };
+  return { lab: 'Marcar como produzido', campo: 'status', val: 'Produzido', ic: 'cake', curto: 'produzido' };
+}
+function etapasHtml(p) {
+  var at = etapaIdx(p.status), h = '<div class="etp" aria-label="Etapa: ' + nomeEtapa(p.status) + '">';
+  ETAPAS.forEach(function (e, i) {
+    var cls = i < at || (i === at && i === ETAPAS.length - 1) ? 'ok' : (i === at ? 'at' : '');
+    if (i) h += '<span class="ln' + (i <= at ? ' ok' : '') + '"></span>';
+    h += '<span class="e ' + cls + '"><i>' + (cls === 'ok' ? ic('check') : '') + '</i>' + e[1] + '</span>';
+  });
+  return h + '</div>';
+}
+/* Mensagens do WhatsApp: texto-modelo (editável em Pedidos › Mensagens do WhatsApp) + campos do pedido */
+var MSG_PAD = {
+  confirmacao: 'Oi, {nome}! Pedido confirmado: {itens}. Total {valor}. Retirada {retirada}. {pagamento}',
+  lembrete: 'Oi, {nome}! Seu pedido ({itens}) fica pronto {retirada}. {cobranca} Qualquer coisa, me avisa!',
+  posentrega: 'Oi, {nome}! Tudo certo com o pedido? Saiu cardápio novo esta semana, quer que eu te mande?',
+  posentrega_pix: 'Oi, {nome}! Tudo certo com o pedido? Vi aqui que o Pix de {valor} ainda não entrou. A chave é {chave_pix}. Obrigada!',
+  clube: 'Oi, {nome}! Saiu o cardápio da semana. Como você é do Clube da Raquel, pode reservar antes de todo mundo, até domingo 12h. Quer que eu te mande?'
+};
+var CAMPO_DESC = { nome: 'primeiro nome', itens: 'itens do pedido', valor: 'total', pix: 'situação do Pix', retirada: 'dia e horário', pedidos: 'nº de pedidos no Clube',
+  cobranca: 'cobrança com valor e chave Pix (vazio se o Pix já entrou)', pagamento: 'agradece o Pix ou cobra com a chave', chave_pix: 'chave Pix e titular' };
+/* Chave Pix vem da aba Config (pix_chave e pix_titular) */
+function chavePix() {
+  var x = (S.boot && S.boot.pix) || {};
+  return x.chave ? x.chave + (x.titular ? ' (' + x.titular + ')' : '') : '';
+}
+function retiradaTxt(p) {
+  if (!p.retirada) return 'em data a combinar';
+  var r = rel(p.retirada), t = (r === 'Hoje' || r === 'Amanhã') ? r.toLowerCase() + ' (' + dBR(p.retirada) + ')' : dBR(p.retirada);
+  return t + (p.janela && p.janela !== 'Horário combinado' ? ', ' + p.janela : '');
+}
+function pixPago(p) { return p.pix === true || p.pix === 'Sim'; }
+function camposPed(p) {
+  var pago = pixPago(p), ch = chavePix(), v = brl(p.valor);
+  var cob = 'Falta o Pix de ' + v + (ch ? ': chave ' + ch + '.' : '.') + ' Me manda o comprovante, por favor.';
+  return { nome: primeiro(p.cliente), itens: itensCurto(p.itens), valor: v, pix: pago ? 'Pix recebido, obrigada!' : 'Pix pendente', retirada: retiradaTxt(p),
+    chave_pix: ch, cobranca: pago ? '' : cob, pagamento: pago ? 'Pix recebido, obrigada!' : cob };
+}
+/* Preenche os campos e arruma os espaços que sobram quando um campo fica vazio (ex.: {cobranca} com Pix pago) */
+function preencher(tpl, d) {
+  var t = String(tpl || '').replace(/\{(\w+)\}/g, function (m, k) { return d[k] !== undefined && d[k] !== null ? String(d[k]) : m; });
+  return t.split('\n').map(function (l) { return l.replace(/[ \t]{2,}/g, ' ').replace(/ +([.,!?;:])/g, '$1').trim(); }).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+function msgDe(chave, d) { return preencher((S.boot && S.boot.msgs && S.boot.msgs[chave]) || MSG_PAD[chave], d); }
+function msgLembrete(p) { return msgDe('lembrete', camposPed(p)); }
+/* Depois da entrega: com Pix pendente, a mensagem cobra com a chave */
+function msgEntregue(p) { return msgDe(pixPago(p) ? 'posentrega' : 'posentrega_pix', camposPed(p)); }
+/* Mensagem certa para a etapa: em aberto = lembrete; retirado = depois da entrega */
+function msgPedido(p) { return emAberto(p) ? msgLembrete(p) : msgEntregue(p); }
+
+/* Painel para ajustar o texto antes de abrir o WhatsApp. A edição vale só para esta mensagem. */
+function enviarWhats(fone, msg, titulo, voltar) {
+  if (!waLink(fone, '')) return toast('Cliente sem WhatsApp cadastrado', true);
+  var sh = sheet('<h3>' + esc(titulo || 'Mensagem no WhatsApp') + '</h3><p class="desc">Ajuste o texto se quiser. A mudança vale só para esta mensagem.</p>' +
+    '<div class="fld"><label class="sr" for="waTx">Texto da mensagem</label><textarea id="waTx" style="min-height:150px;font-size:16px;line-height:1.45" maxlength="2000">' + esc(msg) + '</textarea></div>' +
+    '<div class="btns"><a class="btn" id="waGo" href="' + waLink(fone, msg) + '" target="_blank" rel="noopener">' + ic('wa') + 'Abrir no WhatsApp</a>' +
+    '<button class="btn sec" id="waCp">Copiar texto</button>' +
+    (voltar ? '<button class="btn ghost" id="waVolta">Voltar</button>' : '') +
+    '<button class="btn ghost" id="waPad">Mudar o texto padrão</button></div>');
+  var ta = $('#waTx', sh), a = $('#waGo', sh);
+  ta.addEventListener('input', function () { a.href = waLink(fone, ta.value); });
+  a.onclick = function () { a.href = waLink(fone, ta.value); setTimeout(fecharSheet, 400); };
+  $('#waCp', sh).onclick = function () {
+    var ok = function () { toast('Texto copiado'); }, plano = function () { ta.focus(); ta.select(); try { document.execCommand('copy'); ok(); } catch (e) { toast('Não deu para copiar. Selecione o texto e copie.', true); } };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(ok, plano); else plano();
+  };
+  if (voltar) $('#waVolta', sh).onclick = voltar;
+  $('#waPad', sh).onclick = function () { fecharSheet(); go('mensagens'); };
+}
+function cardPed(p) {
+  var nx = proximoPasso(p), w = whatsDe(p.cliente), mimo = /Clube/.test(p.obs || '');
+  var st = p.pix !== 'Sim' ? '<button class="pill err pixb" data-a="pix" aria-label="Pix pendente. Toque para marcar como recebido">' + ic('pix', 's') + 'Pix pendente</button>' : '<span class="pill ok">' + ic('check', 's') + 'Pix recebido</span>';
+  st += mimo ? '<span class="pill av">' + ic('gift', 's') + 'Mimo do Clube</span>' : '';
+  return '<article class="ord" data-row="' + p.row + '"><div class="t"><b>' + esc(p.cliente) + '</b><span class="v">' + brl(p.valor, true) + '</span></div>' +
+    '<div class="it">' + esc(itensCurto(p.itens)) + '</div>' + etapasHtml(p) +
+    '<div class="mt">' + st + '<span>' + (p.retirada ? rel(p.retirada) + (p.janela && p.janela !== 'Horário combinado' ? ' · ' + esc(p.janela) : '') : 'sem data') + '</span></div>' +
+    '<div class="ac">' + (nx ? '<button class="btn sm ' + (nx.val === 'Retirado' ? 'ok' : 'sec') + '" data-a="next" style="flex:1">' + ic(nx.ic, 's') + esc(nx.lab) + '</button>' : (p.pix !== 'Sim' && p.status === 'Retirado' ? '<button class="btn sm ok" data-a="pix" style="flex:1">' + ic('pix', 's') + 'Marcar Pix recebido</button>' : '<span class="grow"></span>')) +
+    (w ? '<button class="icb wa" data-a="wa" aria-label="' + (emAberto(p) ? 'Lembrar no WhatsApp' : (pixPago(p) ? 'Mensagem no WhatsApp' : 'Cobrar o Pix no WhatsApp')) + '">' + ic('wa') + '</button>' : '') +
+    '<button class="icb" data-a="more" aria-label="Mais ações">' + ic('more') + '</button></div></article>';
+}
+function acharPed(row) {
+  var lists = [S.h && S.h.retiradas, S.h && S.h.pixPendente, S.ps].filter(Boolean), found = null;
+  lists.forEach(function (l) { l.forEach(function (p) { if (p.row === row) found = found || p; }); });
+  return found;
+}
+function aplicarPed(row, campo, val) {
+  [S.h && S.h.retiradas, S.h && S.h.pixPendente, S.ps].forEach(function (l) { if (l) l.forEach(function (p) { if (p.row === row) { if (campo === 'pix') p.pix = val; else p.status = val; } }); });
+  /* os pedidos ficam na memória (para o Desfazer); as telas filtram o que mostrar */
+}
+function atualizarPed(row, campo, val, msg, semDesfazer) {
+  var el = $$('.ord[data-row="' + row + '"]'), sai = val === 'Retirado' || val === 'Cancelado';
+  if (sai) el.forEach(function (e) { e.classList.add('sai'); });
+  var antes = JSON.parse(JSON.stringify(acharPed(row) || {}));
+  setTimeout(function () { aplicarPed(row, campo, val); rerender(); }, sai ? 260 : 0);
+  var volta = campo === 'pix' ? (antes.pix || 'Não') : (antes.status || 'Confirmado');
+  call('atualizarPedido', row, campo, val).then(function () {
+    S.hist = null;
+    toast(msg, false, volta !== val && !semDesfazer ? { label: 'Desfazer', fn: function () { atualizarPed(row, campo, volta, 'Desfeito: voltou para ' + (campo === 'pix' ? (volta === 'Sim' ? 'Pix recebido' : 'Pix pendente') : nomeEtapa(volta).toLowerCase()), true); } } : null);
+  })
+    .catch(function (e) { aplicarPed(row, 'pix', antes.pix); aplicarPed(row, 'status', antes.status); go(S.view, true); fail(e); });
+}
+function emAberto(p) { return p.status !== 'Retirado' && p.status !== 'Cancelado'; }
+function rerender() { if (S.view === 'hoje' && S.h) renderHoje(); if (S.view === 'pedidos' && S.ps) renderPedidos(); }
+function ligarPeds(root) {
+  $$('.ord [data-a]', root).forEach(function (b) {
+    b.onclick = function () {
+      var row = +b.closest('.ord').dataset.row, p = acharPed(row); if (!p) return;
+      if (b.dataset.a === 'pix') { atualizarPed(row, 'pix', 'Sim', primeiro(p.cliente) + ': Pix recebido'); return; }
+      if (b.dataset.a === 'wa') { enviarWhats(whatsDe(p.cliente), msgPedido(p), (emAberto(p) ? 'Lembrete para ' : (pixPago(p) ? 'Mensagem para ' : 'Cobrar o Pix de ')) + primeiro(p.cliente)); return; }
+      if (b.dataset.a === 'next') {
+        var nx = proximoPasso(p); if (!nx) return;
+        var ir = function () { b.disabled = true; atualizarPed(row, nx.campo, nx.val, primeiro(p.cliente) + ': ' + nx.curto); };
+        if (nx.val === 'Retirado' && p.pix !== 'Sim') return confirmar('O Pix de ' + primeiro(p.cliente) + ' ainda não caiu', 'Marcar como retirado mesmo assim? O pedido continua na lista de Pix pendente até o pagamento entrar.', 'Marcar como retirado').then(function (ok) { if (ok) ir(); });
+        ir(); return;
+      }
+      menuPedido(p);
+    };
+  });
+}
+function menuPedido(p) {
+  var w = whatsDe(p.cliente), canc = p.status === 'Cancelado';
+  var sh = sheet('<h3>' + esc(p.cliente) + '</h3><p class="desc">' + brl(p.valor) + (p.retirada ? ' · retirada ' + dBR(p.retirada) + (p.janela && p.janela !== 'Horário combinado' ? ', ' + esc(p.janela) : '') : '') + '</p>' + itensLista(p) +
+    (canc ? '' : '<div class="stg"><span class="lab">Etapa do pedido</span>' + seg('mEt', ETAPAS, ETAPAS[etapaIdx(p.status)][0]) + '</div>' +
+    '<div class="stg"><span class="lab">Pagamento</span>' + seg('mPx', [['Não', 'Pix pendente'], ['Sim', 'Pix recebido']], p.pix === 'Sim' ? 'Sim' : 'Não') + '</div>') +
+    '<div class="menu" style="margin-top:16px">' +
+    '<button class="mi" data-ed="1"><span class="ic">' + ic('edit') + '</span><span><b>Editar pedido</b><span>Itens, valor, retirada, Pix, observação</span></span></button>' +
+    (w && !canc ? '<button class="mi" data-wa="1"><span class="ic">' + ic('wa') + '</span><span><b>' + (emAberto(p) ? 'Lembrar no WhatsApp' : (pixPago(p) ? 'Mensagem no WhatsApp' : 'Cobrar o Pix no WhatsApp')) + '</b><span>' + (emAberto(p) ? 'Pedido, retirada' + (pixPago(p) ? '' : ' e chave Pix') : (pixPago(p) ? 'Pedir retorno e oferecer o cardápio' : 'Valor e chave Pix')) + '</span></span></button>' : '') +
+    (canc ? '' : '<button class="mi danger" data-c="1"><span class="ic">' + ic('trash') + '</span><span><b>Cancelar pedido</b><span>Sai da lista e das contas</span></span></button>') + '</div>');
+  $$('#mEt button', sh).forEach(function (b) { b.onclick = function () { var v = b.dataset.k; if (v === p.status || (v === 'Confirmado' && !p.status)) return fecharSheet(); fecharSheet(); atualizarPed(p.row, 'status', v, primeiro(p.cliente) + ': ' + nomeEtapa(v).toLowerCase()); }; });
+  $$('#mPx button', sh).forEach(function (b) { b.onclick = function () { var v = b.dataset.k; if (v === (p.pix === 'Sim' ? 'Sim' : 'Não')) return fecharSheet(); fecharSheet(); atualizarPed(p.row, 'pix', v, primeiro(p.cliente) + ': ' + (v === 'Sim' ? 'Pix recebido' : 'Pix pendente')); }; });
+  $('[data-ed]', sh).onclick = function () { abrirEdicao(p); };
+  var wb = $('[data-wa]', sh); if (wb) wb.onclick = function () { enviarWhats(w, msgPedido(p), (emAberto(p) ? 'Lembrete para ' : (pixPago(p) ? 'Mensagem para ' : 'Cobrar o Pix de ')) + primeiro(p.cliente), function () { menuPedido(p); }); };
+  var c = $('[data-c]', sh);
+  if (c) c.onclick = function () {
+    fecharSheet(); setTimeout(function () {
+      confirmar('Cancelar o pedido de ' + primeiro(p.cliente) + '?', 'Ele sai da lista e não conta na receita. Se for engano, dá para reabrir em Pedidos › Entregues.', 'Cancelar pedido', true)
+        .then(function (ok) { if (ok) atualizarPed(p.row, 'status', 'Cancelado', 'Pedido cancelado'); });
+    }, 260);
+  };
+}
+
+/* =================== HOJE =================== */
+function vHoje() {
+  if (S.h) renderHoje(); else $('#app').innerHTML = esqueleto();
+  call('getHoje', S.pessoa).then(function (h) { S.h = h; if (S.view === 'hoje') renderHoje(); }).catch(function (e) { if (S.h) return fail(e); erroTela(e, vHoje); });
+}
+function renderHoje() {
+  var h = Object.assign({}, S.h), r = h.resumo, hoje = h.hoje; S.hl = [];
+  h.retiradas = S.h.retiradas.filter(emAberto);
+  h.pixPendente = S.h.pixPendente.filter(function (p) { return p.pix !== 'Sim' && p.status !== 'Cancelado'; });
+  var meta = Number(r.meta) || 0, pct = meta ? Math.min(100, Math.round(r.receita / meta * 100)) : 0;
+  var html = '<div class="page"><div class="lt"><small>' + dLong(hoje) + '</small><h1>' + saud() + ', ' + esc(S.pessoa) + '</h1></div>';
+  html += '<section class="hero" aria-label="Semana até agora">' + '<div class="lbl">' + (h.semana >= 1 ? 'Semana ' + h.semana + ' do plano' : 'Antes da semana 1') + '</div>' +
+    '<div class="big">' + brl(r.receita, true) + (meta ? '<small>de ' + brl(meta, true) + '</small>' : '') + '</div>' +
+    (meta ? '<div class="bar' + (pct >= 100 ? ' ok' : '') + '" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100"><i style="width:' + pct + '%"></i></div>' : '<div style="height:10px"></div>') +
+    '<div class="stats"><div><b>' + r.pedidos + '</b>pedidos</div><div><b>' + (r.pedidos ? brl(r.ticket, true) : '—') + '</b>ticket médio</div>' + (meta ? '<div><b>' + pct + '%</b>da meta</div>' : '') + '</div></section>';
+  var rHoje = h.retiradas.filter(function (p) { return p.retirada && p.retirada <= hoje; }).length, rAm = h.retiradas.filter(function (p) { return p.retirada === isoAdd(hoje, 1); }).length, px = h.pixPendente.length;
+  html += '<div class="tiles"><button class="tile" data-f="hoje"><span class="ic">' + ic('box') + '</span><b>' + rHoje + '</b><span>retirada' + (rHoje === 1 ? '' : 's') + ' hoje</span></button>' +
+    '<button class="tile" data-f="amanha"><span class="ic">' + ic('clock') + '</span><b>' + rAm + '</b><span>para amanhã</span></button>' +
+    '<button class="tile' + (px ? ' alert' : '') + '" data-f="pix"><span class="ic">' + ic('pix') + '</span><b>' + px + '</b><span>Pix pendente' + (px === 1 ? '' : 's') + '</span></button></div>';
+
+  var pend = h.tarefas.filter(function (t) { return !t.ciclo && !t.feita; }), feitas = h.tarefas.filter(function (t) { return !t.ciclo && t.feita; }), rot = h.tarefas.filter(function (t) { return t.ciclo; });
+  html += '<div class="sec"><h2>Suas tarefas</h2><button class="lk" id="addT">+ Adicionar</button></div>';
+  html += '<div class="list">' + (pend.length ? pend.map(liTarefa).join('') : '<div class="li"><div class="dot"><i style="background:var(--ok)"></i></div><div class="tx"><span>Nenhuma tarefa pendente para hoje.</span></div></div>') +
+    (feitas.length ? '<details class="more" style="margin:0;padding:0 16px"><summary>' + ic('chev', 's') + 'Feitas hoje (' + feitas.length + ')</summary></details><div id="feitas" class="hide">' + feitas.map(liTarefa).join('') + '</div>' : '') + '</div>';
+  if (rot.length) html += '<div class="sec"><h2>Rotina de hoje</h2></div><div class="list">' + rot.map(function (t) { S.hl.push(t); return '<div class="li tap" data-dt="' + (S.hl.length - 1) + '"><div class="dot"><i></i></div><div class="tx"><span>' + esc(t.tarefa) + '</span></div>' + ic('chev', 's chev') + '</div>'; }).join('') + '</div>';
+
+  if (h.clube && h.clube.frequentes.length) {
+    html += '<div class="sec"><h2>' + esc(h.clube.nome) + '</h2><span class="cnt">' + h.clube.frequentes.length + ' frequentes</span></div><div class="card flat" style="background:var(--rosaC);border:0"><p class="muted" style="margin:0 0 6px;color:var(--ameixa)">' + ic('gift', 's') + ' Reserva antecipada: mande o cardápio às 18h, antes do post de domingo.</p>' +
+      h.clube.frequentes.map(function (f) {
+        var l = waLink(f.whats, '');
+        return '<div class="row" style="padding:10px 0;border-top:1px solid rgba(78,23,48,.1)"><div class="grow"><b>' + esc(f.nome) + '</b><br><span class="muted">' + f.n + ' pedidos no Clube</span></div>' + (l ? '<button class="icb wa" data-cw="' + esc(f.nome) + '" aria-label="Enviar no WhatsApp">' + ic('wa') + '</button>' : '<span class="muted">sem WhatsApp</span>') + '</div>';
+      }).join('') + '</div>';
+  }
+  if (dow(hoje) === 5 && hoje >= '2026-10-19') html += '<button class="mi" style="margin-top:14px" onclick="go(\'semana\')"><span class="ic">' + ic('week') + '</span><span class="grow"><b>Fechar a semana</b><span>Horas, sobra e quebra · 2 minutos</span></span>' + ic('chev', 's') + '</button>';
+
+  html += '<div class="sec"><h2>Retiradas até amanhã</h2><span class="cnt">' + h.retiradas.length + '</span></div>' + (h.retiradas.length ? h.retiradas.map(cardPed).join('') : '<div class="card flat">' + vazio('box', 'Nenhuma retirada até amanhã', '') + '</div>');
+  var pxSo = h.pixPendente.filter(function (p) { return !h.retiradas.some(function (q) { return q.row === p.row; }); });
+  if (pxSo.length) html += '<div class="sec"><h2>Pix pendente</h2><span class="cnt">' + pxSo.length + '</span></div>' + pxSo.map(cardPed).join('');
+  html += '<p class="center" style="margin-top:28px"><button class="lk" id="troca" style="border:0;background:none;color:var(--sub);font-size:14px">Não é ' + esc(S.pessoa) + '? Trocar de pessoa</button></p></div>';
+  $('#app').innerHTML = html;
+
+  $$('.tile').forEach(function (b) { b.onclick = function () { S.pf.f = b.dataset.f; S.pf.modo = 'abertos'; go('pedidos'); }; });
+  $('#addT').onclick = function () { tarefaSheet(); };
+  var det = $('.list details.more'); if (det) det.addEventListener('toggle', function () { $('#feitas').classList.toggle('hide', !det.open); });
+  $$('[data-dt]').forEach(function (el) { el.onclick = function (ev) { if (ev.target.closest('.ck')) return; detalheSheet(deHoje(S.hl[+el.dataset.dt])); }; });
+  $$('.ck[data-row]').forEach(function (b) {
+    b.onclick = function (ev) { ev.stopPropagation();
+      var t = h.tarefas.filter(function (x) { return String(x.row) === b.dataset.row && String(!!x.acao) === b.dataset.acao; })[0]; if (!t) return;
+      var feita = !t.feita; b.classList.toggle('on', feita);
+      setTimeout(function () {
+        t.feita = feita; renderHoje();
+        call('marcarTarefa', t.row, feita, !!t.acao).then(function () {
+          toast(feita ? 'Feita!' : 'Voltou para a lista', false, feita ? { label: 'Desfazer', fn: function () { t.feita = false; renderHoje(); call('marcarTarefa', t.row, false, !!t.acao).catch(fail); } } : null);
+        }).catch(function (e) { t.feita = !feita; renderHoje(); fail(e); });
+      }, 220);
+    };
+  });
+  $('#troca').onclick = function () { if (!window.MOCK && S.token) api({ acao: 'sair', token: S.token }).catch(function () {}); sairLocal(); store('pessoa', ''); S.pessoa = null; start(); };
+  $$('[data-cw]').forEach(function (b) {
+    b.onclick = function () { var f = h.clube.frequentes.filter(function (x) { return x.nome === b.dataset.cw; })[0]; if (f) enviarWhats(f.whats, msgDe('clube', { nome: primeiro(f.nome), pedidos: f.n }), 'Reserva do Clube para ' + primeiro(f.nome)); };
+  });
+  ligarPeds($('#app'));
+}
+function liTarefa(t) {
+  S.hl.push(t); var i = S.hl.length - 1;
+  var tg = (t.atrasada && !t.feita ? '<span class="pill err">atrasada · ' + dBR(t.data) + '</span>' : '') + (t.acao ? '<span class="pill">plano de ação</span>' : '') + (t.resp === 'Ambos' ? '<span class="pill nd">os dois</span>' : '');
+  return '<div class="li tap' + (t.feita ? ' done' : '') + '" data-dt="' + i + '"><button class="ck' + (t.feita ? ' on' : '') + '" data-row="' + t.row + '" data-acao="' + !!t.acao + '" aria-label="' + (t.feita ? 'Desmarcar' : 'Marcar como feita') + '">' + ic('check') + '</button><div class="tx"><span>' + esc(t.tarefa.replace(/^Ação: /, '')) + '</span>' + (tg ? '<div class="meta">' + tg + '</div>' : '') + '</div>' + ic('chev', 's chev') + '</div>';
+}
+function tarefaSheet(pre, onSalvo) {
+  pre = pre || {};
+  var hoje = S.boot.hoje, f = { resp: pre.resp || S.pessoa, data: pre.data || hoje };
+  var sh = sheet('<h3>Nova tarefa</h3><p class="desc">Entra no plano e aparece no dia escolhido.</p>' +
+    '<div class="fld"><label for="tT">O que precisa ser feito</label><input id="tT" data-auto="1" enterkeyhint="done" placeholder="Ex.: comprar forminhas"></div>' +
+    '<div class="fld"><span class="lab">Para quem</span>' + chipsHtml('tR', ['Raquel', 'Bruno', 'Ambos'], f.resp) + '</div>' +
+    '<div class="fld"><span class="lab">Quando</span>' + chipsHtml('tQ', [[hoje, 'Hoje'], [isoAdd(hoje, 1), 'Amanhã'], ['outra', 'Outra data']], f.data) + '<input id="tD" type="date" value="' + f.data + '" class="hide" style="margin-top:10px"></div>' +
+    '<div class="fld"><label for="tP">Por que é importante <span class="muted" style="font-weight:600">(opcional)</span></label><textarea id="tP" style="min-height:64px" placeholder="Ex.: sem forminha não dá para montar a caixa de cookies de quinta"></textarea></div>' +
+    '<div class="btns"><button class="btn" id="tOk">Salvar tarefa</button></div>');
+  chipsSel($('#tR', sh), function (v) { f.resp = v; });
+  chipsSel($('#tQ', sh), function (v) { if (v === 'outra') { $('#tD', sh).classList.remove('hide'); f.data = $('#tD', sh).value; } else { $('#tD', sh).classList.add('hide'); f.data = v; } });
+  $('#tD', sh).onchange = function () { f.data = this.value; };
+  $('#tOk', sh).onclick = function () {
+    var tx = $('#tT', sh).value.trim(); if (!tx) { $('#tT', sh).classList.add('falta'); return $('#tT', sh).focus(); }
+    var b = this; b.disabled = true; b.textContent = 'Salvando…';
+    call('novaTarefa', { tarefa: tx, resp: f.resp, data: f.data, porque: $('#tP', sh).value.trim() }).then(function () { fecharSheet(); toast('Tarefa incluída para ' + rel(f.data).toLowerCase()); if (onSalvo) onSalvo(); else if (S.view === 'hoje') vHoje(); else if (S.view === 'plano') vPlano(); })
+      .catch(function (e) { b.disabled = false; b.textContent = 'Salvar tarefa'; fail(e); });
+  };
+}
+
+/* =================== PEDIDOS =================== */
+function vPedidos() {
+  if (S.pf.modo === 'hist') return vHist();
+  if (S.ps) renderPedidos(); else $('#app').innerHTML = esqueleto([70, 44, 40, 130, 130, 130]);
+  call('getPedidosAbertos').then(function (ps) { S.ps = ps; if (S.view === 'pedidos' && S.pf.modo !== 'hist') renderPedidos(); }).catch(function (e) { if (S.ps) return fail(e); erroTela(e, vPedidos); });
+}
+function pedSeg() { return seg('pMd', [['abertos', 'Em aberto'], ['hist', 'Entregues']], S.pf.modo === 'hist' ? 'hist' : 'abertos'); }
+function ligarPedSeg() { $$('#pMd button').forEach(function (b) { b.onclick = function () { S.pf.modo = b.dataset.k; S.pf.q = ''; window.scrollTo(0, 0); vPedidos(); }; }); }
+function buscaHtml(ph) { return '<div class="fld" style="position:relative"><input id="pq" type="search" placeholder="' + ph + '" value="' + esc(S.pf.q) + '" style="padding-left:42px"><span style="position:absolute;left:13px;top:14px;color:var(--sub)">' + ic('search', 's') + '</span></div>'; }
+function ligarBusca(fn) { var pq = $('#pq'); if (pq) pq.oninput = function () { S.pf.q = this.value; var pos = this.selectionStart; fn(); var n = $('#pq'); n.focus(); n.setSelectionRange(pos, pos); }; }
+function renderPedidos() {
+  var ps = S.ps.filter(emAberto), hoje = S.boot.hoje, f = S.pf.f, q = norm(S.pf.q);
+  var bate = function (p) { return !q || norm(p.cliente).indexOf(q) >= 0 || norm(p.itens).indexOf(q) >= 0; };
+  /* Retirados que ainda não pagaram: aparecem no filtro Pix pendente e no fim de Todos */
+  var retPx = S.ps.filter(function (p) { return p.status === 'Retirado' && p.pix !== 'Sim'; })
+    .sort(function (a, b) { return (a.retirada || '').localeCompare(b.retirada || ''); });
+  var tot = ps.reduce(function (s, p) { return s + p.valor; }, 0);
+  var lista = ps.filter(function (p) {
+    if (!bate(p)) return false;
+    if (f === 'pix') return p.pix !== 'Sim';
+    if (f === 'hoje') return p.retirada && p.retirada <= hoje;
+    if (f === 'amanha') return p.retirada === isoAdd(hoje, 1);
+    return true;
+  });
+  var listaRet = (f === 'pix' || f === 'todos') ? retPx.filter(bate) : [];
+  var html = '<div class="page"><div class="lt"><small>Em aberto</small><h1>Pedidos</h1><p>' + ps.length + ' pedido' + (ps.length === 1 ? '' : 's') + ' · ' + brl(tot, true) + '</p></div>' + pedSeg();
+  if (ps.length + retPx.length > 4) html += buscaHtml('Buscar cliente ou item');
+  var npx = ps.filter(function (p) { return p.pix !== 'Sim'; }).length + retPx.length;
+  html += chipsHtml('pf', [['todos', 'Todos'], ['hoje', 'Hoje'], ['amanha', 'Amanhã'], ['pix', 'Pix pendente' + (npx ? ' (' + npx + ')' : '')]], f, 'scroll');
+  if (!ps.length && !retPx.length) html += vazio('bag', 'Nenhum pedido em aberto', 'Quando um cliente pedir, registre aqui.', 'Registrar pedido', 'novo');
+  else if (!lista.length && !listaRet.length) html += vazio('search', 'Nada neste filtro', '');
+  else {
+    var g = {}, ordem = [];
+    lista.forEach(function (p) { var k = p.retirada || 'sem'; if (!g[k]) { g[k] = []; ordem.push(k); } g[k].push(p); });
+    ordem.forEach(function (k) {
+      var t = g[k].reduce(function (s, p) { return s + p.valor; }, 0);
+      var atras = k !== 'sem' && k < hoje;
+      html += '<div class="grp"><b>' + (k === 'sem' ? 'Sem data de retirada' : rel(k) + (rel(k) !== dBR(k) ? ' · ' + dBR(k) : '')) + (atras ? ' <span class="pill err">passou</span>' : '') + '</b><span>' + g[k].length + ' · ' + brl(t, true) + '</span></div>' + g[k].map(cardPed).join('');
+    });
+    if (listaRet.length) {
+      var tr = listaRet.reduce(function (s, p) { return s + p.valor; }, 0);
+      html += '<div class="grp"><b>Já retirados, Pix pendente</b><span>' + listaRet.length + ' · ' + brl(tr, true) + '</span></div>' + listaRet.map(cardPed).join('');
+    }
+  }
+  html += '<button class="mi" style="margin-top:18px" onclick="go(\'mensagens\')"><span class="ic">' + ic('wa') + '</span><span class="grow"><b>Mensagens do WhatsApp</b><span>Edite os textos que o app prepara</span></span>' + ic('chev', 's') + '</button>';
+  html += '</div>';
+  $('#app').innerHTML = html;
+  ligarPedSeg();
+  chipsSel($('#pf'), function (v) { S.pf.f = v; renderPedidos(); });
+  ligarBusca(renderPedidos);
+  ligarPeds($('#app'));
+}
+function itensLista(p) { var its = parseItensTxt(p.itens); return its.length ? '<ul class="itl">' + its.map(function (it) { return '<li><b>' + it.q + '×</b><span>' + esc(it.nome) + '</span></li>'; }).join('') + '</ul>' : ''; }
+function abrirEdicao(p) { S.pedEd = JSON.parse(JSON.stringify(p)); fecharSheet(); go('editar'); }
+
+/* Pedidos entregues e cancelados */
+S.pf.hf = 'todos';
+function vHist() {
+  if (S.hist) renderHist(); else $('#app').innerHTML = esqueleto([70, 44, 44, 80, 80, 80, 80]);
+  call('getPedidosHistorico').then(function (h) { S.hist = h; if (S.view === 'pedidos' && S.pf.modo === 'hist') renderHist(); }).catch(function (e) { if (S.hist) return fail(e); erroTela(e, vHist); });
+}
+function renderHist() {
+  var hs = S.hist, q = norm(S.pf.q), hf = S.pf.hf;
+  var lista = hs.filter(function (p) {
+    if (hf === 'ret' && p.status !== 'Retirado') return false;
+    if (hf === 'canc' && p.status !== 'Cancelado') return false;
+    return !q || norm(p.cliente).indexOf(q) >= 0 || norm(p.itens).indexOf(q) >= 0;
+  });
+  var nRet = hs.filter(function (p) { return p.status === 'Retirado'; }).length;
+  var html = '<div class="page"><div class="lt"><small>Histórico</small><h1>Pedidos</h1><p>' + nRet + ' entregue' + (nRet === 1 ? '' : 's') + (hs.length - nRet ? ' · ' + (hs.length - nRet) + ' cancelado' + (hs.length - nRet === 1 ? '' : 's') : '') + '</p></div>' + pedSeg();
+  html += buscaHtml('Buscar cliente ou item');
+  html += chipsHtml('hf', [['todos', 'Todos'], ['ret', 'Entregues'], ['canc', 'Cancelados']], hf, 'scroll');
+  if (!hs.length) html += vazio('box', 'Nenhum pedido entregue ainda', 'Quando um pedido for marcado como Retirado, ele aparece aqui.');
+  else if (!lista.length) html += vazio('search', 'Nada encontrado', q ? 'Tente outro nome ou item.' : '');
+  else {
+    var g = {}, ordem = [];
+    lista.forEach(function (p) { var d = p.retirada || p.data, k = d ? d.slice(0, 7) : 'sem'; if (!g[k]) { g[k] = []; ordem.push(k); } g[k].push(p); });
+    var n = 0;
+    ordem.forEach(function (k) {
+      var ok = g[k].filter(function (p) { return p.status !== 'Cancelado'; }), t = ok.reduce(function (s, p) { return s + p.valor; }, 0);
+      html += '<div class="grp"><b>' + (k === 'sem' ? 'Sem data' : MS[+k.slice(5) - 1].replace(/^./, function (c) { return c.toUpperCase(); }) + ' ' + k.slice(0, 4)) + '</b><span>' + ok.length + ' · ' + brl(t, true) + '</span></div>';
+      g[k].forEach(function (p) {
+        if (n++ > 150) return;
+        var canc = p.status === 'Cancelado', d = p.retirada || p.data;
+        html += '<button class="hist' + (canc ? ' canc' : '') + '" data-hr="' + p.row + '"><div class="t"><b>' + esc(p.cliente) + '</b><span class="v">' + brl(p.valor, true) + '</span></div><div class="it">' + esc(itensCurto(p.itens)) + '</div><div class="meta" style="display:flex;gap:6px;flex-wrap:wrap;font-size:13px;color:var(--sub)">' + (canc ? '<span class="pill nd">cancelado</span>' : '<span class="pill ok">entregue</span>') + (p.pix !== 'Sim' && !canc ? '<span class="pill err">Pix pendente</span>' : '') + '<span>' + (d ? dBR(d) : '') + '</span></div></button>';
+      });
+    });
+    if (n > 150) html += '<p class="center muted">Mostrando os 150 mais recentes. Use a busca para achar os mais antigos.</p>';
+  }
+  html += '</div>';
+  $('#app').innerHTML = html;
+  ligarPedSeg();
+  chipsSel($('#hf'), function (v) { S.pf.hf = v; renderHist(); });
+  ligarBusca(renderHist);
+  $$('[data-hr]').forEach(function (b) { b.onclick = function () { var p = S.hist.filter(function (x) { return x.row === +b.dataset.hr; })[0]; if (p) histSheet(p); }; });
+}
+function histSheet(p) {
+  var canc = p.status === 'Cancelado', w = whatsDe(p.cliente);
+  var sh = sheet('<span class="pill tipo ' + (canc ? 'nd' : 'ok') + '">' + (canc ? 'Cancelado' : 'Entregue') + '</span><h3>' + esc(p.cliente) + '</h3>' +
+    '<p class="desc">' + brl(p.valor) + ' · pedido em ' + dBR(p.data) + (p.retirada ? ' · retirada ' + dBR(p.retirada) : '') + (p.canal ? ' · ' + esc(p.canal) : '') + (p.pix !== 'Sim' ? ' · <b style="color:var(--err)">Pix pendente</b>' : '') + '</p>' + itensLista(p) +
+    (p.obs ? '<div class="aviso" style="margin:0 0 12px">' + ic('info', 's') + '<span>' + esc(p.obs) + '</span></div>' : '') +
+    '<div class="menu">' +
+    (canc ? '' : '<button class="mi" data-h="rep"><span class="ic">' + ic('repeat') + '</span><span><b>Pedir de novo</b><span>Abre um pedido novo com os mesmos itens</span></span></button>') +
+    '<button class="mi" data-h="ed"><span class="ic">' + ic('edit') + '</span><span><b>Editar pedido</b><span>Corrigir itens, valor, data ou Pix</span></span></button>' +
+    (w && !canc ? '<button class="mi" data-h="wa"><span class="ic">' + ic('wa') + '</span><span><b>' + (pixPago(p) ? 'Mensagem no WhatsApp' : 'Cobrar o Pix no WhatsApp') + '</b><span>' + (pixPago(p) ? 'Pedir retorno e oferecer o cardápio' : 'Valor e chave Pix') + '</span></span></button>' : '') +
+    '<button class="mi" data-h="abr"><span class="ic">' + ic('undo') + '</span><span><b>Voltar para em aberto</b><span>' + (canc ? 'Desfaz o cancelamento' : 'Se foi marcado como retirado por engano') + '</span></span></button></div>');
+  var rp = $('[data-h="rep"]', sh); if (rp) rp.onclick = function () { S.pedPre = JSON.parse(JSON.stringify(p)); fecharSheet(); go('novo'); };
+  $('[data-h="ed"]', sh).onclick = function () { abrirEdicao(p); };
+  var hw = $('[data-h="wa"]', sh); if (hw) hw.onclick = function () { enviarWhats(w, msgEntregue(p), (pixPago(p) ? 'Mensagem para ' : 'Cobrar o Pix de ') + primeiro(p.cliente), function () { histSheet(p); }); };
+  $('[data-h="abr"]', sh).onclick = function () {
+    var novo = canc ? 'Confirmado' : 'Produzido'; fecharSheet();
+    call('atualizarPedido', p.row, 'status', novo).then(function () {
+      S.hist = S.hist.filter(function (x) { return x.row !== p.row; }); S.ps = null; S.h = null; renderHist();
+      toast(primeiro(p.cliente) + ': voltou para em aberto', false, { label: 'Ver', fn: function () { S.pf.modo = 'abertos'; vPedidos(); } });
+    }).catch(fail);
+  };
+}
+
+/* =================== NOVO PEDIDO =================== */
+/* Pedidos até terça 20h entram na quinta/sexta da mesma semana; de quarta a sábado, vão para a semana seguinte */
+function proxQui(hoje) { var d = dow(hoje), add = (4 - d + 7) % 7; if (d === 3 || d === 4) add += 7; return isoAdd(hoje, add); }
+/* Formulário de pedido: novo (S.pedPre = pedido para repetir) ou edição (S.pedEd = pedido existente) */
+function parseItensTxt(txt) {
+  return String(txt || '').split(';').map(function (x) { x = x.trim(); if (!x) return null; var m = x.match(/^(\d+)\s*x\s*(.+)$/i); return m ? { q: +m[1], nome: m[2].trim() } : { q: 1, nome: x }; }).filter(Boolean);
+}
+function vNovo() { vPedidoForm(null); }
+function vEditar() { if (!S.pedEd) return go('pedidos'); vPedidoForm(S.pedEd); }
+function vPedidoForm(ed) {
+  var b = S.boot, hoje = b.hoje, ciclo = hoje >= '2026-10-19', pre = ed || S.pedPre || null; S.pedPre = null;
+  var qui = proxQui(hoje);
+  if (ed && ed.retirada && /^Qui|^Sex/.test(ed.janela || '')) qui = /^Sex/.test(ed.janela) ? isoAdd(ed.retirada, -1) : ed.retirada;
+  var sex = isoAdd(qui, 1), temQS = ciclo || (ed && /^Qui|^Sex/.test(ed.janela || ''));
+  var f = { qt: {}, extras: [], canal: '', pix: true, assinatura: false, ret: temQS ? 'qui' : 'outra', data: temQS ? qui : isoAdd(hoje, 2), janela: temQS ? 'Qui 16-19h' : 'Horário combinado', repasse: ed && ed.repasse ? ed.repasse : null };
+  var vManPre = '';
+  if (pre) {
+    var soma = 0;
+    parseItensTxt(pre.itens).forEach(function (it) {
+      var i = -1; b.produtos.forEach(function (p, k) { if (i < 0 && norm(p.nome) === norm(it.nome)) i = k; });
+      if (i >= 0) { f.qt[i] = (f.qt[i] || 0) + it.q; soma += it.q * b.produtos[i].preco; } else f.extras.push({ nome: it.nome, q: it.q, preco: null });
+    });
+    f.canal = pre.canal || '';
+    if (ed) {
+      f.pix = ed.pix === 'Sim'; f.assinatura = ed.assinatura === 'Sim';
+      if (/^Qui/.test(ed.janela || '')) f.ret = 'qui'; else if (/^Sex/.test(ed.janela || '')) { f.ret = 'sex'; f.data = sex; f.janela = 'Sex 8-11h'; }
+      else { f.ret = 'outra'; f.data = ed.retirada || ''; f.janela = ed.janela || 'Horário combinado'; }
+      var dif = Math.round((ed.valor - soma - (ed.repasse || 0)) * 100) / 100;
+      if (f.extras.length === 1 && dif > 0) f.extras[0].preco = Math.round(dif / f.extras[0].q * 100) / 100;
+      // pedidos antigos com a taxa de entrega lançada como item: vira repasse (não é receita)
+      if (!f.repasse) f.extras = f.extras.filter(function (x) { if (REPASSE_RE.test(x.nome) && x.preco > 0) { f.repasse = Math.round(x.q * x.preco * 100) / 100; return false; } return true; });
+      else if (f.extras.length && dif > 0) { f.extras.forEach(function (x) { x.preco = 0; }); vManPre = String(Math.round((ed.valor - (ed.repasse || 0)) * 100) / 100).replace('.', ','); }
+      else if (Math.abs(dif) > 0.009) vManPre = String(Math.round((ed.valor - (ed.repasse || 0)) * 100) / 100).replace('.', ',');
+    } else f.extras.forEach(function (x) { x.preco = null; });
+  }
+  var jan0 = b.janelas.filter(function (j) { return !/^Qui|^Sex/.test(j); });
+  var html = '<div class="page"><div class="lt" style="padding-top:4px"><h1>' + (ed ? 'Editar pedido' : 'Novo pedido') + '</h1><p>' + (ed ? 'Registrado em ' + dBR(ed.data) + (ed.status ? ' · ' + esc(ed.status) : '') + '. As mudanças valem para a receita e os números.' : (pre ? 'Mesmo pedido de ' + dBR(pre.data) + '. Confira a retirada e o Pix.' : 'Registre assim que o Pix cair. Se ainda não caiu, desligue "Pix recebido".')) + '</p></div>';
+  html += '<div class="card"><div class="fld" style="margin:0"><label for="cli">Cliente</label><input id="cli" placeholder="Nome da cliente" autocomplete="off" autocapitalize="words" enterkeyhint="next" value="' + esc(pre ? pre.cliente : '') + '"><div id="cliAc" class="ac-list hide"></div>' +
+    '<div id="novoCli" class="hide" style="margin-top:12px"><label for="wh" class="lab">WhatsApp (cliente nova)</label><input id="wh" type="tel" inputmode="tel" placeholder="85 9 9999-9999"></div><div id="clubeInfo" class="aviso hide"></div></div></div>';
+  html += '<div class="sec" style="margin-top:18px"><h2>Itens</h2></div><div class="list" id="prods">' + b.produtos.map(function (p, i) {
+    var q = f.qt[i] || 0;
+    return '<div class="prod' + (q ? ' sel' : '') + '" data-i="' + i + '"><div class="grow"><div class="nm">' + esc(p.nome) + '</div><div class="pr">' + brl(p.preco, true) + '</div></div><div class="step"><button type="button" class="mn" data-m="' + i + '" aria-label="Menos ' + esc(p.nome) + '">' + ic('plus').replace('M12 5v14', '') + '</button><output id="q' + i + '">' + q + '</output><button type="button" class="plus" data-p="' + i + '" aria-label="Mais ' + esc(p.nome) + '">' + ic('plus') + '</button></div></div>';
+  }).join('') + '<div id="extras"></div><button type="button" class="addx" id="addX">' + ic('plus', 's') + 'Item fora do cardápio</button></div>' +
+    '<div class="card flat" style="margin-top:10px"><div class="fld" style="margin:0"><label for="rep">Taxa de entrega (repasse)</label><input id="rep" inputmode="decimal" placeholder="Motoboy ou Uber pago pela cliente" value="' + (f.repasse ? String(f.repasse).replace('.', ',') : '') + '"><p class="muted" style="margin:6px 0 0;font-size:13px">Soma no total cobrado, mas não conta como receita.</p></div></div>' +
+    '<details class="more"' + (vManPre ? ' open' : '') + '><summary>' + ic('chev', 's') + 'Ajustar valor final (desconto)</summary><div class="card flat"><div class="fld" style="margin:0"><label for="vMan">Valor final do pedido</label><input id="vMan" inputmode="decimal" placeholder="Deixe em branco para usar o total" value="' + esc(vManPre) + '"></div></div></details>';
+  html += '<div class="sec"><h2>Retirada</h2></div><div class="opts" id="ret">' +
+    (temQS ? '<button type="button" class="opt" data-r="qui">' + ic('cal', 's') + '<b>Quinta, ' + qui.slice(8) + '/' + qui.slice(5, 7) + '</b><span>16h às 19h</span></button><button type="button" class="opt" data-r="sex">' + ic('cal', 's') + '<b>Sexta, ' + sex.slice(8) + '/' + sex.slice(5, 7) + '</b><span>8h às 11h</span></button>' : '') +
+    '<button type="button" class="opt" data-r="outra" style="grid-column:span 2">' + ic('clock', 's') + '<b>' + (temQS ? 'Outro dia ou horário' : 'Data combinada') + '</b><span id="outraTxt">' + (temQS ? 'Motoboy, encomenda ou horário combinado' : dBR(f.data) + ' · ' + f.janela) + '</span></button></div>' +
+    '<div id="retOutra" class="card flat hide" style="margin-top:10px"><div class="fld"><label for="dRet">Data</label><input id="dRet" type="date" value="' + (f.ret === 'outra' ? f.data : (temQS ? '' : f.data)) + '"></div><div class="fld" style="margin:0"><span class="lab">Como</span>' + chipsHtml('jan', jan0, jan0.indexOf(f.janela) >= 0 ? f.janela : 'Horário combinado') + '</div></div>';
+  html += '<div class="sec"><h2>Como chegou</h2></div>' + chipsHtml('can', b.canais, f.canal) +
+    '<div class="card" style="margin-top:14px"><div class="tog"><div class="tx"><b>Pix recebido</b><span>Desligue se ainda vai pagar</span></div><button type="button" class="sw' + (f.pix ? ' on' : '') + '" id="swPix" role="switch" aria-checked="' + f.pix + '" aria-label="Pix recebido"></button></div></div>' +
+    '<details class="more"' + (ed && (ed.obs || ed.codigo || f.assinatura) ? ' open' : '') + '><summary>' + ic('chev', 's') + 'Mais opções</summary><div class="card flat"><div class="tog" style="margin-bottom:8px"><div class="tx"><b>Pedido de assinatura</b></div><button type="button" class="sw' + (f.assinatura ? ' on' : '') + '" id="swAss" role="switch" aria-checked="' + f.assinatura + '" aria-label="Pedido de assinatura"></button></div><div class="fld"><label for="cod">Código de indicação</label><input id="cod" autocapitalize="characters" value="' + esc(ed ? ed.codigo : '') + '"></div><div class="fld" style="margin:0"><label for="obs">Observação</label><textarea id="obs" placeholder="Ex.: sem lactose, entregar para a filha">' + esc(ed ? ed.obs : '') + '</textarea></div></div></details></div>';
+  html += '<div class="actbar"><div class="in"><div class="sum"><b id="tot">R$ 0</b><span id="falta">Escolha a cliente e os itens</span></div><button class="btn" id="salvar">' + (ed ? 'Salvar alterações' : 'Salvar') + '</button></div></div>';
+  $('#app').innerHTML = html;
+
+  function extrasHtml() {
+    $('#extras').innerHTML = f.extras.map(function (x, k) {
+      return '<div class="prod sel xtra" data-x="' + k + '"><div class="grow"><input class="xn" data-x="' + k + '" placeholder="Descrição do item" value="' + esc(x.nome) + '" aria-label="Descrição do item">' +
+        '<div class="row" style="margin-top:8px;gap:8px"><span class="muted" style="font-size:13px;white-space:nowrap">R$ cada</span><input class="xp" data-x="' + k + '" inputmode="decimal" placeholder="0,00" value="' + (x.preco === null || x.preco === undefined ? '' : String(x.preco).replace('.', ',')) + '" aria-label="Preço de uma unidade"><button type="button" class="lk xr" data-x="' + k + '" aria-label="Remover item">' + ic('trash', 's') + '</button></div></div>' +
+        '<div class="step"><button type="button" class="mn" data-xm="' + k + '" aria-label="Menos">' + ic('plus').replace('M12 5v14', '') + '</button><output>' + x.q + '</output><button type="button" class="plus" data-xp="' + k + '" aria-label="Mais">' + ic('plus') + '</button></div></div>';
+    }).join('');
+    $$('#extras .xn').forEach(function (el) { el.oninput = function () { f.extras[+el.dataset.x].nome = el.value; atualizar(); }; });
+    $$('#extras .xp').forEach(function (el) { el.oninput = function () { f.extras[+el.dataset.x].preco = num(el.value); atualizar(); }; });
+    $$('#extras [data-xp], #extras [data-xm]').forEach(function (bt) {
+      bt.onclick = function () {
+        var k = +(bt.dataset.xp || bt.dataset.xm), x = f.extras[k];
+        x.q = Math.max(1, x.q + (bt.dataset.xp ? 1 : -1)); bt.parentNode.querySelector('output').textContent = x.q; atualizar();
+      };
+    });
+    $$('#extras .xr').forEach(function (bt) { bt.onclick = function () { f.extras.splice(+bt.dataset.x, 1); extrasHtml(); atualizar(); }; });
+  }
+  function extrasOk() { return f.extras.filter(function (x) { return String(x.nome || '').trim(); }); }
+  function itensTxt() { var arr = b.produtos.map(function (p, i) { return f.qt[i] ? f.qt[i] + 'x ' + p.nome : ''; }).filter(String); extrasOk().forEach(function (x) { arr.push(x.q + 'x ' + String(x.nome).trim().replace(/;/g, ',')); }); return arr.join('; '); }
+  function nItens() { var n = 0; for (var k in f.qt) n += f.qt[k]; extrasOk().forEach(function (x) { n += x.q; }); return n; }
+  function repasse() { var r = num($('#rep').value); return r && r > 0 ? r : 0; }
+  function total() { var t = b.produtos.reduce(function (s, p, i) { return s + (f.qt[i] || 0) * p.preco; }, 0) + extrasOk().reduce(function (s, x) { return s + x.q * (Number(x.preco) || 0); }, 0); var m = num($('#vMan').value); return Math.round(((m === null ? t : m) + repasse()) * 100) / 100; }
+  function semPreco() { return num($('#vMan').value) === null && extrasOk().some(function (x) { return x.preco === null || x.preco === undefined; }); }
+  function faltando() { var m = []; if (!$('#cli').value.trim()) m.push('cliente'); if (!itensTxt()) m.push('itens'); if (semPreco()) m.push('preço do item fora do cardápio'); if (!f.canal) m.push('como chegou'); return m; }
+  function atualizar() {
+    var v = total(), n = nItens(), m = faltando();
+    $('#tot').textContent = brl(v, true);
+    var el = $('#falta');
+    if (!m.length && $('#toast').classList.contains('err')) $('#toast').className = 'toast';
+    if (m.length) { el.textContent = 'Falta: ' + m.join(', '); el.className = ''; }
+    else if (v - repasse() > 0 && v - repasse() < 45) { el.textContent = n + ' ite' + (n === 1 ? 'm' : 'ns') + ' · abaixo do mínimo de R$ 45'; el.className = 'err'; }
+    else { el.textContent = n + ' ite' + (n === 1 ? 'm' : 'ns') + ' · ' + (f.pix ? 'Pix recebido' : 'Pix pendente'); el.className = ''; }
+  }
+  $$('#prods [data-p], #prods [data-m]').forEach(function (bt) {
+    bt.onclick = function () {
+      var i = +(bt.dataset.p || bt.dataset.m); f.qt[i] = Math.max(0, (f.qt[i] || 0) + (bt.dataset.p ? 1 : -1));
+      $('#q' + i).textContent = f.qt[i]; bt.closest('.prod').classList.toggle('sel', f.qt[i] > 0); atualizar();
+    };
+  });
+  $('#addX').onclick = function () { f.extras.push({ nome: '', q: 1, preco: null }); extrasHtml(); atualizar(); var ins = $$('#extras .xn'); ins[ins.length - 1].focus(); };
+  extrasHtml();
+  $('#vMan').oninput = atualizar; $('#rep').oninput = atualizar;
+  function clube() {
+    var v = norm($('#cli').value), el = $('#clubeInfo');
+    var existe = b.clientes.some(function (c) { return norm(c.nome) === v; });
+    var parecido = b.clientes.some(function (c) { return norm(c.nome).indexOf(v) >= 0; });
+    $('#novoCli').classList.toggle('hide', v.length < 3 || existe || parecido);
+    if (ed || !v || !existe && !(b.clube || {})[$('#cli').value.trim().toLowerCase()] || hoje < '2026-10-19') { el.classList.add('hide'); return; }
+    var c = (b.clube || {})[$('#cli').value.trim().toLowerCase()], n = (c ? c.n : 0) + 1, n60 = (c ? c.n60 : 0) + 1;
+    var t = n + 'º pedido no Clube da Raquel. ' + (n % 5 === 0 ? 'Incluir 2 cookies de mimo.' : 'Mimo no ' + (Math.ceil(n / 5) * 5) + 'º.') + (n60 === 3 ? ' Virou frequente: convide para a assinatura.' : '');
+    el.innerHTML = clubePedacos(n) + '<span>' + esc(t) + '</span>'; el.classList.remove('hide');
+  }
+  $('#cli').addEventListener('input', function () { clube(); atualizar(); });
+  autocompletar($('#cli'), $('#cliAc'), function () { return b.clientes.map(function (c) { return c.nome; }); }, function () { clube(); atualizar(); });
+  function setRet(r) {
+    f.ret = r; $$('#ret .opt').forEach(function (o) { o.classList.toggle('on', o.dataset.r === r); });
+    $('#retOutra').classList.toggle('hide', r !== 'outra');
+    if (r === 'qui') { f.data = qui; f.janela = 'Qui 16-19h'; }
+    else if (r === 'sex') { f.data = sex; f.janela = 'Sex 8-11h'; }
+    else { f.data = $('#dRet').value; var j = $('#jan .chip.on'); f.janela = j ? j.dataset.v : 'Horário combinado'; }
+  }
+  $$('#ret .opt').forEach(function (o) { o.onclick = function () { setRet(o.dataset.r); }; });
+  $('#dRet').onchange = function () { f.data = this.value; if (!temQS) $('#outraTxt').textContent = dBR(f.data) + ' · ' + f.janela; };
+  chipsSel($('#jan'), function (v) { f.janela = v; if (!temQS) $('#outraTxt').textContent = dBR(f.data) + ' · ' + f.janela; });
+  setRet(f.ret);
+  chipsSel($('#can'), function (v) { f.canal = v; atualizar(); });
+  $('#swPix').onclick = function () { f.pix = !f.pix; this.classList.toggle('on', f.pix); this.setAttribute('aria-checked', f.pix); atualizar(); };
+  $('#swAss').onclick = function () { f.assinatura = !f.assinatura; this.classList.toggle('on', f.assinatura); this.setAttribute('aria-checked', f.assinatura); };
+  clube(); atualizar();
+  $('#salvar').onclick = function () {
+    var m = faltando();
+    if (m.length) {
+      var alvo = m[0] === 'cliente' ? $('#cli') : m[0] === 'itens' ? $('#prods') : m[0] === 'como chegou' ? $('#can') : ($$('#extras .xp').filter(function (x) { return !x.value.trim(); })[0] || $('#extras'));
+      alvo.scrollIntoView({ behavior: 'smooth', block: 'center' }); alvo.classList.add('falta'); setTimeout(function () { alvo.classList.remove('falta'); }, 600);
+      if (m[0] === 'cliente') setTimeout(function () { $('#cli').focus(); }, 300);
+      return toast('Falta: ' + m.join(', '), true);
+    }
+    var p = { cliente: $('#cli').value.trim(), whats: $('#wh').value.trim(), itens: itensTxt(), valor: total(), repasse: repasse(), canal: f.canal, janela: f.janela, retirada: f.data,
+      pix: f.pix, assinatura: f.assinatura, codigo: $('#cod').value.trim(), obs: $('#obs').value.trim(), data: ed ? ed.data : hoje };
+    var bt = this; bt.disabled = true; bt.textContent = 'Salvando…';
+    if (!b.clientes.some(function (c) { return norm(c.nome) === norm(p.cliente); })) b.clientes.push({ nome: p.cliente, whats: p.whats });
+    if (ed) {
+      return call('editarPedido', ed.row, { id: ed.id, cliente: ed.cliente }, p).then(function () {
+        S.h = null; S.ps = null; S.hist = null; S.pedEd = null; toast('Pedido de ' + primeiro(p.cliente) + ' atualizado'); go(S.prev === 'hoje' ? 'hoje' : 'pedidos');
+      }).catch(function (e) { bt.disabled = false; bt.textContent = 'Salvar alterações'; fail(e); });
+    }
+    call('salvarPedido', p).then(function (r) {
+      var k = p.cliente.toLowerCase(), cl = (r && r.clube) || {};
+      if (cl.n) { b.clube = b.clube || {}; b.clube[k] = { n: cl.n, n60: ((b.clube[k] || {}).n60 || 0) + 1 }; }
+      S.h = null; S.ps = null;
+      sucessoPedido(p, cl);
+    }).catch(function (e) { bt.disabled = false; bt.textContent = 'Salvar'; fail(e); });
+  };
+}
+function sucessoPedido(p, cl) {
+  var w = p.whats || whatsDe(p.cliente);
+  var msg = msgDe('confirmacao', camposPed(p));
+  var extra = cl.mimo ? '<div class="aviso">' + ic('gift', 's') + '<span>' + cl.n + 'º pedido: incluir 2 cookies de mimo.</span></div>' : '';
+  extra += cl.convite ? '<div class="aviso">' + ic('star', 's') + '<span>Virou cliente frequente: convide para a assinatura.</span></div>' : '';
+  var sh = sheet('<div class="sucesso">' + ic('check') + '</div><h3 class="center">Pedido salvo</h3><p class="desc center">' + esc(p.cliente) + ' · ' + brl(p.valor) + '<br>' + esc(itensCurto(p.itens)) + '</p>' + extra +
+    '<div class="btns">' + (w ? '<button class="btn" id="sWa">' + ic('wa') + 'Confirmar no WhatsApp</button>' : '') +
+    '<button class="btn ' + (w ? 'sec' : '') + '" id="sOutro">Registrar outro pedido</button><button class="btn ghost" id="sVer">Ver pedidos</button></div>');
+  if (w) $('#sWa', sh).onclick = function () { enviarWhats(w, msg, 'Confirmação para ' + primeiro(p.cliente), function () { sucessoPedido(p, cl); }); };
+  $('#sOutro', sh).onclick = function () { fecharSheet(); vNovo(); window.scrollTo(0, 0); };
+  $('#sVer', sh).onclick = function () { go('pedidos'); };
+  $('.bg').onclick = function () { fecharSheet(); vNovo(); window.scrollTo(0, 0); };
+}
+
+/* =================== DESPESA =================== */
+var CAT_IC = { 'Insumo': 'bag', 'Embalagem': 'box', 'Taxas e outros variáveis': 'receipt', 'Gás e energia': 'flame', 'Marketing': 'mega', 'Equipamentos e manutenção': 'tool', 'Imposto (DAS)': 'bank', 'Outras fixas': 'dots' };
+var CAT_TX = { 'Insumo': 'Ingredientes', 'Embalagem': 'Caixas, sacos, rótulos', 'Taxas e outros variáveis': 'Taxas, motoboy', 'Gás e energia': 'Botijão, luz', 'Marketing': 'Anúncio, fotos, cartões', 'Equipamentos e manutenção': 'Formas, conserto', 'Imposto (DAS)': 'Guia do MEI', 'Outras fixas': 'Outras contas' };
+function vDespesa() {
+  var b = S.boot, f = { cat: '', pago: 'Conta PJ' };
+  var html = '<div class="page"><div class="lt" style="padding-top:4px"><h1>Nova despesa</h1><p>Toda compra ou conta do negócio. Ingrediente e embalagem atualizam o custo dos produtos.</p></div>';
+  html += '<div class="sec" style="margin-top:6px"><h2>Categoria</h2></div><div class="opts" id="dCat">' + b.categorias.map(function (c) {
+    return '<button type="button" class="opt" data-c="' + esc(c) + '">' + ic(CAT_IC[c] || 'dots', 's') + '<b>' + esc(c.replace(' e outros variáveis', '').replace(' e manutenção', '')) + '</b><span>' + esc(CAT_TX[c] || '') + '</span></button>';
+  }).join('') + '</div>';
+  html += '<div id="dIns" class="card hide" style="margin-top:14px"><div class="fld"><label for="dInsN">Qual item</label><input id="dInsN" placeholder="Ex.: Farinha de trigo" autocomplete="off"><div id="insAc" class="ac-list hide"></div></div>' +
+    '<div class="row"><div class="grow fld" style="margin:0"><label for="dQtd">Quantidade comprada</label><input id="dQtd" inputmode="decimal" placeholder="Ex.: 5000"></div><div class="fld" style="width:100px;margin:0"><label for="dUn">Unidade</label><select id="dUn"><option>g</option><option>ml</option><option>un</option></select></div></div>' +
+    '<p class="muted" style="margin:10px 0 0">Na unidade da receita: 5 kg = 5000 g. É isso que atualiza o custo.</p></div>';
+  html += '<div class="card" style="margin-top:14px"><div class="fld"><label for="dVal">Valor pago</label><div class="money"><span>R$</span><input id="dVal" inputmode="decimal" placeholder="0,00"></div></div>' +
+    '<div class="fld"><label for="dData">Data</label><input id="dData" type="date" value="' + b.hoje + '"></div>' +
+    '<div class="fld"><label for="dDesc">Descrição (opcional)</label><input id="dDesc" placeholder="Ex.: Atacadão, conta de luz"></div>' +
+    '<div class="fld" style="margin:0"><span class="lab">Pago com</span>' + seg('dPag', [['Conta PJ', 'Conta PJ'], ['Conta pessoal', 'Pessoal'], ['Dinheiro', 'Dinheiro']], f.pago) + '</div></div></div>';
+  html += '<div class="actbar"><div class="in"><div class="sum"><b id="dTot">R$ 0</b><span id="dFalta">Escolha a categoria</span></div><button class="btn" id="dOk">Salvar</button></div></div>';
+  $('#app').innerHTML = html;
+  function falta() { var m = []; if (!f.cat) m.push('categoria'); if (!(num($('#dVal').value) > 0)) m.push('valor'); if ((f.cat === 'Insumo' || f.cat === 'Embalagem') && !$('#dInsN').value.trim()) m.push('item'); return m; }
+  function atualizar() { var v = num($('#dVal').value) || 0, m = falta(); $('#dTot').textContent = brl(v, true); $('#dFalta').textContent = m.length ? 'Falta: ' + m.join(', ') : f.cat + ' · ' + f.pago; }
+  $$('#dCat .opt').forEach(function (o) {
+    o.onclick = function () { $$('#dCat .opt').forEach(function (x) { x.classList.remove('on'); }); o.classList.add('on'); f.cat = o.dataset.c; $('#dIns').classList.toggle('hide', !(f.cat === 'Insumo' || f.cat === 'Embalagem')); atualizar(); };
+  });
+  $$('#dPag button').forEach(function (bt) { bt.onclick = function () { $$('#dPag button').forEach(function (x) { x.classList.remove('on'); }); bt.classList.add('on'); f.pago = bt.dataset.k; atualizar(); }; });
+  function unDe(n) { var i = (b.insumos || []).filter(function (x) { return norm(x.nome) === norm(n); })[0]; if (i && i.un) $('#dUn').value = i.un; }
+  autocompletar($('#dInsN'), $('#insAc'), function () { return (b.insumos || []).map(function (x) { return x.nome; }); }, function (n) { unDe(n); atualizar(); });
+  $('#dInsN').addEventListener('input', function () { unDe(this.value); atualizar(); });
+  $('#dVal').oninput = atualizar;
+  atualizar();
+  $('#dOk').onclick = function () {
+    var m = falta(); if (m.length) { toast('Falta: ' + m.join(', '), true); var a = m[0] === 'categoria' ? $('#dCat') : m[0] === 'valor' ? $('#dVal') : $('#dInsN'); a.scrollIntoView({ behavior: 'smooth', block: 'center' }); a.classList.add('falta'); setTimeout(function () { a.classList.remove('falta'); }, 600); return; }
+    var d = { cat: f.cat, valor: $('#dVal').value, data: $('#dData').value, desc: $('#dDesc').value.trim(), pago: f.pago };
+    if (f.cat === 'Insumo' || f.cat === 'Embalagem') { d.insumo = $('#dInsN').value.trim(); d.qtd = $('#dQtd').value; d.un = $('#dUn').value; }
+    var bt = this; bt.disabled = true; bt.textContent = 'Salvando…';
+    call('salvarDespesa', d).then(function () {
+      if (d.insumo && !(b.insumos || []).some(function (x) { return norm(x.nome) === norm(d.insumo); })) b.insumos.push({ nome: d.insumo, un: d.un });
+      var sh = sheet('<div class="sucesso">' + ic('check') + '</div><h3 class="center">Despesa salva</h3><p class="desc center">' + esc(d.cat) + ' · ' + brl(num(d.valor)) + (d.insumo ? '<br>' + esc(d.insumo) + ': o custo dos produtos foi atualizado.' : '') + '</p><div class="btns"><button class="btn" id="sOutra">Registrar outra</button><button class="btn ghost" id="sFim">Concluir</button></div>');
+      $('#sOutra', sh).onclick = function () { fecharSheet(); vDespesa(); window.scrollTo(0, 0); };
+      $('#sFim', sh).onclick = function () { go(S.prev || 'hoje'); };
+    }).catch(function (e) { bt.disabled = false; bt.textContent = 'Salvar'; fail(e); });
+  };
+}
+
+/* =================== FECHAR A SEMANA =================== */
+function vSemana(w) {
+  var hoje = S.boot.hoje, atual = Math.min(Math.max(weekOf(hoje), 1), 31);
+  if (!w) w = (dow(hoje) === 1 || dow(hoje) === 2) && atual > 1 ? atual - 1 : atual;
+  $('#app').innerHTML = esqueleto([60, 120, 300]);
+  call('getSemana', w).then(function (s) {
+    var v = function (x) { return x === '' || x == null ? '' : x; };
+    var opts = ''; for (var i = 1; i <= 31; i++) opts += '<option value="' + i + '"' + (i === w ? ' selected' : '') + '>Semana ' + i + (i === atual ? ' (atual)' : '') + '</option>';
+    var html = '<div class="page"><div class="lt" style="padding-top:4px"><h1>Fechar a semana</h1><p>Revisão de sexta, 2 minutos. ' + dBR(s.inicio) + ' a ' + dBR(s.fim) + '</p></div>' +
+      '<div class="fld"><select id="wSel" aria-label="Semana">' + opts + '</select></div>' +
+      '<div class="kpis" style="margin-bottom:14px"><div class="kpi"><div class="n">Receita</div><div class="v">' + brl(s.receita, true) + '</div><div class="m">' + (s.meta ? 'meta ' + brl(s.meta, true) : 'sem meta') + '</div></div><div class="kpi"><div class="n">Pedidos</div><div class="v">' + (s.pedidos || 0) + '</div><div class="m">' + (typeof s.margemHora === 'number' ? 'margem/h ' + brl(s.margemHora, true) : 'margem/h depois das horas') + '</div></div></div>' +
+      '<div class="card"><div class="fld"><label for="sH">Horas trabalhadas</label><input id="sH" inputmode="decimal" value="' + v(s.horas) + '" placeholder="Produção + atendimento + compras"></div>' +
+      '<div class="fld"><label for="sU">Unidades produzidas</label><input id="sU" inputmode="numeric" value="' + v(s.unidades) + '"></div>' +
+      '<div class="row"><div class="grow fld"><label for="sS">Sobra (un)</label><input id="sS" inputmode="numeric" value="' + v(s.sobra) + '"></div><div class="grow fld"><label for="sQ">Quebra (un)</label><input id="sQ" inputmode="numeric" value="' + v(s.quebra) + '"></div></div>' +
+      '<p class="muted" style="margin:0 0 14px">Custo dos itens vendidos na semana, pelas fichas técnicas: ' + brl(s.custo || 0) + '</p>' +
+      '<div class="fld" style="margin:0"><label for="sN">O que faltou, o que sobrou, decisões</label><textarea id="sN">' + esc(v(s.notas)) + '</textarea></div></div></div>' +
+      '<div class="actbar"><div class="in"><div class="sum"><b>Semana ' + w + '</b><span>Salva horas, unidades, sobra e quebra</span></div><button class="btn" id="sOk">Salvar</button></div></div>';
+    $('#app').innerHTML = html;
+    $('#wSel').onchange = function () { vSemana(+this.value); };
+    $('#sOk').onclick = function () {
+      var bt = this; bt.disabled = true; bt.textContent = 'Salvando…';
+      call('salvarSemana', { semana: w, horas: $('#sH').value, custo: s.custo, unidades: $('#sU').value, sobra: $('#sS').value, quebra: $('#sQ').value, notas: $('#sN').value })
+        .then(function () { toast('Semana ' + w + ' salva'); go(S.prev || 'hoje'); }).catch(function (e) { bt.disabled = false; bt.textContent = 'Salvar'; fail(e); });
+    };
+  }).catch(function (e) { erroTela(e, function () { vSemana(w); }); });
+}
+
+/* =================== Contagem de estoque (03/10/2026) =================== */
+function fmtQ(q, un) { if (q === null || q === undefined || q === '') return '—'; var v = Math.round(q * 10) / 10; return String(v).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' ' + (un || ''); }
+function vEstoque(ref) {
+  $('#app').innerHTML = esqueleto([60, 44, 260, 200]);
+  call('getEstoque').then(function (e) {
+    ref = ref || e.padrao;
+    var refInfo = e.refs.filter(function (r) { return r.ref === ref; })[0] || e.refs[1];
+    var html = '<div class="page"><div class="lt" style="padding-top:4px"><h1>Contar o estoque</h1><p>Pese ou conte o que sobrou de cada insumo, na unidade indicada. Leva uns 10 minutos.</p></div>';
+    html += '<div class="fld"><span class="lab">Estoque do fim de</span>' + seg('eRef', e.refs.map(function (r) { return [r.ref, r.nome.replace(/ de \d{4}$/, '') + (r.contado ? ' ✓' : '')]; }), ref) + '</div>';
+    if (!e.itens.length) {
+      html += '<div class="card flat">' + vazio('box', 'Nenhum insumo marcado', 'Na aba Insumos da planilha, escreva Sim na coluna "Contar no estoque" dos insumos caros.') + '</div></div>';
+      $('#app').innerHTML = html; ligarRef(); return;
+    }
+    html += '<div class="card">' + e.itens.map(function (it, k) {
+      var salvo = ref === e.refs[1].ref ? it.salvo.atual : it.salvo.anterior;
+      return '<div class="fld"' + (k === e.itens.length - 1 ? ' style="margin:0"' : '') + '><label for="q' + k + '">' + esc(it.nome) + (it.temPreco ? '' : ' <span class="pill nd">sem preço</span>') + '</label>' +
+        '<div class="row" style="gap:8px"><input id="q' + k + '" class="eq" inputmode="decimal" placeholder="quanto sobrou" value="' + (salvo === undefined || salvo === null ? '' : String(salvo).replace('.', ',')) + '"><span class="muted" style="min-width:28px">' + esc(it.un) + '</span></div></div>';
+    }).join('') + '</div>';
+    html += '<p class="muted" style="margin:10px 2px 0">Acabou o insumo? Escreva 0. Item sem preço entra na quantidade, mas fica fora do valor até a compra ser lançada com quantidade.</p>';
+    html += resultadoHtml(e.resultado);
+    html += '</div><div class="actbar"><div class="in"><div class="sum"><b id="eCnt">0 de ' + e.itens.length + '</b><span id="eFalta">' + esc('Fim de ' + refInfo.nome) + '</span></div><button class="btn" id="eOk">Salvar</button></div></div>';
+    $('#app').innerHTML = html;
+    var conta = function () { var n = $$('#app .eq').filter(function (i) { return i.value.trim() !== ''; }).length; $('#eCnt').textContent = n + ' de ' + e.itens.length; return n; };
+    $$('#app .eq').forEach(function (i) { i.oninput = conta; }); conta();
+    ligarRef();
+    $('#eOk').onclick = function () {
+      var vazios = $$('#app .eq').filter(function (i) { return i.value.trim() === ''; });
+      var invalido = $$('#app .eq').filter(function (i) { var v = i.value.trim(); return v !== '' && (num(v) === null || num(v) < 0); })[0];
+      if (invalido) { invalido.classList.add('falta'); invalido.focus(); setTimeout(function () { invalido.classList.remove('falta'); }, 600); return toast('Quantidade inválida', true); }
+      var salvar = function () {
+        var itens = e.itens.map(function (it, k) { var v = $('#q' + k).value.trim(); return v === '' ? null : { nome: it.nome, q: num(v) }; }).filter(Boolean);
+        if (!itens.length) return toast('Preencha pelo menos um insumo', true);
+        var bt = $('#eOk'); bt.disabled = true; bt.textContent = 'Salvando…';
+        call('salvarContagem', ref, itens, S.pessoa).then(function (r) { toast('Contagem salva: ' + r.gravados + ' insumo(s)'); vEstoque(ref); })
+          .catch(function (er) { bt.disabled = false; bt.textContent = 'Salvar'; fail(er); });
+      };
+      if (vazios.length) confirmar('Faltam ' + vazios.length + ' insumo(s)', 'Os que ficarem em branco não entram nesta contagem e o consumo real deles não será calculado. Salvar assim mesmo?', 'Salvar assim').then(function (ok) { if (ok) salvar(); });
+      else salvar();
+    };
+  }).catch(function (er) { erroTela(er, function () { vEstoque(ref); }); });
+  function ligarRef() { $$('#eRef button').forEach(function (b) { b.onclick = function () { vEstoque(b.dataset.k); }; }); }
+}
+function resultadoHtml(r) {
+  if (!r) return '<div class="sec"><h2>Resultado</h2></div><div class="card flat"><p class="muted" style="margin:0">Depois da primeira contagem, aqui aparece, por insumo, quanto foi usado de verdade e quanto as fichas técnicas previam.</p></div>';
+  var h = '<div class="sec"><h2>Resultado de ' + esc(r.nome.replace(/ de \d{4}$/, '')) + '</h2></div><div class="card">';
+  if (!r.completo) h += '<div class="aviso av" style="margin:0 0 10px">' + ic('alert', 's') + '<span>' + (r.temIni ? 'Falta a contagem do fim do mês.' : 'Falta a contagem do mês anterior, que é o estoque inicial deste mês.') + ' Sem ela, o consumo real não é calculado.</span></div>';
+  h += '<table class="tbl"><tr class="b"><td>Insumo</td><td>Previsto · real</td></tr>' + r.itens.slice().sort(function (a, b) { return a.nome.localeCompare(b.nome); }).map(function (i) {
+    var negativo = i.real !== null && i.real < 0, alerta = negativo || (i.dif !== null && i.previsto > 0 && i.dif > i.previsto * 0.1);
+    var nota = negativo ? '<div style="font-size:13px;color:var(--err)">Sobrou mais do que havia: falta lançar uma compra deste insumo?</div>'
+      : i.dif !== null ? '<div class="muted" style="font-size:13px">' + (i.dif > 0 ? 'usou ' + fmtQ(i.dif, i.un) + ' a mais' : i.dif < 0 ? 'usou ' + fmtQ(-i.dif, i.un) + ' a menos' : 'igual ao previsto') + '</div>' : '';
+    return '<tr><td>' + esc(i.nome) + nota + '</td>' +
+      '<td' + (alerta ? ' style="color:var(--err);font-weight:800"' : '') + '>' + fmtQ(i.previsto, i.un) + ' · ' + fmtQ(i.real, i.un) + '</td></tr>';
+  }).join('') + '</table>';
+  if (r.completo) h += '<p style="margin:12px 0 0"><b>Perda do mês: ' + brl(r.perda) + (r.perdaPct !== null ? ' (' + String(Math.abs(Math.round(r.perdaPct * 1000) / 10)).replace('.', ',') + '% ' + (r.perdaPct >= 0 ? 'acima' : 'abaixo') + ' do previsto)' : '') + '</b><br><span class="muted">Meta: até 10% acima do previsto. Real = estoque inicial + compras − estoque final.</span></p>';
+  if (r.semPreco && r.semPreco.length) h += '<p class="muted" style="margin:8px 0 0">Sem preço, fora do valor: ' + esc(r.semPreco.join(', ')) + '.</p>';
+  return h + '</div>';
+}
+
+/* =================== GESTÃO =================== */
+S.g = { sub: 'pai', per: 'semana' };
+function vGestao(sub) {
+  if (sub) S.g.sub = sub;
+  $('#app').innerHTML = '<div class="page"><div class="lt"><small>Números e decisões</small><h1>Gestão</h1></div>' + pdfBtn('Estratégia, metas, marca e o mês a mês') + seg('gSeg', [['pai', 'Semana'], ['ind', 'Números'], ['reu', 'Reunião'], ['aco', 'Ações']], S.g.sub) + '<div id="gBody">' + esqueleto([140, 140, 200]).replace('class="page"', '') + '</div></div>';
+  $$('#gSeg button').forEach(function (b) { b.onclick = function () { vGestao(b.dataset.k); }; });
+  ({ pai: gPai, ind: gInd, reu: gReu, aco: gAco })[S.g.sub]();
+}
+function gErro(e, fn) { $('#gBody').innerHTML = '<div class="vazio"><div class="ic">' + ic('alert') + '</div><b>Não deu para carregar</b>' + esc(msgErro(e)) + '<button class="btn" id="gTry">Tentar de novo</button></div>'; $('#gTry').onclick = fn; }
+function gPai() { call('getPainel').then(function (r) { $('#gBody').innerHTML = '<div class="painel">' + r.html + '</div>'; }).catch(function (e) { gErro(e, gPai); }); }
+function fmtV(i) {
+  if (i.valor === null || i.valor === '' || i.valor === undefined) return '—';
+  if (i.fmt === 'brl') return brl(i.valor, true);
+  if (i.fmt === 'pct') return Math.round(i.valor * 100) + '%';
+  return String(i.valor);
+}
+function stPill(st) {
+  if (st === 'ok') return '<span class="pill ok">na meta</span>';
+  if (st && st.indexOf('atenção') === 0) return '<span class="pill err">' + esc(st) + '</span>';
+  if (st === 'sem dado') return '<span class="pill nd">sem dado</span>';
+  return '';
+}
+function kpisHtml(r) { return '<div class="kpis">' + r.indicadores.map(function (i) { return '<div class="kpi"><div class="n">' + esc(i.nome) + (i.extra ? ' · ' + esc(i.extra) : '') + '</div><div class="v">' + fmtV(i) + '</div><div class="m">' + esc(i.metaTxt || '') + '</div>' + stPill(i.st) + '</div>'; }).join('') + '</div>'; }
+function gInd() {
+  var per = S.g.per;
+  call('getIndicadores', per, S.boot.hoje).then(function (r) {
+    var al = r.indicadores.filter(function (i) { return i.st && i.st.indexOf('atenção') === 0; });
+    var html = seg('gPer', [['semana', 'Esta semana'], ['mes', 'Este mês']], per);
+    html += '<div class="sec" style="margin-top:4px"><h2>' + esc(r.titulo) + '</h2>' + (r.parcial ? '<span class="pill av">em andamento</span>' : '') + '</div>' + kpisHtml(r);
+    html += '<div class="sec"><h2>Pontos de atenção</h2><span class="cnt">' + al.length + '</span></div>' + (al.length ? '<div class="list">' + al.map(function (i) {
+      return '<div class="li"><div class="dot"><i style="background:var(--err)"></i></div><div class="tx"><span><b>' + esc(i.nome) + '</b>: ' + fmtV(i) + '</span><div class="meta">' + esc(i.metaTxt || '') + '</div></div><button class="btn sm sec" style="flex:0 0 auto" data-al="' + esc(i.nome) + '">Criar ação</button></div>';
+    }).join('') + '</div>' : '<div class="card flat">' + vazio('check', 'Tudo dentro da meta', '') + '</div>');
+    if (r.dre) html += dreHtml(r);
+    if (r.produtos && r.produtos.length) html += prodHtml(r);
+    html += recalcHtml();
+    $('#gBody').innerHTML = html;
+    $$('#gPer button').forEach(function (b) { b.onclick = function () { S.g.per = b.dataset.k; $('#gBody').innerHTML = esqueleto([44, 300]).replace('class="page"', ''); gInd(); }; });
+    $$('[data-al]').forEach(function (b) { b.onclick = function () { acaoSheet({ indicador: b.dataset.al, problema: b.dataset.al + ' fora da meta' }); }; });
+    ligarRecalc(gInd);
+  }).catch(function (e) { gErro(e, gInd); });
+}
+/* Recalcular agora (03/10/2026): roda o mesmo recálculo das 5h (posAlteracao) e recarrega a tela */
+function recalcHtml() {
+  return '<div class="card flat" style="margin-top:14px"><button class="btn sec" id="recalcBtn">' + ic('refresh', 's') + 'Recalcular agora</button>' +
+    '<p class="muted" style="margin:8px 0 0">Atualiza custos, semanas e o resultado do mês. Use depois de mexer direto na planilha ou de mudanças feitas pelo Claude. Leva até 30 segundos.</p></div>';
+}
+function ligarRecalc(depois) {
+  var b = $('#recalcBtn'); if (!b) return;
+  b.onclick = function () {
+    clearTimeout(recT);
+    b.disabled = true; b.textContent = 'Recalculando…';
+    callRaw('posAlteracao', []).then(function () {
+      S.h = null; toast('Números recalculados'); depois();
+    }).catch(function (e) { b.disabled = false; b.innerHTML = ic('refresh', 's') + 'Recalcular agora'; fail(e); });
+  };
+}
+function dreHtml(r) {
+  var bold = ['Receita líquida', 'Margem de contribuição', 'Resultado antes do pró-labore', 'Resultado do negócio'];
+  return '<div class="sec"><h2>Resultado do mês</h2></div><div class="card"><table class="tbl">' + r.dre.filter(function (l) { return l.linha; }).map(function (l) {
+    var v = l.valor === '' || l.valor === null ? '—' : (/%/.test(l.linha) || /limite/.test(l.linha) ? String(Math.round(l.valor * 1000) / 10).replace('.', ',') + '%' : (/Horas|unidades/.test(l.linha) ? l.valor : brl(l.valor)));
+    var sub = /^Compras de insumo/.test(l.linha) ? '<tr class="b"><td colspan="2" style="padding-top:18px">Compras, estoque e perda</td></tr>' : '';
+    return sub + '<tr class="' + (bold.indexOf(l.linha) >= 0 ? 'b' : '') + '"><td>' + esc(l.linha) + '</td><td>' + v + '</td></tr>';
+  }).join('') + '</table>' + (r.semCusto && r.semCusto.length ? '<div class="aviso">' + ic('alert', 's') + '<span>Vendidos sem custo cadastrado: ' + esc(r.semCusto.join(', ')) + '. A margem do mês aparece maior do que é até esses itens terem ficha técnica completa com o mesmo nome do pedido.</span></div>' : '') + '</div>';
+}
+function prodHtml(r) { return '<div class="sec"><h2>Produtos no mês</h2></div><div class="card"><table class="tbl"><tr class="b"><td>Produto</td><td>Qtd · margem/h</td></tr>' + r.produtos.map(function (p) { return '<tr><td>' + esc(p.nome) + '</td><td>' + p.qtd + ' · ' + (typeof p.margemHora === 'number' ? brl(p.margemHora, true) : '—') + '</td></tr>'; }).join('') + '</table></div>'; }
+
+function acaoSheet(pre, onSalvo, soLer) {
+  pre = pre || {}; var f = { resp: pre.resp || 'Ambos' };
+  var sh = sheet('<h3>' + (soLer ? 'Ação nova' : 'Nova ação') + '</h3><p class="desc">Toda ação tem dono, prazo e o número que deve mudar.</p>' +
+    '<div class="fld"><label for="aA">O que será feito</label><input id="aA" data-auto="1" placeholder="Verbo + o quê. Ex.: testar caixa de 12 cookies"></div>' +
+    '<div class="fld"><label for="aP">Problema ou oportunidade</label><input id="aP" value="' + esc(pre.problema || '') + '"></div>' +
+    '<div class="fld"><span class="lab">Responsável</span>' + chipsHtml('aR', ['Raquel', 'Bruno', 'Ambos'], f.resp) + '</div>' +
+    '<div class="row"><div class="grow fld"><label for="aD">Prazo</label><input id="aD" type="date" value="' + (pre.prazo || isoAdd(S.boot.hoje, 7)) + '"></div></div>' +
+    '<div class="fld"><label for="aI">Indicador que deve mudar</label><input id="aI" value="' + esc(pre.indicador || '') + '"></div>' +
+    '<div class="fld"><label for="aM">Impacto esperado</label><input id="aM" placeholder="Ex.: +R$ 200/semana; −1h de produção"></div>' +
+    '<div class="btns"><button class="btn" id="aOk">' + (soLer ? 'Adicionar' : 'Salvar ação') + '</button></div>');
+  chipsSel($('#aR', sh), function (v) { f.resp = v; });
+  $('#aOk', sh).onclick = function () {
+    var a = { acao: $('#aA', sh).value.trim(), problema: $('#aP', sh).value.trim(), resp: f.resp, prazo: $('#aD', sh).value, indicador: $('#aI', sh).value.trim(), impacto: $('#aM', sh).value.trim() };
+    if (!a.acao) { $('#aA', sh).classList.add('falta'); return $('#aA', sh).focus(); }
+    if (soLer) { fecharSheet(); onSalvo(a); return; }
+    var b = this; b.disabled = true; b.textContent = 'Salvando…';
+    call('salvarAcao', a).then(function () { fecharSheet(); toast('Ação criada'); if (onSalvo) onSalvo(); else vGestao('aco'); }).catch(function (e) { b.disabled = false; b.textContent = 'Salvar ação'; fail(e); });
+  };
+}
+function liAcao(a) {
+  var late = a.prazo && a.prazo < S.boot.hoje;
+  return '<div class="li tap" data-arow="' + a.row + '"><div class="dot"><i style="background:' + (late ? 'var(--err)' : a.status === 'Em andamento' ? 'var(--av)' : 'var(--rosa)') + '"></i></div><div class="tx"><span>' + esc(a.acao) + '</span><div class="meta">' + esc(a.resp) + ' · ' + (a.prazo ? dBR(a.prazo) : 'sem prazo') + (late ? ' <span class="pill err">atrasada</span>' : '') + (a.status === 'Em andamento' ? ' <span class="pill av">em andamento</span>' : '') + (a.indicador ? ' · ' + esc(a.indicador) : '') + '</div></div>' + ic('chev', 's chev') + '</div>';
+}
+function ligarAcoes(lista, depois) {
+  $$('[data-arow]').forEach(function (el) {
+    el.onclick = function () {
+      var a = lista.filter(function (x) { return String(x.row) === el.dataset.arow; })[0]; if (!a) return;
+      var sh = sheet('<h3>' + esc(a.acao) + '</h3><p class="desc">' + esc(a.resp) + ' · prazo ' + (a.prazo ? dBR(a.prazo) : '—') + (a.problema ? '<br>' + esc(a.problema) : '') + (a.indicador ? '<br>Indicador: ' + esc(a.indicador) : '') + '</p><div class="menu">' +
+        (a.status === 'Aberta' ? '<button class="mi" data-s="Em andamento"><span class="ic">' + ic('clock') + '</span><span><b>Começar</b><span>Marcar como em andamento</span></span></button>' : '') +
+        '<button class="mi" data-s="Concluída"><span class="ic">' + ic('check') + '</span><span><b>Concluir</b><span>Anotar o resultado</span></span></button>' +
+        '<button class="mi danger" data-s="Cancelada"><span class="ic">' + ic('x') + '</span><span><b>Cancelar ação</b><span>Não vale mais a pena</span></span></button></div>');
+      $$('[data-s]', sh).forEach(function (b) {
+        b.onclick = function () {
+          var st = b.dataset.s; fecharSheet();
+          var seguir = function (res) { call('atualizarAcao', a.row, st, res || '').then(function () { toast('Ação ' + st.toLowerCase()); depois(); }).catch(fail); };
+          setTimeout(function () {
+            if (st === 'Concluída') perguntar('Qual foi o resultado?', 'Opcional, mas ajuda na próxima reunião.', 'Ex.: ticket subiu para R$ 92').then(function (r) { if (r !== null) seguir(r); });
+            else if (st === 'Cancelada') confirmar('Cancelar esta ação?', a.acao, 'Cancelar ação', true).then(function (ok) { if (ok) seguir(''); });
+            else seguir('');
+          }, 260);
+        };
+      });
+    };
+  });
+}
+function gAco() {
+  call('getAcoes').then(function (r) {
+    var html = '<button class="btn sec" id="novaA" style="margin:4px 0 6px">' + ic('plus', 's') + 'Nova ação</button>';
+    html += '<div class="sec"><h2>Em aberto</h2><span class="cnt">' + r.abertas.length + '</span></div>' + (r.abertas.length ? '<div class="list">' + r.abertas.map(liAcao).join('') + '</div>' : '<div class="card flat">' + vazio('check', 'Nenhuma ação aberta', 'As ações nascem das reuniões e dos pontos de atenção.') + '</div>');
+    if (r.fechadas.length) html += '<div class="sec"><h2>Concluídas recentemente</h2></div><div class="list">' + r.fechadas.map(function (a) { return '<div class="li"><div class="dot"><i style="background:' + (a.status === 'Concluída' ? 'var(--ok)' : 'var(--sub2)') + '"></i></div><div class="tx"><span>' + esc(a.acao) + '</span><div class="meta">' + esc(a.status) + (a.resultado ? ' · ' + esc(a.resultado) : '') + '</div></div></div>'; }).join('') + '</div>';
+    $('#gBody').innerHTML = html;
+    $('#novaA').onclick = function () { acaoSheet(null, gAco); };
+    ligarAcoes(r.abertas, gAco);
+  }).catch(function (e) { gErro(e, gAco); });
+}
+function gReu() {
+  var tipo = S.g.tipoReu || 'Semanal';
+  call('getReuniao', tipo).then(function (r) {
+    var ind = r.ind, b = ind.base || {}, novas = [];
+    var html = seg('gTipo', [['Semanal', 'Semanal'], ['Mensal', 'Mensal'], ['Trimestral', 'Trimestral']], tipo);
+    html += '<div class="card" style="background:var(--rosaC);box-shadow:none"><span class="lab" style="color:var(--ameixa)">Pauta · ' + esc(ind.titulo) + '</span><ol class="pauta">' + r.pauta.map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') + '</ol></div>';
+    html += '<div class="sec"><h2>1. Números</h2></div>' + kpisHtml(ind);
+    if (ind.dre) html += dreHtml(ind);
+    if (ind.produtos && ind.produtos.length) html += prodHtml(ind);
+    var n = 2;
+    if (tipo === 'Semanal') {
+      html += '<div class="sec"><h2>' + (n++) + '. Lançar a semana</h2></div><div class="card"><div class="fld"><label for="rH">Horas trabalhadas</label><input id="rH" inputmode="decimal" value="' + (b.horas == null ? '' : b.horas) + '" placeholder="Produção + atendimento + compras"></div>' +
+        '<div class="fld"><label for="rU">Unidades produzidas</label><input id="rU" inputmode="numeric" value="' + (b.unidades == null ? '' : b.unidades) + '"></div>' +
+        '<div class="row"><div class="grow fld" style="margin:0"><label for="rS">Sobra (un)</label><input id="rS" inputmode="numeric" value="' + (b.sobra == null ? '' : b.sobra) + '"></div><div class="grow fld" style="margin:0"><label for="rQ">Quebra (un)</label><input id="rQ" inputmode="numeric" value="' + (b.quebra == null ? '' : b.quebra) + '"></div></div>' +
+        '<p class="muted" style="margin:10px 0 0">Custo de insumo da semana (das despesas): ' + brl(b.custo || 0) + '</p></div>';
+    }
+    html += '<div class="sec"><h2>' + (n++) + '. Análise</h2></div><div class="card"><div class="fld"><label for="rF">O que funcionou</label><textarea id="rF"></textarea></div><div class="fld" style="margin:0"><label for="rN">O que não funcionou e por quê</label><textarea id="rN" placeholder="Causa, não culpa"></textarea></div></div>';
+    html += '<div class="sec"><h2>Ações abertas</h2><span class="cnt">' + r.acoes.length + '</span></div>' + (r.acoes.length ? '<div class="list">' + r.acoes.map(liAcao).join('') + '</div>' : '<div class="card flat"><p class="muted" style="margin:0">Nenhuma ação aberta.</p></div>');
+    html += '<div class="sec"><h2>' + (n++) + '. Decisões e ações novas</h2></div><div class="card"><div class="fld"><label for="rD">Decisões</label><textarea id="rD" placeholder="Ex.: cardápio de domingo, ajuste de preço"></textarea></div><div id="novas"></div><button class="btn sec" id="addA">' + ic('plus', 's') + 'Ação nova</button><p class="muted" style="margin:10px 0 0">Até 2 ações novas por semana e 3 por mês.</p></div>';
+    if (r.ultimas && r.ultimas.length) html += '<div class="sec"><h2>Decisões anteriores</h2></div><div class="list">' + r.ultimas.map(function (u) { return '<div class="li"><div class="tx"><span>' + esc(u.decisoes || '—') + '</span><div class="meta">' + dBR(u.data) + ' · ' + esc(u.periodo) + '</div></div></div>'; }).join('') + '</div>';
+    html += '<div style="height:10px"></div><button class="btn" id="rOk">Registrar reunião</button>';
+    $('#gBody').innerHTML = html;
+    $$('#gTipo button').forEach(function (x) { x.onclick = function () { S.g.tipoReu = x.dataset.k; $('#gBody').innerHTML = esqueleto([44, 200, 300]).replace('class="page"', ''); gReu(); }; });
+    ligarAcoes(r.acoes, gReu);
+    function desenharNovas() { $('#novas').innerHTML = novas.map(function (a, i) { return '<div class="aviso" style="margin:0 0 10px;justify-content:space-between"><span>' + esc(a.acao) + ' · ' + esc(a.resp) + ' · ' + dBR(a.prazo) + '</span><button class="ib" style="width:32px;height:32px" data-rm="' + i + '" aria-label="Remover">' + ic('x', 's') + '</button></div>'; }).join(''); $$('[data-rm]').forEach(function (b) { b.onclick = function () { novas.splice(+b.dataset.rm, 1); desenharNovas(); }; }); }
+    $('#addA').onclick = function () { acaoSheet(null, function (a) { novas.push(a); desenharNovas(); }, true); };
+    $('#rOk').onclick = function () {
+      var snap = ind.indicadores.map(function (i) { return i.nome + ': ' + fmtV(i); }).join(' · ');
+      var body = { tipo: tipo, periodo: ind.titulo, semana: ind.semana, snapshot: snap, funcionou: $('#rF').value, naoFuncionou: $('#rN').value, decisoes: $('#rD').value, novasAcoes: novas };
+      if (tipo === 'Semanal') { body.horas = $('#rH').value; body.unidades = $('#rU').value; body.sobra = $('#rS').value; body.quebra = $('#rQ').value; }
+      var bt = this; bt.disabled = true; bt.textContent = 'Salvando…';
+      call('salvarReuniao', body).then(function () { toast('Reunião registrada' + (novas.length ? ' com ' + novas.length + ' ação(ões)' : '')); vGestao('aco'); })
+        .catch(function (e) { bt.disabled = false; bt.textContent = 'Registrar reunião'; fail(e); });
+    };
+  }).catch(function (e) { gErro(e, gReu); });
+}
+
+/* =================== PLANO =================== */
+S.p = { st: 'pend', resp: 'Todos', abertos: {} };
+function vPlano() {
+  if (S.p.data) renderPlano(); else $('#app').innerHTML = esqueleto([70, 44, 40, 200, 200]);
+  call('getRoadmap').then(function (r) { S.p.data = r; if (S.view === 'plano') renderPlano(); }).catch(function (e) { if (S.p.data) return fail(e); erroTela(e, vPlano); });
+}
+function anel(feitas, total) { var p = total ? feitas / total : 0, c = 2 * Math.PI * 16; return '<svg class="ring" viewBox="0 0 42 42" aria-label="' + feitas + ' de ' + total + ' feitas"><circle cx="21" cy="21" r="16" fill="none" stroke="#EADFD3" stroke-width="5"/><circle cx="21" cy="21" r="16" fill="none" stroke="' + (p >= 1 ? '#2E6B4F' : '#4E1730') + '" stroke-width="5" stroke-linecap="round" stroke-dasharray="' + (c * p).toFixed(1) + ' ' + c.toFixed(1) + '" transform="rotate(-90 21 21)"/><text x="21" y="25" text-anchor="middle" font-size="11" font-weight="800" fill="#4E1730" font-family="Nunito Sans,sans-serif">' + Math.round(p * 100) + '%</text></svg>'; }
+function renderPlano() {
+  S.p.lista = [];
+  var r = S.p.data, hoje = r.hoje;
+  var todos = r.itens.filter(function (x) { return S.p.resp === 'Todos' || x.resp === S.p.resp || x.resp === 'Ambos'; });
+  var itens = todos.filter(function (x) {
+    if (S.p.st === 'pend') return !x.feita || x.tipo === 'marco' && x.data >= hoje;
+    if (S.p.st === 'feitas') return x.feita && x.tipo !== 'marco';
+    return true;
+  }).sort(function (a, b) { return (a.data || '9999').localeCompare(b.data || '9999') || (a.tipo === 'marco' ? -1 : 1); });
+  var atras = itens.filter(function (x) { return !x.feita && x.tipo !== 'marco' && x.data && x.data < hoje; });
+  var resto = itens.filter(function (x) { return atras.indexOf(x) < 0; });
+  var tt = todos.filter(function (x) { return x.tipo !== 'marco'; }), tf = tt.filter(function (x) { return x.feita; }).length;
+  var html = '<div class="page"><div class="lt"><small>Outubro a abril</small><h1>Plano</h1><p>' + tf + ' de ' + tt.length + ' tarefas feitas' + (atras.length ? ' · <b style="color:var(--err)">' + atras.length + ' atrasada' + (atras.length === 1 ? '' : 's') + '</b>' : '') + '</p></div>';
+  html += pdfBtn('Toque numa tarefa para ver por que ela importa');
+  html += seg('pSt', [['pend', 'A fazer'], ['feitas', 'Feitas'], ['tudo', 'Tudo']], S.p.st);
+  html += '<div class="row" style="margin:0 0 14px">' + chipsHtml('pR', [['Todos', 'Todos'], ['Raquel', 'Raquel'], ['Bruno', 'Bruno']], S.p.resp) + '<span class="grow"></span><button class="btn sm sec" style="flex:0 0 auto" id="pNova">' + ic('plus', 's') + 'Tarefa</button></div>';
+  if (atras.length) html += '<div class="sec" style="margin-top:0"><h2 style="color:var(--err)">Atrasadas</h2><span class="cnt">' + atras.length + '</span></div><div class="list">' + atras.map(liPlano).join('') + '</div>';
+  var porMes = {};
+  resto.forEach(function (x) { var k = x.data ? x.data.slice(0, 7) : 'sem'; (porMes[k] = porMes[k] || []).push(x); });
+  var prox = isoAdd(hoje.slice(0, 7) + '-01', 32).slice(0, 7);
+  Object.keys(porMes).sort().forEach(function (k) {
+    var f = r.meses[k], nome = k === 'sem' ? 'Sem data' : MS[+k.slice(5) - 1] + ' ' + k.slice(0, 4), cur = k === hoje.slice(0, 7);
+    var aberto = S.p.abertos[k] !== undefined ? S.p.abertos[k] : (S.p.st !== 'pend' || k <= prox);
+    var doMes = todos.filter(function (x) { return x.tipo !== 'marco' && x.data && x.data.slice(0, 7) === k; });
+    var nf = doMes.filter(function (x) { return x.feita; }).length;
+    html += '<details class="mes' + (cur ? ' now' : '') + '" data-k="' + k + '"' + (aberto ? ' open' : '') + '><summary>' + anel(nf, doMes.length) + '<div class="tt"><b>' + nome + (cur ? ' <span class="pill" style="vertical-align:3px">agora</span>' : '') + '</b><span>' + (f ? esc(f[0]) + ' · meta ' + esc(f[1]) : '') + '</span></div>' + ic('chev', 's') + '</summary>';
+    var sem = null;
+    porMes[k].forEach(function (x) {
+      var w = x.data ? weekOf(x.data) : null;
+      if (w !== sem && w !== null) { sem = w; html += '<div class="wk">' + (w >= 1 ? 'Semana ' + w : 'Antes da semana 1') + ' · ' + dBR(isoAdd(x.data, -((dow(x.data) + 6) % 7))) + '</div>'; }
+      html += liPlano(x);
+    });
+    html += '</details>';
+  });
+  if (!itens.length) html += '<div class="card flat">' + vazio('check', S.p.st === 'feitas' ? 'Nada feito ainda nesta seleção' : 'Nada pendente nesta seleção', '') + '</div>';
+  html += '<p class="center muted" style="margin-top:18px">Mudanças aqui valem para o app, os e-mails e o painel.<br>O calendário do iPhone não muda sozinho.</p></div>';
+  $('#app').innerHTML = html;
+  $$('#pSt button').forEach(function (b) { b.onclick = function () { S.p.st = b.dataset.k; S.p.abertos = {}; renderPlano(); }; });
+  chipsSel($('#pR'), function (v) { S.p.resp = v; renderPlano(); });
+  $('#pNova').onclick = function () { tarefaSheet({}, function () { vPlano(); }); };
+  $$('details.mes').forEach(function (d) { d.addEventListener('toggle', function () { S.p.abertos[d.dataset.k] = d.open; }); });
+  $$('[data-chk]').forEach(function (b) {
+    b.onclick = function (ev) {
+      ev.stopPropagation();
+      var x = S.p.lista[+b.dataset.chk]; if (!x || x.tipo === 'marco') return;
+      var feita = !x.feita; b.classList.toggle('on', feita);
+      setTimeout(function () {
+        x.feita = feita; renderPlano();
+        var p = x.tipo === 'acao' ? call('atualizarAcao', x.row, feita ? 'Concluída' : 'Aberta', '') : call('marcarTarefa', x.row, feita, false);
+        p.then(function () { toast(feita ? 'Feita!' : 'Reaberta', false, feita ? { label: 'Desfazer', fn: function () { x.feita = false; renderPlano(); (x.tipo === 'acao' ? call('atualizarAcao', x.row, 'Aberta', '') : call('marcarTarefa', x.row, false, false)).catch(fail); } } : null); })
+          .catch(function (e) { x.feita = !feita; renderPlano(); fail(e); });
+      }, 200);
+    };
+  });
+  $$('[data-ed]').forEach(function (el) { el.onclick = function (ev) { if (ev.target.closest('.ck')) return; detalheSheet(S.p.lista[+el.dataset.ed]); }; });
+}
+function liPlano(x) {
+  S.p.lista.push(x); var i = S.p.lista.length - 1, marco = x.tipo === 'marco';
+  if (marco) return '<div class="li tap" data-ed="' + i + '"><div class="star">' + ic('star', 's') + '</div><div class="tx"><span><b style="color:var(--ameixa)">' + esc(x.txt) + '</b></span><div class="meta">Marco · ' + (x.data ? dBR(x.data) : '') + '</div></div>' + ic('chev', 's chev') + '</div>';
+  var late = !x.feita && x.data && x.data < S.p.data.hoje;
+  return '<div class="li tap' + (x.feita ? ' done' : '') + '" data-ed="' + i + '"><button class="ck' + (x.feita ? ' on' : '') + '" data-chk="' + i + '" aria-label="' + (x.feita ? 'Reabrir' : 'Marcar como feita') + '">' + ic('check') + '</button><div class="tx"><span>' + esc(x.txt) + '</span><div class="meta">' + (late ? '<span class="pill err">' + dBR(x.data) + '</span>' : (x.data ? dBR(x.data) : 'sem prazo')) + ' · ' + esc(x.resp) + (x.tipo === 'acao' ? ' <span class="pill">ação</span>' : '') + '</div></div>' + ic('chev', 's chev') + '</div>';
+}
+function editarSheet(x) {
+  if (!x) return; var f = { resp: x.resp };
+  var sh = sheet('<h3>' + (x.tipo === 'acao' ? 'Editar ação' : 'Editar tarefa') + '</h3><p class="desc">Muda no app, nos e-mails e no painel da semana.</p>' +
+    '<div class="fld"><label for="eT">Texto</label><textarea id="eT" style="min-height:70px">' + esc(x.txt) + '</textarea></div>' +
+    '<div class="fld"><label for="eD">Data</label><input id="eD" type="date" value="' + (x.data || '') + '"></div>' +
+    '<div class="fld"><span class="lab">Responsável</span>' + chipsHtml('eR', ['Raquel', 'Bruno', 'Ambos'], x.resp) + '</div>' +
+    (x.tipo === 'plano' ? '<div class="fld"><label for="eP">Por que é importante</label><textarea id="eP" style="min-height:90px" placeholder="O que essa tarefa destrava ou evita">' + esc(x.porque || '') + '</textarea></div>' : '') +
+    '<div class="btns"><button class="btn" id="eOk">Salvar</button>' + (x.tipo === 'plano' ? '<button class="btn danger" id="eX">' + ic('trash', 's') + 'Excluir tarefa</button>' : '') + '</div>');
+  chipsSel($('#eR', sh), function (v) { f.resp = v; });
+  $('#eOk', sh).onclick = function () {
+    var novo = { txt: $('#eT', sh).value.trim(), data: $('#eD', sh).value, resp: f.resp };
+    if (!novo.txt) return $('#eT', sh).classList.add('falta');
+    var b = this; b.disabled = true; b.textContent = 'Salvando…';
+    var p = x.tipo === 'acao' ? call('editarAcao', x.row, x.txt, { acao: novo.txt, prazo: novo.data, resp: novo.resp }) : call('editarTarefa', x.row, x.txt, { tarefa: novo.txt, data: novo.data, resp: novo.resp, porque: $('#eP', sh).value.trim() });
+    p.then(function () { fecharSheet(); toast('Atualizado'); recarregar(); }).catch(function (e) { b.disabled = false; b.textContent = 'Salvar'; fail(e); });
+  };
+  var ex = $('#eX', sh);
+  if (ex) ex.onclick = function () {
+    fecharSheet(); setTimeout(function () {
+      confirmar('Excluir esta tarefa?', x.txt, 'Excluir', true).then(function (ok) { if (ok) call('excluirTarefa', x.row, x.txt).then(function () { toast('Tarefa excluída'); recarregar(); }).catch(fail); });
+    }, 260);
+  };
+}
+
+/* =================== DETALHE COM CONTEXTO =================== */
+function recarregar() { if (S.view === 'hoje') vHoje(); else if (S.view === 'plano') vPlano(); }
+function pdfBtn(sub) {
+  var u = S.boot && S.boot.planoPdf; if (!u) return '';
+  return '<a class="pdf" href="' + esc(u) + '" target="_blank" rel="noopener"><span class="ic" style="display:flex">' + ic('doc') + '</span><span class="grow">Plano completo (PDF)<span class="s">' + esc(sub) + '</span></span>' + ic('chev', 's') + '</a>';
+}
+function deHoje(t) {
+  return { tipo: t.ciclo ? 'rotina' : (t.acao ? 'acao' : 'plano'), row: t.row, data: t.data, resp: t.resp, txt: String(t.tarefa).replace(/^Ação: /, ''), feita: t.feita, porque: t.porque,
+    problema: t.problema, indicador: t.indicador, impacto: t.impacto, origem: t.origem, deHoje: t };
+}
+function porqueTexto(x) {
+  if (x.porque) return x.porque;
+  if (x.tipo === 'acao' && x.problema) return 'Esta ação existe para resolver um problema visto nos números: ' + x.problema + (/[.!?]$/.test(x.problema) ? '' : '.');
+  return '';
+}
+function proxMarco(iso) {
+  var ms = (S.boot && S.boot.marcos) || []; if (!iso) return null;
+  for (var i = 0; i < ms.length; i++) if (ms[i][0] >= iso) return ms[i];
+  return null;
+}
+function detalheSheet(x) {
+  if (!x) return;
+  var nomes = { plano: 'Tarefa do plano', acao: 'Plano de ação', marco: 'Marco do plano', rotina: 'Rotina da semana' };
+  var pq = porqueTexto(x), mes = x.data && S.boot.meses ? S.boot.meses[x.data.slice(0, 7)] : null, w = x.data ? weekOf(x.data) : null;
+  var mc = x.tipo === 'marco' ? null : proxMarco(x.data);
+  var h = '<span class="pill tipo">' + nomes[x.tipo] + '</span><h3' + (x.txt.length > 70 ? ' style="font-size:20px"' : '') + '>' + esc(x.txt) + '</h3>';
+  h += '<dl class="dl">' +
+    (x.data ? '<div><dt>' + (x.tipo === 'acao' ? 'Prazo' : 'Data') + '</dt><dd>' + dLong(x.data) + (w >= 1 ? ' · semana ' + w : '') + '</dd></div>' : '') +
+    (x.tipo !== 'marco' ? '<div><dt>Quem faz</dt><dd>' + esc(x.resp === 'Ambos' ? 'Raquel e Bruno' : x.resp) + '</dd></div>' : '') +
+    (x.tipo !== 'marco' && x.tipo !== 'rotina' ? '<div><dt>Situação</dt><dd>' + (x.feita ? '<span class="pill ok">feita</span>' : (x.data && x.data < S.boot.hoje ? '<span class="pill err">atrasada</span>' : '<span class="pill nd">a fazer</span>')) + '</dd></div>' : '') +
+    '</dl>';
+  h += '<div class="why' + (pq ? '' : ' vz') + '"><div class="lab">' + ic('info', 's') + 'Por que é importante</div><p>' + (pq ? esc(pq) : (x.tipo === 'plano' ? 'Esta tarefa foi incluída sem explicação. Toque em Editar e escreva em uma frase o que ela destrava ou evita, para quem for fazer entender o motivo.' : 'Sem contexto registrado.')) + '</p></div>';
+  if (x.tipo === 'acao' && (x.indicador || x.impacto || x.origem)) {
+    h += '<dl class="dl">' + (x.indicador ? '<div><dt>Indicador</dt><dd>' + esc(x.indicador) + '</dd></div>' : '') + (x.impacto ? '<div><dt>Impacto esperado</dt><dd>' + esc(x.impacto) + '</dd></div>' : '') + (x.origem ? '<div><dt>Origem</dt><dd>' + esc(x.origem) + (x.criada ? ' · ' + dBR(x.criada) : '') + '</dd></div>' : '') + '</dl>';
+  }
+  if (mes || mc) {
+    h += '<div class="sec" style="margin:4px 0 0"><h2 style="font-size:15px">Onde se encaixa no plano</h2></div>';
+    if (mes) h += '<div class="ctx"><span class="ic">' + ic('cal', 's') + '</span><div><small>Foco de ' + MS[+x.data.slice(5, 7) - 1].toLowerCase() + '</small><b>' + esc(mes[0]) + '</b><span>Meta do mês: ' + esc(mes[1]) + '</span></div></div>';
+    if (mc) h += '<div class="ctx"><span class="ic">' + ic('flag', 's') + '</span><div><small>Próximo marco · ' + dBR(mc[0]) + '</small><b>' + esc(mc[1]) + '</b><span>' + (x.tipo === 'rotina' ? 'A rotina é o que sustenta o marco.' : 'Esta tarefa ajuda a chegar lá.') + '</span></div></div>';
+  }
+  var pode = x.tipo === 'plano' || x.tipo === 'acao';
+  h += '<div class="btns">' + (pode ? '<button class="btn" id="dOk">' + ic('check', 's') + (x.feita ? 'Reabrir' : 'Marcar como feita') + '</button><button class="btn sec" id="dEd">' + ic('edit', 's') + 'Editar' + (x.tipo === 'plano' && !x.porque ? ' e escrever o porquê' : '') + '</button>' : '') +
+    (S.boot.planoPdf ? '<a class="btn sec" href="' + esc(S.boot.planoPdf) + '" target="_blank" rel="noopener">' + ic('doc', 's') + 'Abrir o plano completo (PDF)</a>' : '') +
+    (!pode ? '<button class="btn sec" id="dFx">Fechar</button>' : '') + '</div>';
+  var sh = sheet(h);
+  var fx = $('#dFx', sh); if (fx) fx.onclick = fecharSheet;
+  var ed = $('#dEd', sh); if (ed) ed.onclick = function () { fecharSheet(); setTimeout(function () { editarSheet(x); }, 260); };
+  var ok = $('#dOk', sh);
+  if (ok) ok.onclick = function () {
+    var feita = !x.feita; ok.disabled = true;
+    var p = x.tipo === 'acao' ? call('atualizarAcao', x.row, feita ? 'Concluída' : 'Aberta', '') : call('marcarTarefa', x.row, feita, false);
+    p.then(function () {
+      x.feita = feita; if (x.deHoje) x.deHoje.feita = feita; fecharSheet();
+      if (S.view === 'hoje') renderHoje(); else if (S.view === 'plano') renderPlano();
+      toast(feita ? 'Feita!' : 'Reaberta');
+    }).catch(function (e) { ok.disabled = false; fail(e); });
+  };
+}
+
+/* =================== AJUDA =================== */
+S.aj = { chat: [], faq: null, ia: false };
+var AJ_SUG = ['Como edito um pedido?', 'Como o app calcula o custo de um bolo?', 'O que é margem por hora?', 'Como lanço uma compra de ingrediente?', 'O que é ponto de equilíbrio?'];
+function ajScore(q, x) {
+  var t = norm(x.p + ' ' + x.k + ' ' + x.c), r = norm(x.r), sc = 0;
+  norm(q).split(/[^a-z0-9%]+/).filter(function (w) { return w.length > 2 && ['como', 'que', 'por', 'para', 'uma', 'com', 'onde', 'qual', 'quais', 'meu', 'minha', 'faco', 'isso', 'esta', 'sao', 'dos', 'das', 'nos', 'nas'].indexOf(w) < 0; })
+    .forEach(function (w) { var raiz = w.length > 5 ? w.slice(0, w.length - 2) : w; if (t.indexOf(raiz) >= 0) sc += 3; else if (r.indexOf(raiz) >= 0) sc += 1; });
+  return sc;
+}
+function ajBusca(q) { if (!S.aj.faq) return []; return S.aj.faq.map(function (x) { return { x: x, s: ajScore(q, x) }; }).filter(function (o) { return o.s >= 3; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 4).map(function (o) { return o.x; }); }
+function ajFmt(t) {
+  var h = esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>'), out = [], lista = null;
+  h.split(/\n+/).forEach(function (l) {
+    var m = l.match(/^\s*(\d+)[.)]\s+(.*)$/), u = l.match(/^\s*[-•]\s+(.*)$/);
+    if (m || u) { var tipo = m ? 'ol' : 'ul'; if (!lista || lista.t !== tipo) { lista = { t: tipo, i: [] }; out.push(lista); } lista.i.push(m ? m[2] : u[1]); }
+    else if (l.trim()) { lista = null; out.push('<p>' + l + '</p>'); }
+  });
+  return out.map(function (o) { return typeof o === 'string' ? o : '<' + o.t + '>' + o.i.map(function (i) { return '<li>' + i + '</li>'; }).join('') + '</' + o.t + '>'; }).join('');
+}
+function vAjuda() {
+  if (S.aj.faq) return renderAjuda();
+  $('#app').innerHTML = esqueleto([90, 60, 50, 200]);
+  call('getAjuda').then(function (r) { S.aj.faq = r.faq; S.aj.ia = r.ia; if (S.view === 'ajuda') renderAjuda(); }).catch(function (e) { erroTela(e, vAjuda); });
+}
+function renderAjuda() {
+  var ia = S.aj.ia, html = '<div class="page"><div class="lt" style="padding-top:4px"><small>Como funciona</small><h1>Ajuda</h1><p>' + (ia ? 'Pergunte do seu jeito: a assistente explica o app, os custos e os números. Se preferir, veja as perguntas frequentes abaixo.' : 'Busque sua dúvida ou veja as perguntas frequentes abaixo.') + '</p></div>';
+  html += '<div class="ask"><textarea id="aq" rows="1" placeholder="' + (ia ? 'Ex.: como dou desconto num pedido?' : 'Buscar: pedido, custo, margem, despesa…') + '" enterkeyhint="send" aria-label="Sua pergunta"></textarea><button class="send" id="aSend" aria-label="Perguntar" disabled>' + ic(ia ? 'send' : 'search') + '</button></div>';
+  html += '<div id="aLive"></div>';
+  html += '<div class="chat" id="aChat" aria-live="polite">' + S.aj.chat.map(ajBolha).join('') + '</div>';
+  if (!S.aj.chat.length) html += '<div class="sug" id="aSug">' + AJ_SUG.map(function (q) { return '<button>' + esc(q) + '</button>'; }).join('') + '</div>';
+  var cats = {}, ordem = [];
+  S.aj.faq.forEach(function (x, i) { if (!cats[x.c]) { cats[x.c] = []; ordem.push(x.c); } cats[x.c].push(i); });
+  html += '<div class="sec"><h2>Perguntas frequentes</h2></div><div class="faq">' + ordem.map(function (c) {
+    return '<div class="cat">' + esc(c) + '</div><div class="list">' + cats[c].map(function (i) { var x = S.aj.faq[i]; return '<details data-fq="' + i + '"><summary>' + ic('chev', 's') + '<span>' + esc(x.p) + '</span></summary><p>' + esc(x.r) + '</p></details>'; }).join('') + '</div>';
+  }).join('') + '</div>';
+  html += '<p class="center muted" style="margin-top:18px">' + (ia ? 'Respostas da assistente são geradas por IA: confira números importantes na planilha.' : 'A assistente de IA ainda não foi ativada. As perguntas frequentes funcionam sempre.') + '</p></div>';
+  $('#app').innerHTML = html;
+  var aq = $('#aq'), send = $('#aSend');
+  aq.oninput = function () {
+    aq.style.height = 'auto'; aq.style.height = Math.min(aq.scrollHeight, 140) + 'px';
+    send.disabled = !aq.value.trim();
+    var m = aq.value.trim().length > 3 ? ajBusca(aq.value) : [];
+    $('#aLive').innerHTML = m.length ? '<div class="sec" style="margin:14px 0 8px"><h2 style="font-size:16px">Respostas prontas</h2></div><div class="faq"><div class="list">' + m.map(function (x) { return '<details><summary>' + ic('chev', 's') + '<span>' + esc(x.p) + '</span></summary><p>' + esc(x.r) + '</p></details>'; }).join('') + '</div></div>' : '';
+  };
+  aq.onkeydown = function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (aq.value.trim()) perguntar_(aq.value); } };
+  send.onclick = function () { if (aq.value.trim()) perguntar_(aq.value); };
+  $$('#aSug button').forEach(function (b) { b.onclick = function () { perguntar_(b.textContent); }; });
+}
+function ajBolha(m) {
+  if (m.de === 'eu') return '<div class="bol eu">' + esc(m.t) + '</div>';
+  if (m.de === 'pens') return '<div class="bol ia" id="aPens"><span class="dots3"><i></i><i></i><i></i></span></div>';
+  return '<div class="bol ia">' + ajFmt(m.t) + (m.nota ? '<small>' + esc(m.nota) + '</small>' : '') + '</div>';
+}
+function perguntar_(q) {
+  q = String(q).trim(); if (!q) return;
+  var hist = S.aj.chat.filter(function (m) { return m.de === 'eu' || m.de === 'ia' && !m.faq; }).map(function (m) { return { de: m.de, t: m.t }; });
+  S.aj.chat.push({ de: 'eu', t: q });
+  var achou = ajBusca(q);
+  if (!S.aj.ia) {
+    S.aj.chat.push(achou.length ? { de: 'ia', t: achou[0].r, faq: 1, nota: 'Pergunta frequente: ' + achou[0].p } : { de: 'ia', faq: 1, t: 'Não encontrei uma resposta pronta para isso. Veja as perguntas frequentes abaixo ou fale com o Bruno.' });
+    call('registrarPergunta', q, S.pessoa).catch(function () {});
+    renderAjuda(); ajRolar(); return;
+  }
+  S.aj.chat.push({ de: 'pens' }); renderAjuda(); ajRolar();
+  $('#aSend').disabled = true;
+  call('perguntarAjuda', q, hist, S.pessoa).then(function (r) {
+    S.aj.chat = S.aj.chat.filter(function (m) { return m.de !== 'pens'; });
+    if (r.semIA) { S.aj.ia = false; S.aj.chat.push(achou.length ? { de: 'ia', t: achou[0].r, faq: 1, nota: 'Pergunta frequente: ' + achou[0].p } : { de: 'ia', faq: 1, t: 'A assistente de IA não está ativada. Veja as perguntas frequentes abaixo.' }); }
+    else S.aj.chat.push({ de: 'ia', t: r.texto, faq: r.limite ? 1 : 0, nota: r.limite ? '' : 'Resposta da assistente (IA)' });
+    if (S.view === 'ajuda') { renderAjuda(); ajRolar(); }
+  }).catch(function (e) {
+    S.aj.chat = S.aj.chat.filter(function (m) { return m.de !== 'pens'; });
+    S.aj.chat.push(achou.length ? { de: 'ia', t: achou[0].r, faq: 1, nota: 'A assistente não respondeu (' + msgErro(e) + '). Resposta das perguntas frequentes.' } : { de: 'ia', faq: 1, t: 'A assistente não respondeu agora: ' + msgErro(e) });
+    if (S.view === 'ajuda') { renderAjuda(); ajRolar(); }
+  });
+}
+function ajRolar() { var c = $('#aChat'); if (!c || !c.lastElementChild) return; var y = c.lastElementChild.getBoundingClientRect().top + window.scrollY - 120; window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' }); }
+
+/* =================== MENSAGENS DO WHATSAPP =================== */
+S.mg = { lista: null };
+function vMensagens() {
+  if (S.mg.lista) return renderMensagens();
+  $('#app').innerHTML = esqueleto([90, 260, 260]);
+  call('getMensagens').then(function (l) { S.mg.lista = l; if (S.view === 'mensagens') renderMensagens(); }).catch(function (e) { erroTela(e, vMensagens); });
+}
+function pedidoExemplo() {
+  var l = (S.ps || []).concat((S.h && S.h.retiradas) || []).filter(function (p) { return p.cliente && p.itens; });
+  if (l.length) return l[0];
+  var h = S.boot.hoje, qui = h; while (dow(qui) !== 4) qui = isoAdd(qui, 1);
+  return { cliente: 'Ana Souza', itens: '1x Bolo caseirinho médio; 1x Caixa de cookies, 6 un', valor: 140, pix: 'Não', retirada: qui, janela: 'Qui 16-19h' };
+}
+function renderMensagens() {
+  var ex = pedidoExemplo(), exPend = JSON.parse(JSON.stringify(ex)), exPago = JSON.parse(JSON.stringify(ex));
+  exPend.pix = 'Não'; exPago.pix = 'Sim';
+  var dPend = camposPed(exPend), dPago = camposPed(exPago); dPend.pedidos = dPago.pedidos = 4;
+  /* prévia: as mensagens que mudam com o Pix mostram os dois casos */
+  function prevs(m) {
+    if (m.chave === 'posentrega') return [['Pix recebido', dPago]];
+    if (m.chave === 'posentrega_pix') return [['Pix pendente', dPend]];
+    if (m.campos.indexOf('cobranca') >= 0 || m.campos.indexOf('pagamento') >= 0 || m.campos.indexOf('pix') >= 0) return [['Pix pendente', dPend], ['Pix recebido', dPago]];
+    return [['', dPend]];
+  }
+  var html = '<div class="page"><div class="lt" style="padding-top:4px"><small>Pedidos</small><h1>Mensagens do WhatsApp</h1><p>O app monta estas mensagens para você enviar. Os campos entre chaves, como <b>{nome}</b>, viram os dados do pedido. Toque num campo para inserir.</p></div>';
+  S.mg.lista.forEach(function (m, i) {
+    html += '<section class="msgc" data-i="' + i + '"><h2>' + esc(m.titulo) + (m.editada ? ' <span class="pill" style="vertical-align:4px">editada</span>' : '') + '</h2><p class="onde">' + esc(m.onde) + '</p>' +
+      '<label class="sr" for="mt' + i + '">Texto da mensagem: ' + esc(m.titulo) + '</label><textarea id="mt' + i + '" maxlength="1000">' + esc(m.texto) + '</textarea>' +
+      '<div class="cps"><span>Inserir:</span>' + m.campos.map(function (c) { return '<button type="button" data-c="' + c + '" aria-label="Inserir ' + CAMPO_DESC[c] + '">{' + c + '}</button>'; }).join('') + '</div>' +
+      prevs(m).map(function (pv, k) { return '<div class="prev"><span class="lab">Prévia · pedido de ' + esc(primeiro(ex.cliente)) + (pv[0] ? ' · ' + pv[0] : '') + '</span><div class="bolha" id="mp' + i + '_' + k + '"></div></div>'; }).join('') + '<div id="mw' + i + '"></div>' +
+      '<div class="acs"><button class="btn sm" id="ms' + i + '" disabled>Salvar</button><button class="btn sm ghost" id="mr' + i + '"' + (m.texto === m.padrao ? ' disabled' : '') + '>Voltar ao original</button></div></section>';
+  });
+  var ch = chavePix();
+  html += '<p class="center muted">As mudanças valem na hora, para os dois celulares.<br>Para mudar só uma vez, edite o texto na caixa que abre antes do WhatsApp.<br>Chave Pix em uso: <b>' + (ch ? esc(ch) : 'nenhuma') + '</b> (aba Config da planilha: pix_chave e pix_titular).</p></div>';
+  $('#app').innerHTML = html;
+  S.mg.lista.forEach(function (m, i) {
+    var ta = $('#mt' + i), bs = $('#ms' + i), br = $('#mr' + i);
+    function atualiza() {
+      var t = ta.value, desconhecidos = [];
+      t.replace(/\{(\w+)\}/g, function (x, k) { if (m.campos.indexOf(k) < 0 && desconhecidos.indexOf(k) < 0) desconhecidos.push(k); return x; });
+      prevs(m).forEach(function (pv, k) { $('#mp' + i + '_' + k).textContent = preencher(t, pv[1]) || ' '; });
+      $('#mw' + i).innerHTML = desconhecidos.length ? '<div class="aviso av">' + ic('alert', 's') + '<span>' + desconhecidos.map(function (k) { return '{' + esc(k) + '}'; }).join(', ') + (desconhecidos.length === 1 ? ' não é um campo desta mensagem e vai' : ' não são campos desta mensagem e vão') + ' aparecer assim. Campos possíveis: ' + m.campos.map(function (c) { return '{' + c + '}'; }).join(', ') + '.</span></div>' : '';
+      bs.disabled = !t.trim() || t.trim() === m.texto.trim();
+    }
+    ta.addEventListener('input', atualiza); atualiza();
+    $$('.cps button', ta.closest('.msgc')).forEach(function (b) {
+      b.onmousedown = function (e) { e.preventDefault(); };
+      b.onclick = function () {
+        var ins = '{' + b.dataset.c + '}', a = ta.selectionStart != null ? ta.selectionStart : ta.value.length, z = ta.selectionEnd != null ? ta.selectionEnd : a;
+        ta.value = ta.value.slice(0, a) + ins + ta.value.slice(z); ta.focus(); ta.setSelectionRange(a + ins.length, a + ins.length); atualiza();
+      };
+    });
+    function salvar(txt, msgOk) {
+      bs.disabled = true; br.disabled = true; bs.textContent = 'Salvando…';
+      call('salvarMensagem', m.chave, txt, S.pessoa).then(function (r) {
+        m.texto = r.texto; m.editada = r.editada; S.boot.msgs = S.boot.msgs || {}; S.boot.msgs[m.chave] = r.texto;
+        toast(msgOk); renderMensagens();
+      }).catch(function (e) { bs.textContent = 'Salvar'; atualiza(); br.disabled = m.texto === m.padrao; fail(e); });
+    }
+    bs.onclick = function () { salvar(ta.value.trim(), 'Mensagem salva'); };
+    br.onclick = function () {
+      confirmar('Voltar ao texto original?', m.padrao, 'Voltar ao original').then(function (ok) { if (ok) salvar(m.padrao, 'Texto original de volta'); });
+    };
+  });
+}
+
+montarChrome();
+start();
+</script>
+<script>
+if ('serviceWorker' in navigator && !window.MOCK && location.protocol === 'https:') {
+  var recarregou = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function () { if (recarregou) return; recarregou = true; location.reload(); });
+  navigator.serviceWorker.register('sw.js').then(function (reg) { setInterval(function () { reg.update(); }, 30 * 60 * 1000); }).catch(function () {});
+}
+</script>
+</body>
+</html>
