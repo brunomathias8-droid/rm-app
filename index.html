@@ -415,6 +415,7 @@ body.form .toast{bottom:calc(var(--safe) + 96px)}
   <button id="bBack" class="ib hide" aria-label="Fechar"></button>
   <div class="bm" id="bm" aria-label="RM Confeitaria do dia a dia"><span class="bm-rm">RM</span><span class="bm-t">confeitaria do dia a dia</span></div>
   <div class="tt hide" id="tTitle"></div>
+  <button id="bAvisos" class="ib" aria-label="Avisos no celular"></button>
   <button id="bHelp" class="ib" aria-label="Ajuda"></button>
   <button id="bRef" class="ib" aria-label="Atualizar"></button>
 </header>
@@ -432,6 +433,7 @@ body.form .toast{bottom:calc(var(--safe) + 96px)}
 <script>
 /* =================== Ícones =================== */
 var IC = {
+  bell: '<path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
   home: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
   bag: '<path d="M5.5 7.5h13l-1 13h-11z"/><path d="M9 7.5a3 3 0 0 1 6 0"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
@@ -605,7 +607,7 @@ function autocompletar(input, box, fonte, onPick) {
 
 /* =================== Estrutura =================== */
 function montarChrome() {
-  $('#bRef').innerHTML = ic('refresh'); $('#bHelp').innerHTML = ic('help');
+  $('#bRef').innerHTML = ic('refresh'); $('#bHelp').innerHTML = ic('help'); $('#bAvisos').innerHTML = ic('bell'); $('#bAvisos').onclick = function () { avisosSheet(); };
   $('#bHelp').onclick = function () { go('ajuda'); };
   $('#bBack').innerHTML = ic('x');
   var tabs = { hoje: ['home', 'Hoje'], pedidos: ['bag', 'Pedidos'], plano: ['cal', 'Plano'], gestao: ['chart', 'Gestão'] };
@@ -623,7 +625,7 @@ function go(v, refresh) {
   document.body.classList.toggle('form', form);
   $('#bBack').classList.toggle('hide', !form); $('#bm').classList.toggle('hide', form);
   $('#tTitle').classList.toggle('hide', !form); $('#tTitle').textContent = FORM[v] || '';
-  $('#bRef').classList.toggle('hide', form); $('#bHelp').classList.toggle('hide', form);
+  $('#bRef').classList.toggle('hide', form); $('#bHelp').classList.toggle('hide', form); $('#bAvisos').classList.toggle('hide', form);
   $$('#tabs [data-v]').forEach(function (b) { var on = b.dataset.v === v; b.classList.toggle('on', on); if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   if (!refresh) window.scrollTo(0, 0);
   ({ hoje: vHoje, pedidos: vPedidos, novo: vNovo, editar: vEditar, despesa: vDespesa, gestao: vGestao, semana: vSemana, estoque: vEstoque, plano: vPlano, ajuda: vAjuda, mensagens: vMensagens })[v]();
@@ -642,6 +644,7 @@ function menuRegistrar() {
 /* =================== Entrada =================== */
 function start() {
   try { var qa = new URLSearchParams(location.search).get('api'); if (qa && /^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(qa)) { store('api', qa); history.replaceState(null, '', location.pathname); } } catch (e) {}
+  var hv = (location.hash || '').replace(/^#\/?/, ''); if (hv && ['hoje', 'pedidos', 'gestao', 'plano', 'estoque'].indexOf(hv) >= 0 && !FORM[hv]) S.view = hv;
   S.token = store('token'); S.pessoa = store('pessoa');
   if (!S.pessoa) return telaPessoa();
   if (!S.token) return telaPin();
@@ -1971,6 +1974,82 @@ function renderMensagens() {
 montarChrome();
 start();
 </script>
+<script>
+/* ============ Avisos no celular (Web Push pelo Firebase Cloud Messaging) ============
+   O servidor decide QUANDO avisar; aqui o aparelho pede permissão, registra o endereço e escolhe os tipos.
+   No iPhone, só funciona com o app instalado na tela de início (iOS 16.4 ou mais novo). */
+var FB_VERSAO = '10.14.1', PUSH = { cfg: null };
+function pushOk() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; }
+function iosApp() { return /iphone|ipad|ipod/i.test(navigator.userAgent || ''); }
+function instalado() { return window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches); }
+function pushTipos() { var t = store('pushTipos'); return t ? t.split(',').filter(Boolean) : null; }
+function carregarJs(src) { return new Promise(function (ok, erro) { if (document.querySelector('script[src="' + src + '"]')) return ok(); var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = function () { erro(new Error('Sem internet para ativar os avisos.')); }; document.head.appendChild(s); }); }
+function tokenFirebase(cfg) {
+  var base = 'https://www.gstatic.com/firebasejs/' + FB_VERSAO + '/';
+  return carregarJs(base + 'firebase-app-compat.js').then(function () { return carregarJs(base + 'firebase-messaging-compat.js'); })
+    .then(function () { if (!firebase.apps.length) firebase.initializeApp(cfg.webConfig); return navigator.serviceWorker.ready; })
+    .then(function (reg) { return firebase.messaging().getToken({ vapidKey: cfg.vapidKey, serviceWorkerRegistration: reg }); });
+}
+function pushCfg() { return PUSH.cfg ? Promise.resolve(PUSH.cfg) : api({ acao: 'pushConfig', token: S.token }).then(function (c) { PUSH.cfg = c; return c; }); }
+function avisosSheet() {
+  var tok = store('pushToken'), corpo;
+  var cab = '<h3>Avisos no celular</h3>';
+  if (!pushOk()) corpo = '<p class="desc">' + (iosApp() && !instalado() ? 'No iPhone, os avisos só funcionam com o app <b>instalado na tela de início</b> (iOS 16.4 ou mais novo). No Safari: Compartilhar › Adicionar à Tela de Início, e abra pelo ícone RM.' : 'Este navegador não recebe avisos. No Android use o Chrome; no computador, Chrome, Edge ou Safari.') + '</p>';
+  else if (Notification.permission === 'denied') corpo = '<p class="desc">Os avisos estão bloqueados para o RM neste aparelho. ' + (iosApp() ? 'Libere em <b>Ajustes do iPhone › Notificações › RM</b>.' : 'Libere nas configurações do site.') + '</p>';
+  else if (tok && Notification.permission === 'granted') {
+    var tipos = pushTipos() || [], nomes = (PUSH.cfg && PUSH.cfg.tipos) || {};
+    corpo = '<p class="desc"><span class="pill ok">ativos</span> neste aparelho. Escolha o que quer receber:</p><div class="av-l">' +
+      Object.keys(nomes).map(function (k) { return '<label class="av-i"><input type="checkbox" data-t="' + k + '"' + (tipos.indexOf(k) >= 0 ? ' checked' : '') + '><span>' + esc(nomes[k]) + '</span></label>'; }).join('') +
+      '</div><div class="btns"><button class="btn sec" id="avTeste">Enviar um teste</button><button class="btn sec" id="avOff">Desligar neste aparelho</button></div>';
+    if (!PUSH.cfg) pushCfg().then(function () { if ($('#avTeste')) avisosSheet(); }).catch(function () {});
+  } else corpo = '<p class="desc">Receba no celular o bom dia com as tarefas, a véspera das retiradas, Pix pendente, a lista de produção, o lembrete do estoque e o painel da semana. Você escolhe quais depois.</p><button class="btn" id="avOn">' + ic('bell', 's') + 'Ativar avisos</button>';
+  var sh = sheet(cab + corpo);
+  var on = $('#avOn', sh), off = $('#avOff', sh), te = $('#avTeste', sh);
+  if (on) on.onclick = function () {
+    // No iPhone o pedido de permissão precisa ser a primeira coisa depois do toque
+    Notification.requestPermission().then(function (perm) {
+      if (perm !== 'granted') { toast('Sem permissão o app não consegue avisar. Dá para liberar depois nos Ajustes.', true); return avisosSheet(); }
+      on.disabled = true; on.textContent = 'Ativando…';
+      return pushCfg().then(function (cfg) {
+        if (!cfg.ativo) throw new Error('Os avisos ainda não foram configurados no servidor (falta: ' + (cfg.falta || []).join(', ') + ').');
+        return tokenFirebase(cfg).then(function (t) {
+          if (!t) throw new Error('O aparelho não devolveu o endereço de aviso. Tente de novo.');
+          var tipos = pushTipos() || cfg.padrao || [];
+          return api({ acao: 'registrarPush', token: S.token, token_push: t, plataforma: iosApp() ? 'iPhone' : (/Android/.test(navigator.userAgent) ? 'Android' : 'computador'), tipos: tipos })
+            .then(function (r) { store('pushToken', t); store('pushTipos', r.tipos.join(',')); store('pushVerif', S.boot ? S.boot.hoje : ''); toast('Avisos ativados neste aparelho.', false, { label: 'Testar', fn: function () { api({ acao: 'testarPush', token: S.token, token_push: t }).then(function () { toast('Enviado. Deve chegar em alguns segundos.'); }).catch(fail); } }); avisosSheet(); });
+        });
+      });
+    }).catch(function (e) { toast(msgErro(e), true); avisosSheet(); });
+  };
+  $$('.av-i input', sh).forEach(function (c) { c.onchange = function () {
+    var atuais = pushTipos() || [], k = c.dataset.t, novos = c.checked ? atuais.concat(atuais.indexOf(k) >= 0 ? [] : [k]) : atuais.filter(function (x) { return x !== k; });
+    store('pushTipos', novos.join(','));
+    api({ acao: 'preferenciasPush', token: S.token, token_push: store('pushToken'), tipos: novos }).catch(function (e) { store('pushTipos', atuais.join(',')); c.checked = !c.checked; fail(e); });
+  }; });
+  if (te) te.onclick = function () { te.disabled = true; api({ acao: 'testarPush', token: S.token, token_push: store('pushToken') }).then(function () { toast('Enviado. Deve chegar em alguns segundos.'); }).catch(fail).then(function () { te.disabled = false; }); };
+  if (off) off.onclick = function () {
+    var t = store('pushToken'); store('pushToken', ''); store('pushVerif', '');
+    api({ acao: 'removerPush', token: S.token, token_push: t }).catch(function () {});
+    try { if (window.firebase && firebase.apps.length) firebase.messaging().deleteToken(); } catch (e) {}
+    toast('Avisos desligados neste aparelho.'); avisosSheet();
+  };
+}
+/* Uma vez por dia confere o endereço (o Firebase pode trocá-lo) e limpa se a permissão foi retirada */
+function revisarPush() {
+  var tok = store('pushToken'); if (!tok || !S.token || !pushOk() || window.MOCK) return;
+  if (Notification.permission !== 'granted') { api({ acao: 'removerPush', token: S.token, token_push: tok }).catch(function () {}); store('pushToken', ''); return; }
+  var hoje = new Date().toISOString().slice(0, 10); if (store('pushVerif') === hoje) return;
+  pushCfg().then(function (cfg) { if (!cfg.ativo) return; return tokenFirebase(cfg).then(function (novo) {
+    if (novo && novo !== tok) api({ acao: 'removerPush', token: S.token, token_push: tok }).catch(function () {});
+    return api({ acao: 'registrarPush', token: S.token, token_push: novo || tok, plataforma: iosApp() ? 'iPhone' : 'outro', tipos: pushTipos() || cfg.padrao || [] })
+      .then(function (r) { store('pushToken', novo || tok); store('pushTipos', r.tipos.join(',')); store('pushVerif', hoje); });
+  }); }).catch(function () {});
+}
+setTimeout(revisarPush, 8000);
+/* Tocar num aviso abre o app na tela certa (o service worker avisa qual) */
+if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', function (e) { var v = e.data && e.data.ir && String(e.data.ir).replace(/^#\/?/, ''); if (v && S.token && ['hoje', 'pedidos', 'gestao', 'plano', 'estoque'].indexOf(v) >= 0) go(v); });
+</script>
+<style>.av-l{display:flex;flex-direction:column;gap:2px;margin:4px 0 12px}.av-i{display:flex;gap:12px;align-items:flex-start;padding:10px 2px;border-top:1px solid var(--linha);font-size:15px;line-height:1.35}.av-i input{width:22px;height:22px;flex:0 0 auto;accent-color:var(--ameixa);margin:0}</style>
 <script>
 if ('serviceWorker' in navigator && !window.MOCK && location.protocol === 'https:') {
   var recarregou = false;

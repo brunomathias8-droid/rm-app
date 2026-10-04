@@ -29,3 +29,18 @@ App da RM Confeitaria do dia a dia (pedidos, Pix, tarefas, custos, DRE, estoque 
 1. Alterar o `Index.html` do Apps Script.
 2. `python3 build.py caminho/do/Index.html`
 3. Trocar `VERSAO` em `sw.js` e enviar ao GitHub. O Pages publica em cerca de 1 minuto e o app se atualiza sozinho.
+
+## Servidor (Apps Script)
+
+A pasta `servidor/` guarda os arquivos do Apps Script que o app novo usa e que não existiam no app antigo:
+
+| Arquivo | Para quê |
+|---|---|
+| `servidor/Api.gs` | Porta de entrada do app (login, sessões, funções permitidas, rotas dos avisos) |
+| `servidor/Push.gs` | Avisos no celular pelo Firebase Cloud Messaging e o gatilho de hora em hora `verificarAvisos` |
+
+Para copiar pelo celular: abrir o arquivo em `raw.githubusercontent.com/brunomathias8-droid/rm-app/main/servidor/<arquivo>` no Safari, tocar e segurar › Selecionar tudo › Copiar.
+
+## Gestão › Gráficos
+
+Calculado no aparelho a partir dos pedidos (abertos + entregues) e dos indicadores do mês: receita, pedidos e ticket por semana (metas do plano), clientes novos e recorrentes, itens mais vendidos, receita por tipo, canal de origem, dia da retirada e principais clientes. Limite atual: o servidor devolve os 400 pedidos entregues mais recentes.
