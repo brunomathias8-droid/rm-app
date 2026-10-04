@@ -1,18 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<base target="_top">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#4E1730">
-<title>RM</title>
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/png" sizes="192x192" href="icones/icone-192.png">
-<link rel="apple-touch-icon" href="icones/apple-touch-icon.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="RM">
-<script src="config.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Nunito+Sans:wght@400;600;700;800&display=swap">
 <style>
@@ -23,7 +15,7 @@
   --ok:#2E6B4F;--okC:#E1EFE6;--err:#A5281B;--errC:#FBE5E1;--av:#8A5A00;--avC:#FBEFD6;
   --serif:'DM Serif Display',Georgia,serif;--sans:'Nunito Sans',-apple-system,BlinkMacSystemFont,sans-serif;
   --r:16px;--r2:12px;--sh:0 1px 2px rgba(35,19,24,.06),0 2px 10px rgba(35,19,24,.05);
-  --top:calc(54px + env(safe-area-inset-top,0px));--tab:64px;--safe:env(safe-area-inset-bottom,0px);
+  --top:54px;--tab:64px;--safe:env(safe-area-inset-bottom,0px);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--linho);color:var(--tinta);font:16px/1.45 var(--sans);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
@@ -38,7 +30,7 @@ svg.i{width:22px;height:22px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-
 svg.i.s{width:18px;height:18px}
 
 /* ============ Barra superior ============ */
-.top{position:fixed;top:0;left:0;right:0;z-index:20;height:var(--top);padding-top:env(safe-area-inset-top,0px)!important;display:flex;align-items:center;gap:8px;padding:0 8px 0 14px;background:rgba(78,23,48,.97);color:var(--linho);backdrop-filter:saturate(1.4) blur(8px)}
+.top{position:fixed;top:0;left:0;right:0;z-index:20;height:var(--top);display:flex;align-items:center;gap:8px;padding:0 8px 0 14px;background:rgba(78,23,48,.97);color:var(--linho);backdrop-filter:saturate(1.4) blur(8px)}
 .top .bm{display:flex;align-items:center;gap:9px;flex:1;min-width:0}
 .top .bm-rm{font:22px/1 var(--serif);color:var(--linho)}
 .top .bm-t{font:italic 16px/1 var(--serif);color:var(--rosaT);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -518,37 +510,16 @@ function call(fn) {
   return p;
 }
 function callRaw(fn, args) {
-  if (window.MOCK) return window.MOCK[fn].apply(null, ['tk'].concat(args));
-  return api({ acao: 'rpc', token: S.token, fn: fn, args: args || [] }).then(function (d) { guardarCache(fn, args, d); return d; });
+  return new Promise(function (res, rej) {
+    if (window.google && google.script && google.script.run) {
+      var r = google.script.run.withSuccessHandler(res).withFailureHandler(function (e) { rej(e); });
+      r[fn].apply(r, [S.pin].concat(args));
+    } else { window.MOCK[fn].apply(null, [S.pin].concat(args)).then(res, rej); }
+  });
 }
-/* API do Apps Script: POST com JSON em text/plain (evita a pré-verificação de CORS). Erro de sessão volta ao login. */
-function api(corpo) {
-  var url = store('api') || (window.RM_CONFIG && RM_CONFIG.api) || '';
-  if (!url) return Promise.reject(new Error('Endereço do servidor não configurado (config.js).'));
-  var ctl = window.AbortController ? new AbortController() : null, tm = setTimeout(function () { if (ctl) ctl.abort(); }, 45000);
-  return fetch(url, { method: 'POST', body: JSON.stringify(corpo), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow', signal: ctl ? ctl.signal : undefined })
-    .then(function (r) { clearTimeout(tm); if (!r.ok) throw new Error('Servidor respondeu ' + r.status + '. Tente de novo.'); return r.json().catch(function () { throw new Error('O servidor respondeu, mas não pelo Api.gs (falta publicar a versão nova?).'); }); },
-      function (e) { clearTimeout(tm); if (e && e.name === 'AbortError') throw new Error('timeout'); if (navigator.onLine === false) throw new Error('Failed to fetch');
-        var x = new Error('O servidor não atendeu o app. Confira em Implantar › Gerenciar implantações se a versão nova foi publicada, com acesso "Qualquer pessoa", e se o endereço é o mesmo do config.js.'); x.codigo = 'SERVIDOR'; throw x; })
-    .then(function (j) {
-      if (j === null || typeof j !== 'object') throw new Error('Resposta inesperada do servidor.');
-      if (j && j.ok) return j.dados;
-      var e = new Error((j && j.erro) || 'Erro no servidor'); e.codigo = j && j.codigo;
-      if (e.codigo === 'SESSAO' && S.token) { sairLocal(); telaPin(); toast('Sessão expirada. Digite o PIN de novo.', true); }
-      throw e;
-    });
-}
-/* Cache local: as telas abrem na hora com os últimos dados e atualizam quando o servidor responde */
-var CACHE_FNS = { getBootstrap: 1, getHoje: 1, getPedidosAbertos: 1, getPedidosHistorico: 1, getRoadmap: 1, getAcoes: 1, getPainel: 1, getMensagens: 1, getEstoque: 1, getAjuda: 1 };
-function chaveCache(fn, args) { return 'c_' + fn + ':' + JSON.stringify(args || []); }
-function guardarCache(fn, args, d) { if (CACHE_FNS[fn]) store(chaveCache(fn, args), JSON.stringify({ t: Date.now(), d: d })); }
-function lerCache(fn, args) { try { var o = JSON.parse(store(chaveCache(fn, args)) || 'null'); return o && o.d; } catch (e) { return null; } }
-function limparCache() { try { Object.keys(localStorage).forEach(function (k) { if (k.indexOf('rm_c_') === 0) localStorage.removeItem(k); }); } catch (e) {} }
-function sairLocal() { store('token', ''); S.token = null; limparCache(); S.boot = S.h = S.ps = S.hist = null; }
 function msgErro(e) { var m = (e && e.message) || String(e || ''); if (/network|NetworkError|Failed to fetch|timeout/i.test(m)) return 'Sem conexão. Confira a internet e tente de novo.'; return m.replace(/^Exception:\s*/, ''); }
-function fail(e) { if (e && e.codigo === 'SESSAO') return; toast(msgErro(e), true); }
+function fail(e) { var m = msgErro(e); if (/PIN/.test(m)) { store('pin', ''); S.pin = null; telaPin(); } toast(m, true); }
 function erroTela(e, retry) {
-  if (e && e.codigo === 'SESSAO') return;
   $('#app').innerHTML = '<div class="page"><div class="vazio"><div class="ic">' + ic('alert') + '</div><b>Não deu para carregar</b>' + esc(msgErro(e)) + '<button class="btn" id="tryAgain">Tentar de novo</button></div></div>';
   $('#tryAgain').onclick = retry;
 }
@@ -641,17 +612,12 @@ function menuRegistrar() {
 
 /* =================== Entrada =================== */
 function start() {
-  try { var qa = new URLSearchParams(location.search).get('api'); if (qa && /^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(qa)) { store('api', qa); history.replaceState(null, '', location.pathname); } } catch (e) {}
-  S.token = store('token'); S.pessoa = store('pessoa');
+  S.pin = store('pin'); S.pessoa = store('pessoa');
+  if (!S.pin) return telaPin();
   if (!S.pessoa) return telaPessoa();
-  if (!S.token) return telaPin();
-  var cb = lerCache('getBootstrap', []);
-  if (cb && !S.boot) {   // abre na hora com os dados guardados
-    S.boot = cb; S.h = S.h || lerCache('getHoje', [S.pessoa]); S.ps = S.ps || lerCache('getPedidosAbertos', []);
-    $('#tabs').classList.remove('hide'); go(S.view);
-  } else if (!S.boot) $('#app').innerHTML = esqueleto();
-  call('getBootstrap').then(function (b) { var primeira = !S.boot || !$('#tabs') || $('#tabs').classList.contains('hide'); S.boot = b; $('#tabs').classList.remove('hide'); if (primeira) go(S.view); })
-    .catch(function (e) { if (e && e.codigo === 'SESSAO') return telaPin(); if (!S.boot) erroTela(e, start); else toast(msgErro(e), true); });
+  $('#app').innerHTML = esqueleto();
+  call('getBootstrap').then(function (b) { S.boot = b; $('#tabs').classList.remove('hide'); go(S.view); })
+    .catch(function (e) { if (/PIN/.test(msgErro(e))) return fail(e); erroTela(e, start); });
 }
 /* Marca final (03/10/2026): selo com o RM dentro do papel rendado. Mínimo 32 px. */
 var RENDADO = 'M60,10 A10.53,10.53 0 0,1 79.13,13.81 A10.53,10.53 0 0,1 95.36,24.64 A10.53,10.53 0 0,1 106.19,40.87 A10.53,10.53 0 0,1 110,60 A10.53,10.53 0 0,1 106.19,79.13 A10.53,10.53 0 0,1 95.36,95.36 A10.53,10.53 0 0,1 79.13,106.19 A10.53,10.53 0 0,1 60,110 A10.53,10.53 0 0,1 40.87,106.19 A10.53,10.53 0 0,1 24.64,95.36 A10.53,10.53 0 0,1 13.81,79.13 A10.53,10.53 0 0,1 10,60 A10.53,10.53 0 0,1 13.81,40.87 A10.53,10.53 0 0,1 24.64,24.64 A10.53,10.53 0 0,1 40.87,13.81 A10.53,10.53 0 0,1 60,10 Z';
@@ -673,29 +639,20 @@ function clubePedacos(n, cls) {
 function heroMarca() { return '<div class="hero-m">' + selo('selo') + '<div class="n1">Confeitaria</div><div class="n2">do dia a dia</div><div class="n3">POR RAQUEL MIRANDA</div></div>'; }
 function telaPin() {
   $('#tabs').classList.add('hide');
-  if (!S.pessoa) return telaPessoa();
-  $('#app').innerHTML = '<div class="page">' + heroMarca() + avisoInstalar() + '<div class="card"><p class="muted" style="margin:0 0 10px">Entrando como <b>' + esc(S.pessoa) + '</b> · <button class="lk" id="outraP" style="border:0;background:none;color:var(--ameixa);padding:0;text-decoration:underline">trocar</button></p><div class="fld"><label for="pin">PIN de acesso</label><input id="pin" class="pinput" type="password" inputmode="numeric" maxlength="8" autocomplete="current-password" enterkeyhint="go"></div><button class="btn" id="okPin">Entrar</button></div></div>';
-  $('#outraP').onclick = function () { store('pessoa', ''); S.pessoa = null; telaPessoa(); };
+  $('#app').innerHTML = '<div class="page">' + heroMarca() + '<div class="card"><div class="fld"><label for="pin">PIN de acesso</label><input id="pin" class="pinput" type="password" inputmode="numeric" maxlength="8" autocomplete="off" enterkeyhint="go"></div><button class="btn" id="okPin">Entrar</button></div></div>';
   var entrar = function () {
     var v = $('#pin').value.trim(); if (!v) return $('#pin').focus();
-    var b = $('#okPin'); b.disabled = true; b.textContent = 'Entrando…';
-    var login = window.MOCK ? Promise.resolve({ token: 'tk', boot: null }) : api({ acao: 'login', pessoa: S.pessoa, pin: v, aparelho: (navigator.userAgent || '').slice(0, 120) });
-    login.then(function (r) { store('token', r.token); S.token = r.token; if (r.boot) { S.boot = r.boot; guardarCache('getBootstrap', [], r.boot); } $('#tabs').classList.remove('hide'); S.view = 'hoje'; go('hoje'); })
-      .catch(function (e) { b.disabled = false; b.textContent = 'Entrar'; var pi = $('#pin'); pi.value = ''; pi.classList.add('falta'); setTimeout(function () { pi.classList.remove('falta'); }, 400); toast(msgErro(e), true); });
+    var b = $('#okPin'); b.disabled = true; b.textContent = 'Entrando…'; S.pin = v;
+    call('getBootstrap').then(function (bt) { store('pin', S.pin); S.boot = bt; start(); })
+      .catch(function (e) { S.pin = null; b.disabled = false; b.textContent = 'Entrar'; var pi = $('#pin'); pi.classList.add('falta'); setTimeout(function () { pi.classList.remove('falta'); }, 400); toast(/PIN/.test(msgErro(e)) ? 'PIN incorreto' : msgErro(e), true); });
   };
   $('#okPin').onclick = entrar;
   $('#pin').onkeydown = function (e) { if (e.key === 'Enter') entrar(); };
 }
-/* No iPhone, só o app instalado na tela de início guarda os dados e (depois) recebe avisos */
-function avisoInstalar() {
-  var ios = /iphone|ipad|ipod/i.test(navigator.userAgent || ''), inst = window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
-  if (!ios || inst) return '';
-  return '<div class="card" style="background:var(--rosaC);border:0"><b>Instale o app na tela de início</b><p class="muted" style="margin:6px 0 0">No Safari, toque em Compartilhar (quadrado com seta) e depois em <b>Adicionar à Tela de Início</b>. Abra pelo ícone RM.</p></div>';
-}
 function telaPessoa() {
   $('#tabs').classList.add('hide');
   $('#app').innerHTML = '<div class="page">' + heroMarca() + '<p class="center muted" style="margin:0 0 14px">Quem está usando este celular?</p><div class="quem"><button data-p="Raquel"><span class="av">R</span>Raquel</button><button data-p="Bruno"><span class="av">B</span>Bruno</button></div></div>';
-  $$('[data-p]').forEach(function (b) { b.onclick = function () { var nova = b.dataset.p; if (nova !== store('pessoa')) { sairLocal(); } store('pessoa', nova); S.pessoa = nova; start(); }; });
+  $$('[data-p]').forEach(function (b) { b.onclick = function () { store('pessoa', b.dataset.p); S.pessoa = b.dataset.p; start(); }; });
 }
 
 /* =================== Pedido: cartão e ações =================== */
@@ -904,7 +861,7 @@ function renderHoje() {
       }, 220);
     };
   });
-  $('#troca').onclick = function () { if (!window.MOCK && S.token) api({ acao: 'sair', token: S.token }).catch(function () {}); sairLocal(); store('pessoa', ''); S.pessoa = null; start(); };
+  $('#troca').onclick = function () { store('pessoa', ''); S.pessoa = null; S.h = null; start(); };
   $$('[data-cw]').forEach(function (b) {
     b.onclick = function () { var f = h.clube.frequentes.filter(function (x) { return x.nome === b.dataset.cw; })[0]; if (f) enviarWhats(f.whats, msgDe('clube', { nome: primeiro(f.nome), pedidos: f.n }), 'Reserva do Clube para ' + primeiro(f.nome)); };
   });
@@ -1970,13 +1927,6 @@ function renderMensagens() {
 
 montarChrome();
 start();
-</script>
-<script>
-if ('serviceWorker' in navigator && !window.MOCK && location.protocol === 'https:') {
-  var recarregou = false;
-  navigator.serviceWorker.addEventListener('controllerchange', function () { if (recarregou) return; recarregou = true; location.reload(); });
-  navigator.serviceWorker.register('sw.js').then(function (reg) { setInterval(function () { reg.update(); }, 30 * 60 * 1000); }).catch(function () {});
-}
 </script>
 </body>
 </html>

@@ -4,7 +4,7 @@ Fonte única das telas: Index.html (pasta do Apps Script). Rode: python3 build.p
 O que muda: chamadas ao servidor por fetch (API com token), login pessoa + PIN, cache local para abrir na hora,
 manifest, ícones, service worker e área segura do iPhone."""
 import sys, re, pathlib
-src = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else '/home/claude/rm-gas/Index.html').read_text()
+src = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else str(pathlib.Path(__file__).with_name('fonte') / 'Index.html')).read_text()
 t = src
 def rep(a, b, n=1):
     global t
