@@ -496,13 +496,15 @@ function callRaw(fn, args) {
 }
 /* API do Apps Script: POST com JSON em text/plain (evita a pré-verificação de CORS). Erro de sessão volta ao login. */
 function api(corpo) {
-  var url = (window.RM_CONFIG && RM_CONFIG.api) || '';
+  var url = store('api') || (window.RM_CONFIG && RM_CONFIG.api) || '';
   if (!url) return Promise.reject(new Error('Endereço do servidor não configurado (config.js).'));
   var ctl = window.AbortController ? new AbortController() : null, tm = setTimeout(function () { if (ctl) ctl.abort(); }, 45000);
   return fetch(url, { method: 'POST', body: JSON.stringify(corpo), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow', signal: ctl ? ctl.signal : undefined })
-    .then(function (r) { clearTimeout(tm); if (!r.ok) throw new Error('Servidor respondeu ' + r.status + '. Tente de novo.'); return r.json(); },
-      function (e) { clearTimeout(tm); throw new Error(e && e.name === 'AbortError' ? 'timeout' : 'Failed to fetch'); })
+    .then(function (r) { clearTimeout(tm); if (!r.ok) throw new Error('Servidor respondeu ' + r.status + '. Tente de novo.'); return r.json().catch(function () { throw new Error('O servidor respondeu, mas não pelo Api.gs (falta publicar a versão nova?).'); }); },
+      function (e) { clearTimeout(tm); if (e && e.name === 'AbortError') throw new Error('timeout'); if (navigator.onLine === false) throw new Error('Failed to fetch');
+        var x = new Error('O servidor não atendeu o app. Confira em Implantar › Gerenciar implantações se a versão nova foi publicada, com acesso "Qualquer pessoa", e se o endereço é o mesmo do config.js.'); x.codigo = 'SERVIDOR'; throw x; })
     .then(function (j) {
+      if (j === null || typeof j !== 'object') throw new Error('Resposta inesperada do servidor.');
       if (j && j.ok) return j.dados;
       var e = new Error((j && j.erro) || 'Erro no servidor'); e.codigo = j && j.codigo;
       if (e.codigo === 'SESSAO' && S.token) { sairLocal(); telaPin(); toast('Sessão expirada. Digite o PIN de novo.', true); }
@@ -612,6 +614,7 @@ function menuRegistrar() {
 
 /* =================== Entrada =================== */
 function start() {
+  try { var qa = new URLSearchParams(location.search).get('api'); if (qa && /^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(qa)) { store('api', qa); history.replaceState(null, '', location.pathname); } } catch (e) {}
   S.token = store('token'); S.pessoa = store('pessoa');
   if (!S.pessoa) return telaPessoa();
   if (!S.token) return telaPin();
