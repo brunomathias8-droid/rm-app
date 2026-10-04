@@ -4,5 +4,5 @@
  * publicar "Nova versão" na implantação existente mantém o endereço.
  */
 window.RM_CONFIG = {
-  api: 'https://script.google.com/macros/s/AKfycbxHVQAov_P3WBVnR59TphQBu0KCWPAk6EUEySdjGR0vBea_cYJ1HptomgYG0wX4uDc6aQ/exec'
+  api: 'https://script.google.com/macros/s/AKfycbyxITYpiNBeu2QJJM1W5DnS2K1jaeLe9R2ti5_VgkLLgBsAtMOzicA993TuwhM6MBbdzA/exec'
 };
