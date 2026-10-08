@@ -1,6 +1,6 @@
 /* Service worker do app RM: guarda o app no aparelho para abrir rápido (e sem internet, com os últimos dados).
    Troque VERSAO a cada publicação: o app baixa a versão nova e recarrega sozinho. Dados da API nunca passam por aqui. */
-var VERSAO = 'rm-2026-10-04-2';
+var VERSAO = 'rm-2026-10-08-1';
 var ARQUIVOS = ['./', 'index.html', 'config.js', 'manifest.webmanifest', 'icones/icone-192.png', 'icones/icone-512.png', 'icones/apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {
@@ -17,7 +17,7 @@ self.addEventListener('fetch', function (e) {
   if (url.origin === location.origin) {
     // Página: rede primeiro (pega versão nova), cache se estiver sem internet. Demais arquivos: cache primeiro.
     if (req.mode === 'navigate') {
-      e.respondWith(fetch(req).then(function (r) { var cp = r.clone(); caches.open(VERSAO).then(function (c) { c.put('index.html', cp); }); return r; })
+      e.respondWith(fetch(req).then(function (r) { if (r.ok) { var cp = r.clone(); caches.open(VERSAO).then(function (c) { c.put('index.html', cp); }); } return r; })
         .catch(function () { return caches.match('index.html'); }));
     } else {
       e.respondWith(caches.match(req).then(function (r) { return r || fetch(req); }));

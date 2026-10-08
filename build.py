@@ -31,7 +31,7 @@ new_call = r'''function callRaw(fn, args) {
 }
 /* API do Apps Script: POST com JSON em text/plain (evita a pré-verificação de CORS). Erro de sessão volta ao login. */
 function api(corpo) {
-  var url = store('api') || (window.RM_CONFIG && RM_CONFIG.api) || '';
+  var url = (window.RM_CONFIG && RM_CONFIG.api) || '';   // só o config.js: endereço vindo de link levaria o token e o PIN para outro servidor
   if (!url) return Promise.reject(new Error('Endereço do servidor não configurado (config.js).'));
   var ctl = window.AbortController ? new AbortController() : null, tm = setTimeout(function () { if (ctl) ctl.abort(); }, 45000);
   return fetch(url, { method: 'POST', body: JSON.stringify(corpo), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow', signal: ctl ? ctl.signal : undefined })
@@ -62,7 +62,7 @@ rep("function erroTela(e, retry) {\n", "function erroTela(e, retry) {\n  if (e &
 # 4. Entrada: pessoa → PIN → token. Abre com cache, atualiza em seguida.
 old_start = t[t.index('function start() {'):t.index('/* Marca final (03/10/2026)')]
 new_start = r'''function start() {
-  try { var qa = new URLSearchParams(location.search).get('api'); if (qa && /^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(qa)) { store('api', qa); history.replaceState(null, '', location.pathname); } } catch (e) {}
+  try { localStorage.removeItem('rm_api'); } catch (e) {}   // apaga o endereço guardado pelo antigo ?api= (não é mais aceito)
   S.token = store('token'); S.pessoa = store('pessoa');
   if (!S.pessoa) return telaPessoa();
   if (!S.token) return telaPin();

@@ -29,7 +29,7 @@ function pushWebConfig_() {
   if (!t) return null;
   var m = t.match(/\{[\s\S]*\}/);
   if (!m) return null;
-  var s = m[0].replace(/\/\/[^\n]*/g, '').replace(/([{,]\s*)([A-Za-z_]\w*)\s*:/g, '$1"$2":').replace(/'/g, '"').replace(/,\s*\}/g, '}');
+  var s = m[0].replace(/^\s*\/\/.*$/gm, '').replace(/([{,]\s*)([A-Za-z_]\w*)\s*:/g, '$1"$2":').replace(/'/g, '"').replace(/,\s*\}/g, '}');
   try { var o = JSON.parse(s); return o.apiKey && o.projectId && o.messagingSenderId && o.appId ? o : null; } catch (e) { return null; }
 }
 
@@ -155,7 +155,7 @@ function pushEnviar_(tok, msg) {
     var code = r.getResponseCode();
     if (code === 200) return { ok: true };
     var txt = r.getContentText().slice(0, 300);
-    if (code === 404 || /UNREGISTERED|INVALID_ARGUMENT/.test(txt)) pushDesativar_(tok, txt);
+    if (code === 404 || /UNREGISTERED/.test(txt)) pushDesativar_(tok, txt);   // só aparelho desinstalado: INVALID_ARGUMENT também vem de mensagem mal montada
     return { ok: false, erro: code + ' ' + txt };
   } catch (e) { return { ok: false, erro: String(e.message || e) }; }
 }
