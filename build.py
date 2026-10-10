@@ -187,7 +187,7 @@ setTimeout(revisarPush, 8000);
 /* Tocar num aviso abre o app na tela certa (o service worker avisa qual) */
 if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', function (e) { var v = e.data && e.data.ir && String(e.data.ir).replace(/^#\/?/, ''); if (v && S.token && ['hoje', 'pedidos', 'gestao', 'plano', 'estoque'].indexOf(v) >= 0) go(v); });
 </script>
-<style>.av-l{display:flex;flex-direction:column;gap:2px;margin:4px 0 12px}.av-i{display:flex;gap:12px;align-items:flex-start;padding:10px 2px;border-top:1px solid var(--linha);font-size:15px;line-height:1.35}.av-i input{width:22px;height:22px;flex:0 0 auto;accent-color:var(--ameixa);margin:0}</style>
+<style>.av-l{display:flex;flex-direction:column;gap:2px;margin:4px 0 12px}.av-i{display:flex;gap:12px;align-items:flex-start;padding:10px 2px;border-top:1px solid var(--linha);font-size:15px;line-height:1.35}.av-i input{width:22px;height:22px;flex:0 0 auto;margin:0;padding:0;border:1.5px solid var(--ameixa);border-radius:6px;background:#fff center/16px no-repeat}.av-i input:checked{background-color:var(--ameixa);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E")}</style>
 """
 rep('</body>', AVISOS + '</body>')
 # 5. Service worker: guarda o app no aparelho; versão nova recarrega sozinha
