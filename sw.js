@@ -1,6 +1,6 @@
 /* Service worker do app RM: guarda o app no aparelho para abrir rápido (e sem internet, com os últimos dados).
    Troque VERSAO a cada publicação: o app baixa a versão nova e recarrega sozinho. Dados da API nunca passam por aqui. */
-var VERSAO = 'rm-2026-10-10-1';
+var VERSAO = 'rm-2026-10-12-1';
 var ARQUIVOS = ['./', 'index.html', 'config.js', 'manifest.webmanifest', 'icones/icone-192.png', 'icones/icone-512.png', 'icones/apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {

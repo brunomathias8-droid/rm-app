@@ -105,6 +105,16 @@ rep("$$('[data-p]').forEach(function (b) { b.onclick = function () { store('pess
 rep("$('#troca').onclick = function () { store('pessoa', ''); S.pessoa = null; S.h = null; start(); };",
     "$('#troca').onclick = function () { if (!window.MOCK && S.token) api({ acao: 'sair', token: S.token }).catch(function () {}); sairLocal(); store('pessoa', ''); S.pessoa = null; start(); };")
 
+# 4a. Painel da semana: o HTML vem do Painel.gs (o mesmo do e-mail). Imagem que não carrega no app vira a marca em texto
+rep("function gPai() { call('getPainel').then(function (r) { $('#gBody').innerHTML = '<div class=\"painel\">' + r.html + '</div>'; }).catch(function (e) { gErro(e, gPai); }); }",
+    """function gPai() { call('getPainel').then(function (r) { $('#gBody').innerHTML = '<div class="painel">' + r.html + '</div>'; marcaPainel(); }).catch(function (e) { gErro(e, gPai); }); }
+function marcaPainel() {
+  var trocar = function (im) { if (!im.parentNode) return; var d = document.createElement('div'); d.className = 'painel-marca'; d.innerHTML = '<span class="bm-rm">RM</span><span class="bm-t">confeitaria do dia a dia</span>'; im.parentNode.replaceChild(d, im); };
+  $$('#gBody .painel img').forEach(function (im) {
+    if (!/^(https:|data:image[/])/.test(im.getAttribute('src') || '') || (im.complete && !im.naturalWidth)) return trocar(im);
+    im.addEventListener('error', function () { trocar(im); });
+  });
+}""")
 # 4b. Avisos no celular (push pelo Firebase) e rotas por endereço (#pedidos)
 rep('<button id="bHelp" class="ib" aria-label="Ajuda"></button>', '<button id="bAvisos" class="ib" aria-label="Avisos no celular"></button>\n  <button id="bHelp" class="ib" aria-label="Ajuda"></button>')
 rep("$('#bRef').innerHTML = ic('refresh'); $('#bHelp').innerHTML = ic('help');", "$('#bRef').innerHTML = ic('refresh'); $('#bHelp').innerHTML = ic('help'); $('#bAvisos').innerHTML = ic('bell'); $('#bAvisos').onclick = function () { avisosSheet(); };")
@@ -187,7 +197,7 @@ setTimeout(revisarPush, 8000);
 /* Tocar num aviso abre o app na tela certa (o service worker avisa qual) */
 if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', function (e) { var v = e.data && e.data.ir && String(e.data.ir).replace(/^#\/?/, ''); if (v && S.token && ['hoje', 'pedidos', 'gestao', 'plano', 'estoque'].indexOf(v) >= 0) go(v); });
 </script>
-<style>.av-l{display:flex;flex-direction:column;gap:2px;margin:4px 0 12px}.av-i{display:flex;gap:12px;align-items:flex-start;padding:10px 2px;border-top:1px solid var(--linha);font-size:15px;line-height:1.35}.av-i input{width:22px;height:22px;flex:0 0 auto;margin:0;padding:0;border:1.5px solid var(--ameixa);border-radius:6px;background:#fff center/16px no-repeat}.av-i input:checked{background-color:var(--ameixa);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E")}</style>
+<style>.painel-marca{display:flex;align-items:baseline;gap:9px}.painel-marca .bm-rm{font:26px/1 var(--serif);color:var(--linho)}.painel-marca .bm-t{font:italic 18px/1 var(--serif);color:var(--rosaT)}.av-l{display:flex;flex-direction:column;gap:2px;margin:4px 0 12px}.av-i{display:flex;gap:12px;align-items:flex-start;padding:10px 2px;border-top:1px solid var(--linha);font-size:15px;line-height:1.35}.av-i input{width:22px;height:22px;flex:0 0 auto;margin:0;padding:0;border:1.5px solid var(--ameixa);border-radius:6px;background:#fff center/16px no-repeat}.av-i input:checked{background-color:var(--ameixa);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E")}</style>
 """
 rep('</body>', AVISOS + '</body>')
 # 5. Service worker: guarda o app no aparelho; versão nova recarrega sozinha

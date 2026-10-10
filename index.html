@@ -1526,7 +1526,14 @@ function vGestao(sub) {
   ({ pai: gPai, ind: gInd, gra: gGraf, reu: gReu, aco: gAco })[S.g.sub]();
 }
 function gErro(e, fn) { $('#gBody').innerHTML = '<div class="vazio"><div class="ic">' + ic('alert') + '</div><b>Não deu para carregar</b>' + esc(msgErro(e)) + '<button class="btn" id="gTry">Tentar de novo</button></div>'; $('#gTry').onclick = fn; }
-function gPai() { call('getPainel').then(function (r) { $('#gBody').innerHTML = '<div class="painel">' + r.html + '</div>'; }).catch(function (e) { gErro(e, gPai); }); }
+function gPai() { call('getPainel').then(function (r) { $('#gBody').innerHTML = '<div class="painel">' + r.html + '</div>'; marcaPainel(); }).catch(function (e) { gErro(e, gPai); }); }
+function marcaPainel() {
+  var trocar = function (im) { if (!im.parentNode) return; var d = document.createElement('div'); d.className = 'painel-marca'; d.innerHTML = '<span class="bm-rm">RM</span><span class="bm-t">confeitaria do dia a dia</span>'; im.parentNode.replaceChild(d, im); };
+  $$('#gBody .painel img').forEach(function (im) {
+    if (!/^(https:|data:image[/])/.test(im.getAttribute('src') || '') || (im.complete && !im.naturalWidth)) return trocar(im);
+    im.addEventListener('error', function () { trocar(im); });
+  });
+}
 function fmtV(i) {
   if (i.valor === null || i.valor === '' || i.valor === undefined) return '—';
   if (i.fmt === 'brl') return brl(i.valor, true);
@@ -2049,7 +2056,7 @@ setTimeout(revisarPush, 8000);
 /* Tocar num aviso abre o app na tela certa (o service worker avisa qual) */
 if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', function (e) { var v = e.data && e.data.ir && String(e.data.ir).replace(/^#\/?/, ''); if (v && S.token && ['hoje', 'pedidos', 'gestao', 'plano', 'estoque'].indexOf(v) >= 0) go(v); });
 </script>
-<style>.av-l{display:flex;flex-direction:column;gap:2px;margin:4px 0 12px}.av-i{display:flex;gap:12px;align-items:flex-start;padding:10px 2px;border-top:1px solid var(--linha);font-size:15px;line-height:1.35}.av-i input{width:22px;height:22px;flex:0 0 auto;margin:0;padding:0;border:1.5px solid var(--ameixa);border-radius:6px;background:#fff center/16px no-repeat}.av-i input:checked{background-color:var(--ameixa);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E")}</style>
+<style>.painel-marca{display:flex;align-items:baseline;gap:9px}.painel-marca .bm-rm{font:26px/1 var(--serif);color:var(--linho)}.painel-marca .bm-t{font:italic 18px/1 var(--serif);color:var(--rosaT)}.av-l{display:flex;flex-direction:column;gap:2px;margin:4px 0 12px}.av-i{display:flex;gap:12px;align-items:flex-start;padding:10px 2px;border-top:1px solid var(--linha);font-size:15px;line-height:1.35}.av-i input{width:22px;height:22px;flex:0 0 auto;margin:0;padding:0;border:1.5px solid var(--ameixa);border-radius:6px;background:#fff center/16px no-repeat}.av-i input:checked{background-color:var(--ameixa);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E")}</style>
 <script>
 if ('serviceWorker' in navigator && !window.MOCK && location.protocol === 'https:') {
   var recarregou = false;
