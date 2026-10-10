@@ -18,9 +18,10 @@ var PUSH_TIPOS = {
   pix: 'Pix pendente há mais de 1 dia, às 10h',
   producao: 'Lista de produção pronta (terça, 20h30)',
   estoque: 'Contar o estoque (último dia do mês, 9h)',
-  painel: 'Painel da semana (domingo, 18h)'
+  painel: 'Painel da semana (domingo, 18h)',
+  pedido: 'Pedido novo registrado pela outra pessoa'
 };
-var PUSH_PADRAO = { Raquel: ['manha', 'vespera', 'pix', 'producao', 'estoque', 'painel'], Bruno: ['manha', 'pix', 'producao', 'painel'] };
+var PUSH_PADRAO = { Raquel: ['manha', 'vespera', 'pix', 'producao', 'estoque', 'painel', 'pedido'], Bruno: ['manha', 'pix', 'producao', 'painel', 'pedido'] };
 
 /* ------------------------------ configuração ------------------------------ */
 
@@ -216,6 +217,18 @@ function verificarAvisos() {
     API_PESSOAS.forEach(function (pe) { pushAvisar_(pe, 'producao', { titulo: 'Lista de produção pronta', corpo: plural(sem.length, 'pedido', 'pedidos') + ' · ' + un + ' itens. Detalhe no e-mail das 20h30.', url: '#pedidos', tag: 'producao' }); });
   }
   if (hora === 3) pushLimparMarcas_();
+}
+
+/** Chamado pelo Api.gs logo depois de salvarPedido: avisa quem não registrou o pedido. */
+function pushPedidoNovo_(quem, p) {
+  if (!p || !pushStatus_().ativo) return;
+  var hoje = today_(), ret = String(p.retirada || '');
+  var quando = ret === hoje ? 'hoje' : ret === addDays_(hoje, 1) ? 'amanhã' : ret ? ret.slice(8, 10) + '/' + ret.slice(5, 7) : '';
+  var itens = String(p.itens || '').split(';').map(function (s) { return s.trim(); }).filter(String).join(', ');
+  var corpo = brl_(Number(p.valor) || 0) + (quando ? ' · retirada ' + quando : '') + (p.pix ? '' : ' · sem Pix') + (itens ? '. ' + itens : '');
+  API_PESSOAS.forEach(function (pe) {
+    if (pe !== quem) pushAvisar_(pe, 'pedido', { titulo: 'Pedido novo: ' + String(p.cliente || '').trim().split(' ')[0] + ' (por ' + quem + ')', corpo: corpo.slice(0, 180), url: '#pedidos', tag: 'pedido-' + Date.now() });
+  });
 }
 
 function pushLimparMarcas_() {

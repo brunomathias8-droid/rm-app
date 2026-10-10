@@ -130,6 +130,9 @@ function apiRpc_(s, req) {
   var args = Array.isArray(req.args) ? req.args : [];
   if (args.length > 8) throw apiErro_('Argumentos demais.', 'VALIDACAO');
   var r = mapa[fn].apply(null, [config_().pin].concat(args));
+  if (fn === 'salvarPedido' && typeof pushPedidoNovo_ === 'function') {   // aviso de pedido novo; falha aqui não desfaz o pedido
+    try { pushPedidoNovo_(s.pessoa, args[0]); } catch (x) { apiLogErro_(req, x); }
+  }
   return r === undefined ? null : JSON.parse(JSON.stringify(r)); // datas viram texto, como no app antigo
 }
 
