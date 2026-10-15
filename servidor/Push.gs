@@ -219,7 +219,33 @@ function verificarAvisos() {
   if (hora === 3) pushLimparMarcas_();
 }
 
-/** Chamado pelo Api.gs logo depois de salvarPedido: avisa quem não registrou o pedido. */
+/* Pedido novo: o Api.gs só põe na fila e cria um gatilho de 1 vez; o envio roda em seguida, fora da resposta do app
+   (o Google dispara em até 1 minuto). A trava garante que nenhum pedido da fila fique sem gatilho. */
+function pushAgendarPedido_(quem, p) {
+  if (!PropertiesService.getScriptProperties().getProperty('FCM_SERVICE_ACCOUNT')) return;
+  var lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    var pr = PropertiesService.getScriptProperties(), fila = JSON.parse(pr.getProperty('FILA_AVISOS_PEDIDO') || '[]');
+    fila.push({ quem: quem, p: { cliente: p.cliente, valor: p.valor, retirada: p.retirada, pix: p.pix, itens: p.itens } });
+    pr.setProperty('FILA_AVISOS_PEDIDO', JSON.stringify(fila.slice(-30)));
+    ScriptApp.newTrigger('enviarAvisosPedido').timeBased().after(1000).create();
+  } finally { lock.releaseLock(); }
+}
+
+/** Gatilho de 1 vez criado por pushAgendarPedido_. Não precisa rodar à mão. */
+function enviarAvisosPedido() {
+  var lock = LockService.getScriptLock(), fila;
+  lock.waitLock(20000);
+  try {
+    ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'enviarAvisosPedido') ScriptApp.deleteTrigger(t); });
+    var pr = PropertiesService.getScriptProperties();
+    fila = JSON.parse(pr.getProperty('FILA_AVISOS_PEDIDO') || '[]');
+    pr.deleteProperty('FILA_AVISOS_PEDIDO');
+  } finally { lock.releaseLock(); }
+  fila.forEach(function (x) { try { pushPedidoNovo_(x.quem, x.p); } catch (e) { Logger.log('Aviso de pedido: ' + (e.stack || e)); } });
+}
+
+/** Avisa quem não registrou o pedido. */
 function pushPedidoNovo_(quem, p) {
   if (!p || !pushStatus_().ativo) return;
   var hoje = today_(), ret = String(p.retirada || '');

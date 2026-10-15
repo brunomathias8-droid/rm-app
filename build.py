@@ -105,6 +105,9 @@ rep("$$('[data-p]').forEach(function (b) { b.onclick = function () { store('pess
 rep("$('#troca').onclick = function () { store('pessoa', ''); S.pessoa = null; S.h = null; start(); };",
     "$('#troca').onclick = function () { if (!window.MOCK && S.token) api({ acao: 'sair', token: S.token }).catch(function () {}); sairLocal(); store('pessoa', ''); S.pessoa = null; start(); };")
 
+# 3b. Pedido novo: um código por formulário (_rid). Tocar Salvar de novo não grava o pedido duas vezes (Api.gs confere)
+rep("    call('salvarPedido', p).then(function (r) {", "    p._rid = f.rid || (f.rid = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8));\n    call('salvarPedido', p).then(function (r) {")
+rep("function msgErro(e) { var m = (e && e.message) || String(e || '');", "function msgErro(e) { var m = (e && e.message) || String(e || ''); if (m === 'timeout') return 'O servidor demorou para responder. Confira se salvou antes de tentar de novo.';")
 # 4a. Painel da semana: o HTML vem do Painel.gs (o mesmo do e-mail). Imagem que não carrega no app vira a marca em texto
 rep("function gPai() { call('getPainel').then(function (r) { $('#gBody').innerHTML = '<div class=\"painel\">' + r.html + '</div>'; }).catch(function (e) { gErro(e, gPai); }); }",
     """function gPai() { call('getPainel').then(function (r) { $('#gBody').innerHTML = '<div class="painel">' + r.html + '</div>'; marcaPainel(); }).catch(function (e) { gErro(e, gPai); }); }

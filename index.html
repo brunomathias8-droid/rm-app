@@ -547,7 +547,7 @@ function guardarCache(fn, args, d) { if (CACHE_FNS[fn]) store(chaveCache(fn, arg
 function lerCache(fn, args) { try { var o = JSON.parse(store(chaveCache(fn, args)) || 'null'); return o && o.d; } catch (e) { return null; } }
 function limparCache() { try { Object.keys(localStorage).forEach(function (k) { if (k.indexOf('rm_c_') === 0) localStorage.removeItem(k); }); } catch (e) {} }
 function sairLocal() { store('token', ''); S.token = null; limparCache(); S.boot = S.h = S.ps = S.hist = null; }
-function msgErro(e) { var m = (e && e.message) || String(e || ''); if (/network|NetworkError|Failed to fetch|timeout/i.test(m)) return 'Sem conexão. Confira a internet e tente de novo.'; return m.replace(/^Exception:\s*/, ''); }
+function msgErro(e) { var m = (e && e.message) || String(e || ''); if (m === 'timeout') return 'O servidor demorou para responder. Confira se salvou antes de tentar de novo.'; if (/network|NetworkError|Failed to fetch|timeout/i.test(m)) return 'Sem conexão. Confira a internet e tente de novo.'; return m.replace(/^Exception:\s*/, ''); }
 function fail(e) { if (e && e.codigo === 'SESSAO') return; toast(msgErro(e), true); }
 function erroTela(e, retry) {
   if (e && e.codigo === 'SESSAO') return;
@@ -1196,6 +1196,7 @@ function vPedidoForm(ed) {
         S.h = null; S.ps = null; S.hist = null; S.pedEd = null; toast('Pedido de ' + primeiro(p.cliente) + ' atualizado'); go(S.prev === 'hoje' ? 'hoje' : 'pedidos');
       }).catch(function (e) { bt.disabled = false; bt.textContent = 'Salvar alterações'; fail(e); });
     }
+    p._rid = f.rid || (f.rid = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
     call('salvarPedido', p).then(function (r) {
       var k = p.cliente.toLowerCase(), cl = (r && r.clube) || {};
       if (cl.n) { b.clube = b.clube || {}; b.clube[k] = { n: cl.n, n60: ((b.clube[k] || {}).n60 || 0) + 1 }; }

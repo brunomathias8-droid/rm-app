@@ -129,11 +129,32 @@ function apiRpc_(s, req) {
   if (!Object.prototype.hasOwnProperty.call(mapa, fn)) throw apiErro_('Função não permitida: ' + fn, 'ACAO');
   var args = Array.isArray(req.args) ? req.args : [];
   if (args.length > 8) throw apiErro_('Argumentos demais.', 'VALIDACAO');
+  if (fn === 'salvarPedido') return apiSalvarPedido_(s, req, mapa[fn], args);
   var r = mapa[fn].apply(null, [config_().pin].concat(args));
-  if (fn === 'salvarPedido' && typeof pushPedidoNovo_ === 'function') {   // aviso de pedido novo; falha aqui não desfaz o pedido
-    try { pushPedidoNovo_(s.pessoa, args[0]); } catch (x) { apiLogErro_(req, x); }
-  }
   return r === undefined ? null : JSON.parse(JSON.stringify(r)); // datas viram texto, como no app antigo
+}
+
+/* Pedido novo. O app manda _rid (um por formulário): tocar Salvar de novo depois de uma resposta demorada
+   devolve o mesmo resultado em vez de gravar o pedido duas vezes. O aviso à outra pessoa sai depois, fora da resposta. */
+function apiSalvarPedido_(s, req, fn, args) {
+  var p = args[0] || {}, rid = String(p._rid || '').slice(0, 40), cache = CacheService.getScriptCache(), chave = 'rm_rid_' + rid;
+  delete p._rid;
+  if (rid) {
+    var lock = LockService.getScriptLock(); lock.waitLock(20000);
+    try {
+      var antes = cache.get(chave);
+      if (antes === 'andamento') throw apiErro_('Este pedido ainda está sendo salvo. Aguarde um pouco e confira em Pedidos.', 'ANDAMENTO');
+      if (antes) return JSON.parse(antes);
+      cache.put(chave, 'andamento', 600);
+    } finally { lock.releaseLock(); }
+  }
+  var r;
+  try { r = fn.apply(null, [config_().pin].concat(args)); }
+  catch (e) { if (rid) cache.remove(chave); throw e; }
+  r = r === undefined ? null : JSON.parse(JSON.stringify(r));
+  if (rid) cache.put(chave, JSON.stringify(r), 21600);
+  if (typeof pushAgendarPedido_ === 'function') { try { pushAgendarPedido_(s.pessoa, p); } catch (x) { apiLogErro_(req, x); } }   // falha no aviso não desfaz o pedido
+  return r;
 }
 
 function apiEncerrar_(pessoa, soEsteToken) {
