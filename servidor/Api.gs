@@ -15,7 +15,7 @@ var API_CAB_SESSOES = ['ID', 'TokenHash', 'Pessoa', 'CriadoEm', 'ExpiraEmMs', 'A
 
 /* Funções que o app pode chamar (todas recebem o PIN como 1º argumento). Fora desta lista: recusado. */
 function apiFuncoes_() {
-  return {
+  var m = {
     getBootstrap: getBootstrap, getHoje: getHoje, getPedidosAbertos: getPedidosAbertos, getPedidosHistorico: getPedidosHistorico,
     salvarPedido: salvarPedido, atualizarPedido: atualizarPedido, editarPedido: editarPedido,
     salvarDespesa: salvarDespesa, salvarSemana: salvarSemana, getSemana: getSemana,
@@ -27,6 +27,8 @@ function apiFuncoes_() {
     getAjuda: getAjuda, perguntarAjuda: perguntarAjuda, registrarPergunta: registrarPergunta,
     getMensagens: getMensagens, salvarMensagem: salvarMensagem
   };
+  if (typeof getProducao === 'function') { m.getProducao = getProducao; m.salvarProducao = salvarProducao; }   // Producao.gs
+  return m;
 }
 
 function doPost(e) {

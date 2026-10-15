@@ -47,7 +47,7 @@ function api(corpo) {
     });
 }
 /* Cache local: as telas abrem na hora com os últimos dados e atualizam quando o servidor responde */
-var CACHE_FNS = { getBootstrap: 1, getHoje: 1, getPedidosAbertos: 1, getPedidosHistorico: 1, getRoadmap: 1, getAcoes: 1, getPainel: 1, getMensagens: 1, getEstoque: 1, getAjuda: 1 };
+var CACHE_FNS = { getProducao: 1, getBootstrap: 1, getHoje: 1, getPedidosAbertos: 1, getPedidosHistorico: 1, getRoadmap: 1, getAcoes: 1, getPainel: 1, getMensagens: 1, getEstoque: 1, getAjuda: 1 };
 function chaveCache(fn, args) { return 'c_' + fn + ':' + JSON.stringify(args || []); }
 function guardarCache(fn, args, d) { if (CACHE_FNS[fn]) store(chaveCache(fn, args), JSON.stringify({ t: Date.now(), d: d })); }
 function lerCache(fn, args) { try { var o = JSON.parse(store(chaveCache(fn, args)) || 'null'); return o && o.d; } catch (e) { return null; } }
@@ -105,8 +105,32 @@ rep("$$('[data-p]').forEach(function (b) { b.onclick = function () { store('pess
 rep("$('#troca').onclick = function () { store('pessoa', ''); S.pessoa = null; S.h = null; start(); };",
     "$('#troca').onclick = function () { if (!window.MOCK && S.token) api({ acao: 'sair', token: S.token }).catch(function () {}); sairLocal(); store('pessoa', ''); S.pessoa = null; start(); };")
 
-# 3b. Pedido novo: um código por formulário (_rid). Tocar Salvar de novo não grava o pedido duas vezes (Api.gs confere)
-rep("    call('salvarPedido', p).then(function (r) {", "    p._rid = f.rid || (f.rid = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8));\n    call('salvarPedido', p).then(function (r) {")
+# 3b. Pedido novo em segundo plano (extras/fila.js): a tela de sucesso abre na hora e o envio continua sozinho.
+#     Um código por formulário (_rid): repetir o envio não grava o pedido duas vezes (Api.gs confere)
+rep("""    call('salvarPedido', p).then(function (r) {
+      var k = p.cliente.toLowerCase(), cl = (r && r.clube) || {};
+      if (cl.n) { b.clube = b.clube || {}; b.clube[k] = { n: cl.n, n60: ((b.clube[k] || {}).n60 || 0) + 1 }; }
+      S.h = null; S.ps = null;
+      sucessoPedido(p, cl);
+    }).catch(function (e) { bt.disabled = false; bt.textContent = 'Salvar'; fail(e); });""",
+"""    p._rid = f.rid || (f.rid = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
+    var k = p.cliente.toLowerCase(), c0 = (b.clube || {})[k], cl = {};
+    if (hoje >= '2026-10-19') { var n60 = (c0 ? c0.n60 : 0) + 1; cl = { n: (c0 ? c0.n : 0) + 1 }; cl.mimo = cl.n % 5 === 0; cl.convite = n60 === 3; b.clube = b.clube || {}; b.clube[k] = { n: cl.n, n60: n60 }; }
+    S.h = null; S.ps = null;
+    enfileirarPedido(p);
+    sucessoPedido(p, cl);""")
+# 3c. Controle de produção (extras/producao.js): cartão na Hoje, item no menu +, livres e sabores das caixas no pedido
+rep("  var pend = h.tarefas.filter(", "  html += prodCardHtml();\n  var pend = h.tarefas.filter(")
+rep("""'<button class="mi" data-g="despesa">""", """'<button class="mi" data-g="producao"><span class="ic">' + ic('box') + '</span><span><b>Produção</b><span>O que ficou pronto ou congelado</span></span></button>' +
+    '<button class="mi" data-g="despesa">""")
+rep("if (b.dataset.g === 'tarefa')", "if (b.dataset.g === 'producao') { fecharSheet(); setTimeout(function () { prodSheet(); }, 260); } else if (b.dataset.g === 'tarefa')")
+rep("""+ '</div><div class="pr">' + brl(p.preco, true) + '</div></div>""", """+ '</div><div class="pr">' + brl(p.preco, true) + ' <span class="pr-est" id="est' + i + '"></span></div></div>""")
+rep("Item fora do cardápio</button></div>' +", "Item fora do cardápio</button></div><div id=\"sabBox\" class=\"hide\"></div>' +")
+rep("  function extrasHtml() {", "  prodFormIni(f, b, pre, ed);\n  function extrasHtml() {")
+rep("  function atualizar() {\n    var v = total(), n = nItens(), m = faltando();", "  function atualizar() {\n    prodForm(f, b, atualizar);\n    var v = total(), n = nItens(), m = faltando();")
+rep("if (!f.canal) m.push('como chegou'); return m; }", "if (!f.canal) m.push('como chegou'); if (prodSabFalta(f, b)) m.push('sabores da caixa'); return m; }")
+rep("obs: $('#obs').value.trim(), data:", "obs: prodObs($('#obs').value.trim(), f, b), data:")
+rep("esc(ed ? ed.obs : '')", "esc(ed ? prodSemSabores(ed.obs) : '')")
 rep("function msgErro(e) { var m = (e && e.message) || String(e || '');", "function msgErro(e) { var m = (e && e.message) || String(e || ''); if (m === 'timeout') return 'O servidor demorou para responder. Confira se salvou antes de tentar de novo.';")
 # 4a. Painel da semana: o HTML vem do Painel.gs (o mesmo do e-mail). Imagem que não carrega no app vira a marca em texto
 rep("function gPai() { call('getPainel').then(function (r) { $('#gBody').innerHTML = '<div class=\"painel\">' + r.html + '</div>'; }).catch(function (e) { gErro(e, gPai); }); }",
@@ -203,6 +227,13 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('mess
 <style>.painel-marca{display:flex;align-items:baseline;gap:9px}.painel-marca .bm-rm{font:26px/1 var(--serif);color:var(--linho)}.painel-marca .bm-t{font:italic 18px/1 var(--serif);color:var(--rosaT)}.av-l{display:flex;flex-direction:column;gap:2px;margin:4px 0 12px}.av-i{display:flex;gap:12px;align-items:flex-start;padding:10px 2px;border-top:1px solid var(--linha);font-size:15px;line-height:1.35}.av-i input{width:22px;height:22px;flex:0 0 auto;margin:0;padding:0;border:1.5px solid var(--ameixa);border-radius:6px;background:#fff center/16px no-repeat}.av-i input:checked{background-color:var(--ameixa);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E")}</style>
 """
 rep('</body>', AVISOS + '</body>')
+# 4c. Arquivos de extras/ (fila de pedidos e produção) e o estilo deles
+EXTRAS = ''.join('<script>\n' + (pathlib.Path(__file__).with_name('extras') / n).read_text() + '</script>\n' for n in ['fila.js', 'producao.js'])
+EXTRAS += ('<style>.fila-av{position:fixed;top:calc(var(--top) + 8px);left:50%;transform:translateX(-50%);z-index:25;display:flex;align-items:center;gap:6px;padding:8px 14px;border:0;border-radius:999px;background:var(--ameixa);color:#fff;font:600 13px var(--sans);box-shadow:0 4px 14px rgba(0,0,0,.18);white-space:nowrap}'
+  '.fila-av.hide{display:none}.fila-av.err{background:var(--err)}.fila-av svg{width:16px;height:16px}.fila-av .spin{animation:filaGira 1s linear infinite}@keyframes filaGira{to{transform:rotate(360deg)}}'
+  '.prod-est .li{align-items:center}.prod-est .tx small{display:block;font-size:13px;margin-top:2px}.pe-n{text-align:right;min-width:72px}.pe-n b{display:block;font:26px/1 var(--serif);color:var(--ameixa)}.pe-n b.neg{color:var(--err)}.pe-n b.nd{color:var(--sub)}.pe-n span{font-size:12px;color:var(--sub)}'
+  '.pr-est{font-size:13px;color:var(--ok);margin-left:6px;font-weight:600}.pr-est.neg{color:var(--err)}.step.big{justify-content:flex-start;gap:12px}.step.big input{width:96px;text-align:center;font-size:22px;padding:8px}</style>\n')
+rep('</body>', EXTRAS + '</body>')
 # 5. Service worker: guarda o app no aparelho; versão nova recarrega sozinha
 rep('</body>', '''<script>
 if ('serviceWorker' in navigator && !window.MOCK && location.protocol === 'https:') {
