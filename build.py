@@ -17,7 +17,7 @@ rep('<meta name="theme-color" content="#4E1730">',
     '<meta name="theme-color" content="#4E1730">\n<title>RM</title>\n<link rel="manifest" href="manifest.webmanifest">\n'
     '<link rel="icon" type="image/png" sizes="192x192" href="icones/icone-192.png">\n<link rel="apple-touch-icon" href="icones/apple-touch-icon.png">\n'
     '<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="mobile-web-app-capable" content="yes">\n'
-    '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n<meta name="apple-mobile-web-app-title" content="RM">\n'
+    '<meta name="apple-mobile-web-app-status-bar-style" content="black">\n<meta name="apple-mobile-web-app-title" content="RM">\n'
     '<script src="config.js"></script>')
 # 2. Área segura (notch) no topo
 rep('--top:54px;', '--top:calc(54px + env(safe-area-inset-top,0px));')
@@ -62,6 +62,10 @@ t = t.replace(old_call, new_call)
 rep("function fail(e) { var m = msgErro(e); if (/PIN/.test(m)) { store('pin', ''); S.pin = null; telaPin(); } toast(m, true); }",
     "function fail(e) { if (e && e.codigo === 'SESSAO') return; toast(msgErro(e), true); }")
 rep("function erroTela(e, retry) {\n", "function erroTela(e, retry) {\n  if (e && e.codigo === 'SESSAO') return;\n")
+
+# 3d. Começa depois de carregar todos os scripts: a tela Hoje usa a produção (extras/), que vem no fim da página.
+#     Antes, com dados guardados, a Hoje falhava ao abrir e ficava em branco até o servidor responder
+rep("montarChrome();\nstart();", "document.addEventListener('DOMContentLoaded', function () { montarChrome(); start(); });")
 
 # 4. Entrada: pessoa → PIN → token. Abre com cache, atualiza em seguida.
 old_start = t[t.index('function start() {'):t.index('/* Marca final (03/10/2026)')]
@@ -231,14 +235,19 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('mess
 <style>.painel-marca{display:flex;align-items:baseline;gap:9px}.painel-marca .bm-rm{font:26px/1 var(--serif);color:var(--linho)}.painel-marca .bm-t{font:italic 18px/1 var(--serif);color:var(--rosaT)}.av-l{display:flex;flex-direction:column;gap:2px;margin:4px 0 12px}.av-i{display:flex;gap:12px;align-items:flex-start;padding:10px 2px;border-top:1px solid var(--linha);font-size:15px;line-height:1.35}.av-i input{width:22px;height:22px;flex:0 0 auto;margin:0;padding:0;border:1.5px solid var(--ameixa);border-radius:6px;background:#fff center/16px no-repeat}.av-i input:checked{background-color:var(--ameixa);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E")}</style>
 """
 rep('</body>', AVISOS + '</body>')
-# 4d. iPhone (app instalado): às vezes a área da página fica mais curta que a tela e as barras fixas sobem,
-#     deixando um vão embaixo. Mede o vão e encosta as barras no fundo. Volta ao app depois de 1 min: atualiza a Hoje.
+# 4d. iPhone (app instalado). Barra de status opaca ("black"): com a transparente, o iOS 26 encurta a área do app
+#     embaixo e deixa uma faixa fora do app, onde nada é desenhado. Quem instalou antes continua com a transparente
+#     até remover e adicionar o app de novo; nesse caso a faixa já ocupa o lugar da barrinha do iPhone, então
+#     as barras perdem o espaço extra de baixo (--safe). Volta ao app depois de 1 min: atualiza a Hoje.
 rep('</body>', """<script>
 function ajustarFundo() {
-  var inst = window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
-  var vao = inst ? Math.round(screen.height - window.innerHeight) : 0;
-  if (vao < 0 || vao > 90 || window.innerWidth > window.innerHeight) vao = 0;   // só o vão pequeno, em pé
-  document.documentElement.style.setProperty('--vao', vao + 'px');
+  var inst = window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches), curta = false;
+  if (inst && window.innerWidth < window.innerHeight) {
+    var t = document.createElement('div'); t.style.cssText = 'position:fixed;top:0;height:0;padding-top:env(safe-area-inset-top,0px);visibility:hidden';
+    document.body.appendChild(t); var topo = t.offsetHeight; t.remove();
+    curta = topo > 0 && screen.height - window.innerHeight > 20;   // barra transparente e área encurtada
+  }
+  document.documentElement.classList.toggle('curta', curta);
 }
 ajustarFundo(); window.addEventListener('resize', ajustarFundo); window.addEventListener('pageshow', ajustarFundo);
 var saiuEm = 0;
@@ -248,7 +257,7 @@ document.addEventListener('visibilitychange', function () {
   if (saiuEm && Date.now() - saiuEm > 60000 && S.token && S.boot && S.view === 'hoje' && !$('#sheet').classList.contains('open')) vHoje();
 });
 </script>
-<style>.tabs,.actbar{bottom:calc(0px - var(--vao,0px))}#sheet{bottom:calc(0px - var(--vao,0px))}.toast{bottom:calc(var(--tab) + var(--safe) + 14px - var(--vao,0px))}body.form .toast{bottom:calc(var(--safe) + 96px - var(--vao,0px))}</style>
+<style>html.curta{--safe:0px}</style>
 </body>""")
 # 4c. Arquivos de extras/ (fila de pedidos e produção) e o estilo deles
 EXTRAS = ''.join('<script>\n' + (pathlib.Path(__file__).with_name('extras') / n).read_text() + '</script>\n' for n in ['fila.js', 'producao.js'])
