@@ -38,7 +38,7 @@ function prodCarregar(depois) {
 
 /* ---------- Cartão na tela Hoje ---------- */
 function prodCardHtml() {
-  if (!S.prodT || Date.now() - S.prodT > 60000) { S.prodT = Date.now(); prodCarregar(function () { if (S.view === 'hoje' && S.h) renderHoje(); }); }
+  if (!S.prodT || Date.now() - S.prodT > 60000) { S.prodT = Date.now(); setTimeout(function () { prodCarregar(function () { if (S.view === 'hoje' && S.h) renderHoje(); }); }, 2500); }   // depois da Hoje, para não disputar o servidor
   var m = prodMapa(), cab = '<div class="sec"><h2>Produção</h2><button class="lk" onclick="prodSheet()">+ Lançar</button></div>';
   if (!m) return '';
   if (!S.prod.inicio) return cab + '<div class="card flat"><p class="muted" style="margin:0 0 12px">Lance o que foi produzido (congelado ou pronto) e o app mostra quanto ainda dá para vender. Os pedidos descontam sozinhos.</p><button class="btn sec" onclick="prodSheet()">' + ic('plus', 's') + 'Lançar produção</button></div>';

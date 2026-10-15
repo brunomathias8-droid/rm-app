@@ -23,6 +23,10 @@ rep('<meta name="theme-color" content="#4E1730">',
 rep('--top:54px;', '--top:calc(54px + env(safe-area-inset-top,0px));')
 rep('.top{position:fixed;top:0;left:0;right:0;z-index:20;height:var(--top);', '.top{position:fixed;top:0;left:0;right:0;z-index:20;height:var(--top);padding-top:env(safe-area-inset-top,0px)!important;')
 
+# 2b. Entrada das telas sem transparência: no iPhone a animação pode ficar parada no começo quando o app abre
+#     ou volta do segundo plano, e a tela ficava invisível até tocar numa aba
+rep('@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}', '@keyframes in{from{transform:translateY(6px)}to{transform:none}}')
+
 # 3. Servidor: fetch na API com token (o MOCK continua para os testes)
 old_call = t[t.index('function callRaw(fn, args) {'):t.index('function msgErro(e)')]
 new_call = r'''function callRaw(fn, args) {
@@ -227,6 +231,25 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('mess
 <style>.painel-marca{display:flex;align-items:baseline;gap:9px}.painel-marca .bm-rm{font:26px/1 var(--serif);color:var(--linho)}.painel-marca .bm-t{font:italic 18px/1 var(--serif);color:var(--rosaT)}.av-l{display:flex;flex-direction:column;gap:2px;margin:4px 0 12px}.av-i{display:flex;gap:12px;align-items:flex-start;padding:10px 2px;border-top:1px solid var(--linha);font-size:15px;line-height:1.35}.av-i input{width:22px;height:22px;flex:0 0 auto;margin:0;padding:0;border:1.5px solid var(--ameixa);border-radius:6px;background:#fff center/16px no-repeat}.av-i input:checked{background-color:var(--ameixa);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E")}</style>
 """
 rep('</body>', AVISOS + '</body>')
+# 4d. iPhone (app instalado): às vezes a área da página fica mais curta que a tela e as barras fixas sobem,
+#     deixando um vão embaixo. Mede o vão e encosta as barras no fundo. Volta ao app depois de 1 min: atualiza a Hoje.
+rep('</body>', """<script>
+function ajustarFundo() {
+  var inst = window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  var vao = inst ? Math.round(screen.height - window.innerHeight) : 0;
+  if (vao < 0 || vao > 90 || window.innerWidth > window.innerHeight) vao = 0;   // só o vão pequeno, em pé
+  document.documentElement.style.setProperty('--vao', vao + 'px');
+}
+ajustarFundo(); window.addEventListener('resize', ajustarFundo); window.addEventListener('pageshow', ajustarFundo);
+var saiuEm = 0;
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'hidden') { saiuEm = Date.now(); return; }
+  ajustarFundo();
+  if (saiuEm && Date.now() - saiuEm > 60000 && S.token && S.boot && S.view === 'hoje' && !$('#sheet').classList.contains('open')) vHoje();
+});
+</script>
+<style>.tabs,.actbar{bottom:calc(0px - var(--vao,0px))}#sheet{bottom:calc(0px - var(--vao,0px))}.toast{bottom:calc(var(--tab) + var(--safe) + 14px - var(--vao,0px))}body.form .toast{bottom:calc(var(--safe) + 96px - var(--vao,0px))}</style>
+</body>""")
 # 4c. Arquivos de extras/ (fila de pedidos e produção) e o estilo deles
 EXTRAS = ''.join('<script>\n' + (pathlib.Path(__file__).with_name('extras') / n).read_text() + '</script>\n' for n in ['fila.js', 'producao.js'])
 EXTRAS += ('<style>.fila-av{position:fixed;top:calc(var(--top) + 8px);left:50%;transform:translateX(-50%);z-index:25;display:flex;align-items:center;gap:6px;padding:8px 14px;border:0;border-radius:999px;background:var(--ameixa);color:#fff;font:600 13px var(--sans);box-shadow:0 4px 14px rgba(0,0,0,.18);white-space:nowrap}'

@@ -52,7 +52,7 @@ svg.i.s{width:18px;height:18px}
 main{padding:calc(var(--top) + 8px) 16px calc(var(--tab) + var(--safe) + 28px);max-width:600px;margin:0 auto}
 body.form main{padding-bottom:calc(var(--safe) + 150px)}
 .page{animation:in .18s ease-out}
-@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes in{from{transform:translateY(6px)}to{transform:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 .lt{padding:10px 2px 14px}
 .lt small{display:block;font-size:13px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--ouro)}
@@ -2062,6 +2062,22 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('mess
 </script>
 <style>.painel-marca{display:flex;align-items:baseline;gap:9px}.painel-marca .bm-rm{font:26px/1 var(--serif);color:var(--linho)}.painel-marca .bm-t{font:italic 18px/1 var(--serif);color:var(--rosaT)}.av-l{display:flex;flex-direction:column;gap:2px;margin:4px 0 12px}.av-i{display:flex;gap:12px;align-items:flex-start;padding:10px 2px;border-top:1px solid var(--linha);font-size:15px;line-height:1.35}.av-i input{width:22px;height:22px;flex:0 0 auto;margin:0;padding:0;border:1.5px solid var(--ameixa);border-radius:6px;background:#fff center/16px no-repeat}.av-i input:checked{background-color:var(--ameixa);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E")}</style>
 <script>
+function ajustarFundo() {
+  var inst = window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  var vao = inst ? Math.round(screen.height - window.innerHeight) : 0;
+  if (vao < 0 || vao > 90 || window.innerWidth > window.innerHeight) vao = 0;   // só o vão pequeno, em pé
+  document.documentElement.style.setProperty('--vao', vao + 'px');
+}
+ajustarFundo(); window.addEventListener('resize', ajustarFundo); window.addEventListener('pageshow', ajustarFundo);
+var saiuEm = 0;
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'hidden') { saiuEm = Date.now(); return; }
+  ajustarFundo();
+  if (saiuEm && Date.now() - saiuEm > 60000 && S.token && S.boot && S.view === 'hoje' && !$('#sheet').classList.contains('open')) vHoje();
+});
+</script>
+<style>.tabs,.actbar{bottom:calc(0px - var(--vao,0px))}#sheet{bottom:calc(0px - var(--vao,0px))}.toast{bottom:calc(var(--tab) + var(--safe) + 14px - var(--vao,0px))}body.form .toast{bottom:calc(var(--safe) + 96px - var(--vao,0px))}</style>
+<script>
 /* ============ Pedidos novos em segundo plano (17/10/2026) ============
    Ao tocar Salvar, o pedido fica guardado no aparelho e a tela de "Pedido salvo" abre na hora.
    O envio continua sozinho e tenta de novo quando falha. Repetir é seguro: cada pedido leva o mesmo _rid,
@@ -2176,7 +2192,7 @@ function prodCarregar(depois) {
 
 /* ---------- Cartão na tela Hoje ---------- */
 function prodCardHtml() {
-  if (!S.prodT || Date.now() - S.prodT > 60000) { S.prodT = Date.now(); prodCarregar(function () { if (S.view === 'hoje' && S.h) renderHoje(); }); }
+  if (!S.prodT || Date.now() - S.prodT > 60000) { S.prodT = Date.now(); setTimeout(function () { prodCarregar(function () { if (S.view === 'hoje' && S.h) renderHoje(); }); }, 2500); }   // depois da Hoje, para não disputar o servidor
   var m = prodMapa(), cab = '<div class="sec"><h2>Produção</h2><button class="lk" onclick="prodSheet()">+ Lançar</button></div>';
   if (!m) return '';
   if (!S.prod.inicio) return cab + '<div class="card flat"><p class="muted" style="margin:0 0 12px">Lance o que foi produzido (congelado ou pronto) e o app mostra quanto ainda dá para vender. Os pedidos descontam sozinhos.</p><button class="btn sec" onclick="prodSheet()">' + ic('plus', 's') + 'Lançar produção</button></div>';
