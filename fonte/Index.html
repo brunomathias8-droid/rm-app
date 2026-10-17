@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Nunito+Sans:wght@400;600;700;800&display=swap">
 <style>
-/* ============ Tokens da marca RM Confeitaria do dia a dia ============ */
+/* ============ Tokens da marca RM Confeitaria Artesanal ============ */
 :root{
   --ameixa:#4E1730;--ameixa2:#6A2644;--rosa:#C98695;--rosaT:#E3B3BE;--rosaC:#F4E4E4;
   --linho:#F4ECE2;--papel:#FFFCF8;--tinta:#231318;--sub:#6B5560;--sub2:#8C7A80;--linha:#E6DACE;--ouro:#7A5A1E;
@@ -405,7 +405,7 @@ body.form .toast{bottom:calc(var(--safe) + 96px)}
 <body>
 <header class="top">
   <button id="bBack" class="ib hide" aria-label="Fechar"></button>
-  <div class="bm" id="bm" aria-label="RM Confeitaria do dia a dia"><span class="bm-rm">RM</span><span class="bm-t">confeitaria do dia a dia</span></div>
+  <div class="bm" id="bm" aria-label="RM Confeitaria Artesanal"><span class="bm-rm">RM</span><span class="bm-t">Confeitaria Artesanal</span></div>
   <div class="tt hide" id="tTitle"></div>
   <button id="bHelp" class="ib" aria-label="Ajuda"></button>
   <button id="bRef" class="ib" aria-label="Atualizar"></button>
@@ -636,7 +636,7 @@ function clubePedacos(n, cls) {
   }
   return '<svg class="' + (cls || 'clube-p') + '" viewBox="0 0 120 120" role="img" aria-label="' + feitos + ' de 5 pedidos"><path d="' + RENDADO + '" fill="#FFFFFF"/>' + h + '</svg>';
 }
-function heroMarca() { return '<div class="hero-m">' + selo('selo') + '<div class="n1">Confeitaria</div><div class="n2">do dia a dia</div><div class="n3">POR RAQUEL MIRANDA</div></div>'; }
+function heroMarca() { return '<div class="hero-m">' + selo('selo') + '<div class="n1">Confeitaria</div><div class="n2">Artesanal</div><div class="n3">POR RAQUEL MIRANDA</div></div>'; }
 function telaPin() {
   $('#tabs').classList.add('hide');
   $('#app').innerHTML = '<div class="page">' + heroMarca() + '<div class="card"><div class="fld"><label for="pin">PIN de acesso</label><input id="pin" class="pinput" type="password" inputmode="numeric" maxlength="8" autocomplete="off" enterkeyhint="go"></div><button class="btn" id="okPin">Entrar</button></div></div>';

@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Nunito+Sans:wght@400;600;700;800&display=swap">
 <style>
-/* ============ Tokens da marca RM Confeitaria do dia a dia ============ */
+/* ============ Tokens da marca RM Confeitaria Artesanal ============ */
 :root{
   --ameixa:#4E1730;--ameixa2:#6A2644;--rosa:#C98695;--rosaT:#E3B3BE;--rosaC:#F4E4E4;
   --linho:#F4ECE2;--papel:#FFFCF8;--tinta:#231318;--sub:#6B5560;--sub2:#8C7A80;--linha:#E6DACE;--ouro:#7A5A1E;
@@ -413,7 +413,7 @@ body.form .toast{bottom:calc(var(--safe) + 96px)}
 <body>
 <header class="top">
   <button id="bBack" class="ib hide" aria-label="Fechar"></button>
-  <div class="bm" id="bm" aria-label="RM Confeitaria do dia a dia"><span class="bm-rm">RM</span><span class="bm-t">confeitaria do dia a dia</span></div>
+  <div class="bm" id="bm" aria-label="RM Confeitaria Artesanal"><span class="bm-rm">RM</span><span class="bm-t">Confeitaria Artesanal</span></div>
   <div class="tt hide" id="tTitle"></div>
   <button id="bAvisos" class="ib" aria-label="Avisos no celular"></button>
   <button id="bHelp" class="ib" aria-label="Ajuda"></button>
@@ -674,7 +674,7 @@ function clubePedacos(n, cls) {
   }
   return '<svg class="' + (cls || 'clube-p') + '" viewBox="0 0 120 120" role="img" aria-label="' + feitos + ' de 5 pedidos"><path d="' + RENDADO + '" fill="#FFFFFF"/>' + h + '</svg>';
 }
-function heroMarca() { return '<div class="hero-m">' + selo('selo') + '<div class="n1">Confeitaria</div><div class="n2">do dia a dia</div><div class="n3">POR RAQUEL MIRANDA</div></div>'; }
+function heroMarca() { return '<div class="hero-m">' + selo('selo') + '<div class="n1">Confeitaria</div><div class="n2">Artesanal</div><div class="n3">POR RAQUEL MIRANDA</div></div>'; }
 function telaPin() {
   $('#tabs').classList.add('hide');
   if (!S.pessoa) return telaPessoa();
@@ -1532,7 +1532,7 @@ function vGestao(sub) {
 function gErro(e, fn) { $('#gBody').innerHTML = '<div class="vazio"><div class="ic">' + ic('alert') + '</div><b>Não deu para carregar</b>' + esc(msgErro(e)) + '<button class="btn" id="gTry">Tentar de novo</button></div>'; $('#gTry').onclick = fn; }
 function gPai() { call('getPainel').then(function (r) { $('#gBody').innerHTML = '<div class="painel">' + r.html + '</div>'; marcaPainel(); }).catch(function (e) { gErro(e, gPai); }); }
 function marcaPainel() {
-  var trocar = function (im) { if (!im.parentNode) return; var d = document.createElement('div'); d.className = 'painel-marca'; d.innerHTML = '<span class="bm-rm">RM</span><span class="bm-t">confeitaria do dia a dia</span>'; im.parentNode.replaceChild(d, im); };
+  var trocar = function (im) { if (!im.parentNode) return; var d = document.createElement('div'); d.className = 'painel-marca'; d.innerHTML = '<span class="bm-rm">RM</span><span class="bm-t">Confeitaria Artesanal</span>'; im.parentNode.replaceChild(d, im); };
   $$('#gBody .painel img').forEach(function (im) {
     if (!/^(https:|data:image[/])/.test(im.getAttribute('src') || '') || (im.complete && !im.naturalWidth)) return trocar(im);
     im.addEventListener('error', function () { trocar(im); });

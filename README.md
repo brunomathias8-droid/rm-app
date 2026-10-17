@@ -1,6 +1,6 @@
 # RM — app de gestão
 
-App da RM Confeitaria do dia a dia (pedidos, Pix, tarefas, custos, DRE, estoque e Clube da Raquel), instalável na tela de início do celular.
+App da RM Confeitaria Artesanal (pedidos, Pix, tarefas, custos, DRE, estoque e Clube da Raquel), instalável na tela de início do celular.
 
 ## Como funciona
 

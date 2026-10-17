@@ -144,7 +144,7 @@ rep("function msgErro(e) { var m = (e && e.message) || String(e || '');", "funct
 rep("function gPai() { call('getPainel').then(function (r) { $('#gBody').innerHTML = '<div class=\"painel\">' + r.html + '</div>'; }).catch(function (e) { gErro(e, gPai); }); }",
     """function gPai() { call('getPainel').then(function (r) { $('#gBody').innerHTML = '<div class="painel">' + r.html + '</div>'; marcaPainel(); }).catch(function (e) { gErro(e, gPai); }); }
 function marcaPainel() {
-  var trocar = function (im) { if (!im.parentNode) return; var d = document.createElement('div'); d.className = 'painel-marca'; d.innerHTML = '<span class="bm-rm">RM</span><span class="bm-t">confeitaria do dia a dia</span>'; im.parentNode.replaceChild(d, im); };
+  var trocar = function (im) { if (!im.parentNode) return; var d = document.createElement('div'); d.className = 'painel-marca'; d.innerHTML = '<span class="bm-rm">RM</span><span class="bm-t">Confeitaria Artesanal</span>'; im.parentNode.replaceChild(d, im); };
   $$('#gBody .painel img').forEach(function (im) {
     if (!/^(https:|data:image[/])/.test(im.getAttribute('src') || '') || (im.complete && !im.naturalWidth)) return trocar(im);
     im.addEventListener('error', function () { trocar(im); });
