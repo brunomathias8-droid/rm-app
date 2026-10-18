@@ -231,12 +231,12 @@ var MU_SUGESTOES = [['Legenda', 'Escreva a legenda do post de '], ['Cardápio', 
 function muPedir() {
   var d = S.mu.dados, el = $('#muBody'), ref = S.mu.ref; S.mu.ref = null;
   var h = '';
-  if (d && !d.assistente) h += '<div class="card" style="background:var(--avC)"><b>Assistente ainda não ligado</b><p class="muted" style="margin:4px 0 0">Falta o Bruno configurar a rotina do assistente no servidor. Os recados dos agentes já funcionam.</p></div>';
+  if (d && !d.assistente) h += '<div class="card" style="background:var(--avC)"><b>Assistente ainda não ligado</b><p class="muted" style="margin:4px 0 0">Falta o Bruno colocar a chave da API na Config. Os recados dos agentes já funcionam.</p></div>';
   h += '<div class="card"><div class="fld" style="margin:0"><label for="muTx">O que você precisa?</label>' +
     '<textarea id="muTx" rows="4" maxlength="1500" placeholder="Ex.: legenda para o bolo de banana com doce de leite, 900 g, R$ 70">' + (ref ? esc('Sobre o recado "' + ref.titulo + '": ') : '') + '</textarea></div>' +
     '<div class="chips scroll" id="muSug" style="margin:10px 0 2px">' + MU_SUGESTOES.map(function (s, i) { return '<button type="button" class="chip" data-s="' + i + '">' + esc(s[0]) + '</button>'; }).join('') + '</div>' +
     '<button class="btn" id="muEnv" style="margin-top:12px">' + ic('send', 's') + 'Enviar ao assistente</button>' +
-    '<p class="muted" style="margin:8px 0 0">A resposta chega aqui no Mural em alguns minutos, com aviso no celular. O assistente prepara rascunhos: nada é publicado nem enviado a cliente sem vocês.</p></div>';
+    '<p class="muted" style="margin:8px 0 0">A resposta chega aqui no Mural em menos de 1 minuto. O assistente prepara rascunhos: nada é publicado nem enviado a cliente sem vocês.</p></div>';
   var meus = d ? d.pedidos : [];
   if (meus.length) h += '<div class="sec"><h2>Pedidos recentes</h2></div>' + meus.map(function (p) {
     var st = p.status === 'respondido' ? '<span class="pill ok">respondido</span>' : p.status === 'erro' ? '<span class="pill err">não saiu</span>' : '<span class="pill av">' + ic('clock', 's') + 'o assistente está trabalhando</span>';
@@ -251,10 +251,22 @@ function muPedir() {
     var v = tx.value.trim(), btn = this; if (v.length < 4) { tx.focus(); return toast('Escreva o que você precisa.', true); }
     btn.disabled = true; btn.textContent = 'Enviando…';
     call('pedirAssistente', S.pessoa, v, ref ? ref.id : '').then(function (r) {
-      toast(r.status === 'enviado' ? 'Pedido enviado. A resposta chega no Mural em alguns minutos.' : 'Pedido guardado. O servidor vai tentar de novo em 10 minutos.', r.status !== 'enviado');
+      if (r.modo === 'api') { toast('Pedido enviado. O assistente está escrevendo — leva menos de 1 minuto.'); muResponder(r.id); }
+      else toast(r.status === 'enviado' ? 'Pedido enviado. A resposta chega no Mural em alguns minutos.' : 'Pedido guardado. O servidor vai tentar de novo em 10 minutos.', r.status !== 'enviado');
       return muCarregar(true);
     }).then(function () { if (S.view === 'mural' && S.mu.sub === 'ped') muPedir(); }).catch(function (e) { btn.disabled = false; btn.innerHTML = ic('send', 's') + 'Enviar ao assistente'; fail(e); });
   };
+}
+
+/* Resposta na hora pela API: o servidor escreve o recado e o app abre o aviso "Resposta pronta" */
+function muResponder(id) {
+  call('responderPedido', id).then(function (r) {
+    return muCarregar(true).then(function () {
+      if (S.view === 'mural' && !($('#muTx') && $('#muTx').value.trim())) muRender();
+      if (r && r.ok && r.muralId) toast('Resposta do assistente pronta.', false, { label: 'Ver', fn: function () { S.mu.cartao = r.muralId; go('cartao'); } });
+      else if (r && r.status === 'erro') toast(r.erro || 'O assistente não conseguiu responder.', true);
+    });
+  }).catch(function () {});   // demorou mais que o app espera: o servidor termina sozinho e o Mural atualiza em seguida
 }
 
 /* ---------- editor do cardápio (post 1080×1080 e story 1080×1920) ---------- */
@@ -395,5 +407,5 @@ setInterval(function () {
   var d = S.mu && S.mu.dados; if (!d || !S.token || window.MOCK || document.visibilityState !== 'visible' || S.view !== 'mural') return;
   if (!(d.pedidos || []).some(function (p) { return p.status === 'enviado' || p.status === 'aberto'; })) return;
   muCarregar().then(function () { var tx = $('#muTx'); if (S.view === 'mural' && !(tx && tx.value.trim()) && !document.querySelector('textarea:focus, input:focus')) muRender(); }).catch(function () {});
-}, 45000);
+}, 20000);
 document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && S.token && !window.MOCK) muCarregar().then(function () { if (S.view === 'mural') muRender(); }).catch(function () {}); });

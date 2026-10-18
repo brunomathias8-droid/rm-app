@@ -55,7 +55,7 @@ Substitui os e-mails dos agentes. Fluxo:
 | Sistema | lista de produção na terça 20h30 | cartão automático |
 
 - Formato do cartão: comentário no topo da seção "entrada dos agentes" do `Mural.gs`. Mesma `chave` atualiza o cartão em vez de duplicar.
-- Pedido ao assistente: grava na aba PedidosAssistente e aciona a rotina pela API (`assistente_url` e `assistente_token` na Config; o token vai para as Propriedades do script). Sem resposta em 40 min, o pedido vira "não saiu" e quem pediu é avisado.
+- Pedido ao assistente: grava na aba PedidosAssistente e responde pela API da Anthropic (chave em Config › `anthropic_api_key`, que vai para as Propriedades do script como `ANTHROPIC_API_KEY`; modelo `claude-sonnet-5-5`, reserva Haiku na 2ª tentativa; troca em Config › `assistente_modelo`). O app chama `responderPedido` logo depois de pedir; o gatilho de 5 min refaz o que ficou para trás (até 3 tentativas). O texto leva as fichas técnicas, as vendas das últimas 4 semanas e o último cardápio. Alternativa, se um dia houver gatilho de API na rotina: `assistente_url` + `assistente_token`.
 - Arquivos da marca: `marca/` e `marca/biblioteca.json` (chaves usadas no campo `anexos`).
 - Cardápio: editor no app gera o post 1080×1080 e o story 1080×1920 no padrão da marca; o texto fica guardado para a semana seguinte.
 - Instalação: colar `Mural.gs`, rodar `ativarMural` (cria as abas, o gatilho e desliga os e-mails diário e de terça; o de domingo continua), Implantar › Gerenciar implantações › Nova versão.

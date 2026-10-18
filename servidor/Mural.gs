@@ -23,7 +23,7 @@ var MURAL_LIMITE_DIA = 25;   // pedidos ao assistente por dia (os dois juntos)
 
 /* Funções que o app pode chamar (o Api.gs junta estas à lista permitida) */
 function apiExtras_() {
-  return { getMural: getMural, muralAcao: muralAcao, salvarCardapio: salvarCardapio, pedirAssistente: pedirAssistente };
+  return { getMural: getMural, muralAcao: muralAcao, salvarCardapio: salvarCardapio, pedirAssistente: pedirAssistente, responderPedido: responderPedido };
 }
 
 /* ------------------------------ abas ------------------------------ */
@@ -98,7 +98,7 @@ function getMural(pin, pessoa) {
   var peds = muralLer_('PedidosAssistente', PEDAS_CAB).linhas.filter(function (p) { return String(p.CriadoEm).slice(0, 10) >= addDays_(hoje, -14); })
     .map(function (p) { return { id: p.ID, criadoEm: p.CriadoEm, pessoa: p.Pessoa, texto: p.Texto, cartaoId: p.CartaoID, status: p.Status || 'aberto', muralId: p.MuralID, erro: p.Erro }; })
     .reverse().slice(0, 30);
-  return { hoje: hoje, cartoes: cards, pedidos: peds, assistente: !!muralAssistenteCfg_().url, ultimoCardapio: muralUltimoCardapio_() };
+  return { hoje: hoje, cartoes: cards, pedidos: peds, assistente: muralAssistenteLigado_(), ultimoCardapio: muralUltimoCardapio_() };
 }
 
 function muralPublico_(c, pessoa, hoje) {
@@ -175,8 +175,14 @@ function muralAssistenteCfg_() {
     sh.getRange(2, 1, n, 2).getValues().forEach(function (r, i) { if (String(r[0]).trim() === 'assistente_token') sh.getRange(i + 2, 2).setValue('(guardado nas Propriedades do script)'); });
   }
   var url = String(c.assistente_url || '').trim();
-  return { url: /^https:\/\/api\.anthropic\.com\/v1\/claude_code\/routines\/[\w-]+\/fire$/.test(url) ? url : '', token: props.getProperty('ASSISTENTE_TOKEN') || '' };
+  // chave da API da Anthropic (console.anthropic.com): colada em Config › anthropic_api_key, vai para as Propriedades do script
+  var chave = String(c.anthropic_api_key || '').trim();
+  if (chave && !/^\(guardad/.test(chave)) { props.setProperty('ANTHROPIC_API_KEY', chave); muralConfig_('anthropic_api_key', '(guardada nas Propriedades do script)'); }
+  return { url: /^https:\/\/api\.anthropic\.com\/v1\/claude_code\/routines\/[\w-]+\/fire$/.test(url) ? url : '', token: props.getProperty('ASSISTENTE_TOKEN') || '',
+    chave: props.getProperty('ANTHROPIC_API_KEY') || '' };
 }
+/* Dois jeitos de responder: pela API da Anthropic (chave; responde em segundos, preferido) ou pela rotina do Claude (URL + token) */
+function muralAssistenteLigado_() { var c = muralAssistenteCfg_(); return !!(c.chave || (c.url && c.token)); }
 
 function pedirAssistente(pin, pessoa, texto, cartaoId) {
   checkPin_(pin);
@@ -185,17 +191,24 @@ function pedirAssistente(pin, pessoa, texto, cartaoId) {
   if (texto.length < 4) throw new Error('Escreva o que você precisa.');
   if (texto.length > 1500) throw new Error('Texto longo demais (máximo 1.500 caracteres).');
   var cfg = muralAssistenteCfg_();
-  if (!cfg.url || !cfg.token) throw new Error('O assistente ainda não foi ligado no servidor (falta assistente_url ou assistente_token na Config).');
+  if (!cfg.chave && !(cfg.url && cfg.token)) throw new Error('O assistente ainda não foi ligado no servidor (falta a chave anthropic_api_key na Config).');
   var t = muralLer_('PedidosAssistente', PEDAS_CAB), hoje = today_();
   if (t.linhas.filter(function (p) { return String(p.CriadoEm).slice(0, 10) === hoje; }).length >= MURAL_LIMITE_DIA) throw new Error('Limite de ' + MURAL_LIMITE_DIA + ' pedidos por dia atingido. Tente amanhã.');
   var id = 'A' + Date.now(), agora = new Date().toISOString();
   t.sh.appendRow([id, agora, pessoa, texto, String(cartaoId || ''), 'aberto', '0', '', '', '', '', '']);
+  if (cfg.chave) return { id: id, status: 'aberto', modo: 'api' };   // o app chama responderPedido logo em seguida (e o gatilho de 5 min garante)
   var r = muralDisparar_(id);
   return { id: id, status: r.ok ? 'enviado' : 'erro', erro: r.ok ? '' : r.erro };
+}
+/* Chamado pelo app logo depois de pedirAssistente: responde na hora pela API */
+function responderPedido(pin, id) {
+  checkPin_(pin);
+  return muralResponderApi_(String(id || ''));
 }
 
 /* Aciona a rotina do assistente. O texto enviado leva só o código do pedido: a rotina lê o pedido na planilha. */
 function muralDisparar_(id) {
+  if (muralAssistenteCfg_().chave) return muralResponderApi_(id);
   var cfg = muralAssistenteCfg_(), t = muralLer_('PedidosAssistente', PEDAS_CAB), p = t.linhas.filter(function (x) { return x.ID === id; })[0];
   if (!p) return { ok: false, erro: 'pedido não encontrado' };
   var tent = (Number(p.Tentativas) || 0) + 1, res;
@@ -213,6 +226,102 @@ function muralDisparar_(id) {
   p.Status = res.ok ? 'enviado' : (tent >= 3 ? 'erro' : 'aberto'); p.Erro = res.ok ? '' : res.erro; p.Sessao = res.sessao || p.Sessao;
   muralGravar_(t, p, ['Tentativas', 'UltimaTentativa', 'Status', 'Erro', 'Sessao']);
   return res;
+}
+
+/* ------------------------------ assistente pela API da Anthropic ------------------------------ */
+var MURAL_IA_MODELO = 'claude-sonnet-5-5', MURAL_IA_RESERVA = 'claude-haiku-4-5-20251001';
+
+function muralResponderApi_(id) {
+  var lock = LockService.getScriptLock(); lock.waitLock(10000);
+  var t, p, tent;
+  try {   // reserva o pedido: o app e o gatilho de 5 min nunca respondem o mesmo pedido duas vezes
+    t = muralLer_('PedidosAssistente', PEDAS_CAB); p = t.linhas.filter(function (x) { return x.ID === id; })[0];
+    if (!p) return { ok: false, erro: 'Pedido não encontrado.' };
+    if (p.Status !== 'aberto') return { ok: p.Status === 'respondido', status: p.Status, muralId: p.MuralID || '' };
+    tent = (Number(p.Tentativas) || 0) + 1;
+    p.Tentativas = String(tent); p.UltimaTentativa = new Date().toISOString(); p.Status = 'enviado'; p.Sessao = 'api'; p.Erro = '';
+    muralGravar_(t, p, ['Tentativas', 'UltimaTentativa', 'Status', 'Sessao', 'Erro']);
+  } finally { lock.releaseLock(); }
+  try {
+    var cfg = muralAssistenteCfg_(), modelo = tent >= 2 ? MURAL_IA_RESERVA : String(config_().assistente_modelo || MURAL_IA_MODELO);
+    var body = { model: modelo, max_tokens: 3000,
+      system: [{ type: 'text', text: muralSistemaIA_(), cache_control: { type: 'ephemeral' } }],
+      messages: [{ role: 'user', content: muralContextoIA_() + '\n\n' + muralTextoPedido_(p) }] };
+    var r = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+      headers: { 'x-api-key': cfg.chave, 'anthropic-version': '2023-06-01' }, payload: JSON.stringify(body) });
+    var code = r.getResponseCode(), js = {};
+    try { js = JSON.parse(r.getContentText()); } catch (e) {}
+    if (code !== 200) throw new Error(code === 401 ? 'Chave da API inválida (Config › anthropic_api_key).' : code === 400 && /credit/i.test(r.getContentText()) ? 'Sem crédito na conta da API (console.anthropic.com).' : 'A API respondeu ' + code + ': ' + r.getContentText().slice(0, 160));
+    var texto = (js.content || []).filter(function (b) { return b.type === 'text'; }).map(function (b) { return b.text; }).join('\n').trim();
+    if (!texto) throw new Error('Resposta vazia.');
+    var c = null, m = texto.match(/[\[{][\s\S]*[\]}]/);
+    if (m) { try { var j = JSON.parse(m[0]); c = Array.isArray(j) ? j[0] : j && Array.isArray(j.cartoes) ? j.cartoes[0] : j; } catch (e) { c = null; } }
+    if (!c || typeof c !== 'object' || !c.titulo) c = { titulo: 'Resposta do assistente', tipo: 'resposta', corpo: texto };   // veio fora do formato: entrega o texto mesmo assim
+    c.pedidoId = p.ID; c.origem = 'Assistente'; c.para = p.Pessoa; delete c.chave;
+    var lk = LockService.getScriptLock(); lk.waitLock(10000);
+    try { if (!muralDoAgente_(c)) throw new Error('Resposta sem título.'); } finally { lk.releaseLock(); }
+    var d = muralLer_('PedidosAssistente', PEDAS_CAB).linhas.filter(function (x) { return x.ID === id; })[0] || {};
+    return { ok: true, status: 'respondido', muralId: d.MuralID || '' };
+  } catch (e) {
+    var msg = String(e.message || e).slice(0, 200);
+    Logger.log('assistente API ' + id + ': ' + msg);
+    var t2 = muralLer_('PedidosAssistente', PEDAS_CAB), p2 = t2.linhas.filter(function (x) { return x.ID === id; })[0];
+    if (p2 && p2.Status === 'enviado') { p2.Status = tent >= 3 || /inválida|crédito/.test(msg) ? 'erro' : 'aberto'; p2.Erro = msg; muralGravar_(t2, p2, ['Status', 'Erro']); }
+    return { ok: false, status: p2 ? p2.Status : 'erro', erro: msg };
+  }
+}
+
+/* Regras fixas (ficam em cache na API: só a primeira chamada de cada 5 minutos paga o texto inteiro) */
+function muralSistemaIA_() {
+  return [
+    'Você é o assistente da RM Confeitaria Artesanal (bolos caseirinhos, cookies e pudins de Raquel Miranda, Fortaleza). Quem pede é a Raquel ou o Bruno, pela aba Mural do app da empresa. Português do Brasil.',
+    '',
+    'O QUE VOCÊ FAZ: rascunhos e respostas — legendas, roteiros de reel, textos de story, cardápio da semana, respostas para clientes no WhatsApp (a Raquel copia e envia ela mesma), cálculo de preço e margem com os dados da ficha técnica, ideias de ação comercial, dúvidas sobre o plano ou o app. Use só os dados enviados abaixo; se faltar dado, diga qual e marque a estimativa como "premissa". Não invente números. Nada é publicado nem enviado por você.',
+    '',
+    'MARCA E TOM (obrigatório em todo texto para cliente): nome "RM Confeitaria Artesanal", assinatura "por Raquel Miranda". Instagram @rm_confeitari4 (nunca o antigo @rm_bolosartesanais; nunca o nome antigo "RM Confeitaria do dia a dia"). WhatsApp de pedidos (85) 98690-0420, link wa.me/5585986900420. Tom direto e específico: sabor, textura, peso, prazo, preço publicado. No máximo 1 emoji por texto, sem frases de efeito, nunca "feito com amor", nunca "fornada", nunca "caseiro rústico". "Artesanal" = feito à mão em pequenos lotes, com ingrediente de verdade: diga isso com fatos. Nunca ofereça bolo de festa, pasta americana ou encomenda personalizada. Pedido mínimo R$ 45; cookie só em caixa fechada; entrega por motoboy ou Uber paga pela cliente. Embalagem do cookie: sacola kraft com lacre da marca e cada cookie em saquinho com selo.',
+    'MODELO: cardápio publicado domingo, pedidos até terça 20h, produção quarta e quinta, retirada quinta 16–19h e sexta 8–11h, Pix antecipado. Cardápio com 3 a 4 itens (1 fixo, o mais vendido; 2 que giram; 1 teste ocasional), quantidade limitada. Capacidade: cerca de 16 h de produção por semana; não sugira ação que gere demanda acima disso sem dizer como absorver. O cookie é o produto mais vendido.',
+    'CLUBE DA RAQUEL: a cada 5º pedido, 2 cookies de mimo; frequente (3 ou mais pedidos em 60 dias) recebe o cardápio no sábado 18h e reserva até domingo 12h; assinatura R$ 250/mês com lugar garantido; indicação com código (R$ 10 para os dois lados) a partir de 16/01/2027. Não prometa desconto ou brinde fora disso.',
+    'TEXTO INTERNO (para Raquel e Bruno): neutro e objetivo, frases curtas, ação primeiro; avalie com honestidade e aponte problema quando houver (preço abaixo do custo, demanda acima da capacidade, regra da marca quebrada).',
+    'Se o pedido pedir algo fora dessas regras, explique no cartão o que não pode e entregue a parte possível.',
+    '',
+    'FORMATO DA RESPOSTA: responda SOMENTE com um objeto JSON válido, sem texto antes ou depois e sem bloco de código, com estes campos (inclua só os que fizerem sentido):',
+    '{"tipo": "post" se houver texto para Instagram ou WhatsApp, "cardapio" se for cardápio, senão "resposta"; "titulo": até 80 caracteres, diz o que é; "resumo": uma linha, o que a pessoa faz com isto; "legenda": texto pronto para colar, até 2200 caracteres; "corpo": explicação, outras opções, cálculos (aceita **negrito**, listas "- " ou "1. " e tabelas com |, com linha |---|); "passos": lista de 2 a 6 ações concretas; "anexos": chaves de arquivos da marca, só destas: avatar, destaque-cardapio, destaque-como-pedir, destaque-retirada, destaque-clientes, destaque-portfolio, logotipo-horizontal, logotipo-horizontal-negativo, logotipo-vertical, logotipo-so-texto, selo-cor, selo-negativo, selo-pequeno, lacre-50mm, cartao-indicacao-90x50, clube-logotipo, clube-selo, adesivo-clube-50mm, cartao-clube-90x50; "cardapio": {"titulo": "Cardápio da semana", "periodo": "26 a 30/10", "itens": [{"nome": até 60 caracteres, "desc": até 110 caracteres (sabor e textura), "peso": "900 g", "preco": "R$ 70", "qtd": "10 unidades", "destaque": true só no mais vendido}], "prazo": "Pedidos até terça, 20h", "retirada": "Retirada quinta 16–19h ou sexta 8–11h", "nota": "Pix antecipado · entrega por motoboy por conta da cliente"} — só em pedido de cardápio, 1 a 6 itens, preços iguais aos da ficha}.',
+    'Com duas ou três opções de texto, ponha a recomendada em "legenda" e as outras no "corpo". Se o pedido trouxer "Recado de referência", entregue a versão ajustada completa e diga no resumo o que mudou. Seja conciso: o corpo com no máximo 250 palavras.'
+  ].join('\n');
+}
+
+/* Dados do dia: produtos e preços, o que mais vendeu nas últimas 4 semanas e o último cardápio */
+function muralContextoIA_() {
+  var l = [], hoje = today_(), dSem = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'][new Date(hoje + 'T12:00:00').getDay()];
+  var dow = new Date(hoje + 'T12:00:00').getDay(), seg = addDays_(hoje, ((8 - dow) % 7) || 7), sex = addDays_(seg, 4);
+  l.push('DADOS DE HOJE (' + dSem + ', ' + hoje.split('-').reverse().join('/') + '). Próxima semana de produção: ' + seg.slice(8) + '/' + seg.slice(5, 7) + ' a ' + sex.slice(8) + '/' + sex.slice(5, 7) + '.');
+  try {
+    var sh = sh_('Fichas técnicas'), n = Math.min(Math.max(sh.getLastRow() - 1, 0), 60);
+    if (n) {
+      l.push('', 'PRODUTOS (aba Fichas técnicas: nome | preço | custo por unidade | margem por hora | status do preço):');
+      sh.getRange(2, 1, n, 13).getValues().forEach(function (r) {
+        if (!r[0]) return;
+        var f = function (v) { return typeof v === 'number' ? 'R$ ' + v.toFixed(2).replace('.', ',') : '—'; };
+        l.push('- ' + r[0] + ' | ' + f(r[1]) + ' | ' + f(r[12]) + ' | ' + f(r[9]) + ' | ' + (r[11] || '—'));
+      });
+    }
+  } catch (e) { l.push('(fichas técnicas indisponíveis agora)'); }
+  try {
+    var ps = sh_('Pedidos'), np = ps.getLastRow() - 1, lim = addDays_(hoje, -28), cont = {}, nPed = 0, rec = 0;
+    if (np > 0) {
+      var ini = Math.max(2, ps.getLastRow() - 399);
+      ps.getRange(ini, 1, ps.getLastRow() - ini + 1, 15).getValues().forEach(function (r) {
+        var d = r[0] instanceof Date ? fmt_(r[0], 'yyyy-MM-dd') : String(r[0]).slice(0, 10);
+        if (!d || d < lim || String(r[10]) === 'Cancelado') return;
+        nPed++; rec += (Number(r[3]) || 0) - (Number(r[14]) || 0);
+        String(r[2] || '').split(';').forEach(function (s) { var m = s.trim().match(/^(\d+)\s*x\s*(.+)$/i); var q = m ? +m[1] : 1, nome = (m ? m[2] : s).trim(); if (nome) cont[nome] = (cont[nome] || 0) + q; });
+      });
+    }
+    var top = Object.keys(cont).sort(function (a, b) { return cont[b] - cont[a]; }).slice(0, 10);
+    l.push('', 'VENDAS DAS ÚLTIMAS 4 SEMANAS: ' + nPed + ' pedidos, receita R$ ' + rec.toFixed(2).replace('.', ',') + ' (sem taxa de entrega).' + (top.length ? ' Mais vendidos (unidades): ' + top.map(function (k) { return k + ' ' + cont[k]; }).join('; ') + '.' : ''));
+  } catch (e) { l.push('(pedidos indisponíveis agora)'); }
+  try { var u = muralUltimoCardapio_(); if (u) l.push('', 'ÚLTIMO CARDÁPIO SALVO NO APP: ' + JSON.stringify(u).slice(0, 1500)); } catch (e) {}
+  return l.join('\n');
 }
 
 /* Texto que a rotina recebe: o pedido completo, para o assistente não depender de ler a planilha.
@@ -346,6 +455,10 @@ function verificarMural() {
     ps.linhas.forEach(function (p) {
       var ult = p.UltimaTentativa ? Date.parse(p.UltimaTentativa) : 0;
       if (p.Status === 'aberto' && Date.now() - ult > 10 * 60 * 1000 && (Number(p.Tentativas) || 0) < 3) muralDisparar_(p.ID);
+      else if (p.Status === 'enviado' && p.Sessao === 'api' && ult && Date.now() - ult > 8 * 60 * 1000) {   // a execução caiu no meio: tenta de novo
+        p.Status = (Number(p.Tentativas) || 0) < 3 ? 'aberto' : 'erro'; p.Erro = p.Status === 'erro' ? 'O assistente não conseguiu responder. Peça de novo ou fale com o Bruno.' : '';
+        muralGravar_(ps, p, ['Status', 'Erro']);
+      }
       else if (p.Status === 'enviado' && ult && Date.now() - ult > 40 * 60 * 1000) {
         p.Status = 'erro'; p.Erro = 'O assistente não respondeu em 40 minutos. Peça de novo ou fale com o Bruno.';
         muralGravar_(ps, p, ['Status', 'Erro']);
