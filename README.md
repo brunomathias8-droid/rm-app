@@ -40,8 +40,25 @@ A pasta `servidor/` guarda os arquivos do Apps Script que o app novo usa e que n
 | `servidor/Api.gs` | Porta de entrada do app (login, sessões, funções permitidas, rotas dos avisos) |
 | `servidor/Push.gs` | Avisos no celular pelo Firebase Cloud Messaging e o gatilho de hora em hora `verificarAvisos` |
 | `servidor/Producao.gs` | Controle de produção: aba Producao, `getProducao` e `salvarProducao` |
+| `servidor/Mural.gs` | Aba Mural do app: recados dos agentes, pedidos ao assistente, cardápio da semana e o gatilho de 5 em 5 minutos `verificarMural` |
 
 Para copiar pelo celular: abrir o arquivo em `raw.githubusercontent.com/brunomathias8-droid/rm-app/main/servidor/<arquivo>` no Safari, tocar e segurar › Selecionar tudo › Copiar.
+
+## Mural
+
+Substitui os e-mails dos agentes. Fluxo:
+
+| Quem | Como entrega | Onde aparece |
+|---|---|---|
+| Agentes (Marketing sáb., Fechamento ter., Gestão sex.) | criam um `.json` na pasta do Drive "RM · Mural (entrada)" (`mural_pasta_id` na Config) | o `Mural.gs` importa em até 5 min (ou ao abrir o app), manda o arquivo para a lixeira e avisa no celular |
+| Assistente (rotina acionada pelo app) | igual, com `pedidoId` | cartão "Resposta do assistente" para quem pediu |
+| Sistema | lista de produção na terça 20h30 | cartão automático |
+
+- Formato do cartão: comentário no topo da seção "entrada dos agentes" do `Mural.gs`. Mesma `chave` atualiza o cartão em vez de duplicar.
+- Pedido ao assistente: grava na aba PedidosAssistente e aciona a rotina pela API (`assistente_url` e `assistente_token` na Config; o token vai para as Propriedades do script). Sem resposta em 40 min, o pedido vira "não saiu" e quem pediu é avisado.
+- Arquivos da marca: `marca/` e `marca/biblioteca.json` (chaves usadas no campo `anexos`).
+- Cardápio: editor no app gera o post 1080×1080 e o story 1080×1920 no padrão da marca; o texto fica guardado para a semana seguinte.
+- Instalação: colar `Mural.gs`, rodar `ativarMural` (cria as abas, o gatilho e desliga os e-mails diário e de terça; o de domingo continua), Implantar › Gerenciar implantações › Nova versão.
 
 ## Gestão › Gráficos
 

@@ -1,0 +1,140 @@
+{
+ "atualizado": "2026-10-18",
+ "marca": "RM Confeitaria Artesanal",
+ "instagram": "@rm_confeitari4",
+ "arquivos": [
+  {
+   "grupo": "Instagram",
+   "chave": "avatar",
+   "titulo": "Foto do perfil (avatar)",
+   "uso": "1080 × 1080. O Instagram recorta em círculo: selo em cor sobre rosa claro.",
+   "arquivo": "marca/avatar.png"
+  },
+  {
+   "grupo": "Instagram",
+   "chave": "destaque-cardapio",
+   "titulo": "Capa de destaque: Cardápio",
+   "uso": "1080 × 1920. No perfil: segurar o destaque › Editar destaque › Editar capa.",
+   "arquivo": "marca/destaque-cardapio.png"
+  },
+  {
+   "grupo": "Instagram",
+   "chave": "destaque-como-pedir",
+   "titulo": "Capa de destaque: Como pedir",
+   "uso": "1080 × 1920.",
+   "arquivo": "marca/destaque-como-pedir.png"
+  },
+  {
+   "grupo": "Instagram",
+   "chave": "destaque-retirada",
+   "titulo": "Capa de destaque: Retirada",
+   "uso": "1080 × 1920.",
+   "arquivo": "marca/destaque-retirada.png"
+  },
+  {
+   "grupo": "Instagram",
+   "chave": "destaque-clientes",
+   "titulo": "Capa de destaque: Clientes",
+   "uso": "1080 × 1920.",
+   "arquivo": "marca/destaque-clientes.png"
+  },
+  {
+   "grupo": "Instagram",
+   "chave": "destaque-portfolio",
+   "titulo": "Capa de destaque: Portfólio",
+   "uso": "1080 × 1920.",
+   "arquivo": "marca/destaque-portfolio.png"
+  },
+  {
+   "grupo": "Logotipos",
+   "chave": "logotipo-horizontal",
+   "titulo": "Logotipo horizontal",
+   "uso": "Principal: posts, cardápio, cartões. Fundo claro. Mínimo 4 cm ou 140 px.",
+   "arquivo": "marca/logotipo-horizontal.png"
+  },
+  {
+   "grupo": "Logotipos",
+   "chave": "logotipo-horizontal-negativo",
+   "titulo": "Logotipo horizontal (fundo ameixa)",
+   "uso": "Para fundo escuro.",
+   "arquivo": "marca/logotipo-horizontal-negativo.png"
+  },
+  {
+   "grupo": "Logotipos",
+   "chave": "logotipo-vertical",
+   "titulo": "Logotipo vertical",
+   "uso": "Adesivo redondo e capa. Mínimo 2,5 cm ou 80 px.",
+   "arquivo": "marca/logotipo-vertical.png"
+  },
+  {
+   "grupo": "Logotipos",
+   "chave": "logotipo-so-texto",
+   "titulo": "Só texto",
+   "uso": "Rodapé de post e de e-mail. Mínimo 3,5 cm ou 120 px.",
+   "arquivo": "marca/logotipo-so-texto.png"
+  },
+  {
+   "grupo": "Logotipos",
+   "chave": "selo-cor",
+   "titulo": "Selo em cor",
+   "uso": "Marca-d’água, ícone, lacre. Mínimo 1,5 cm ou 32 px.",
+   "arquivo": "marca/selo-cor.png"
+  },
+  {
+   "grupo": "Logotipos",
+   "chave": "selo-negativo",
+   "titulo": "Selo para fundo ameixa",
+   "uso": "Para fundo escuro.",
+   "arquivo": "marca/selo-negativo.png"
+  },
+  {
+   "grupo": "Logotipos",
+   "chave": "selo-pequeno",
+   "titulo": "Selo pequeno (sem pontilhado)",
+   "uso": "Para usos abaixo de 44 px: saquinho do cookie, envelope.",
+   "arquivo": "marca/selo-pequeno.png"
+  },
+  {
+   "grupo": "Impressos",
+   "chave": "lacre-50mm",
+   "titulo": "Adesivo lacre 5 cm",
+   "uso": "Sacola kraft e caixa. Pedir à gráfica com 2 mm de sangria e prova de cor.",
+   "arquivo": "marca/lacre-50mm.png"
+  },
+  {
+   "grupo": "Impressos",
+   "chave": "cartao-indicacao-90x50",
+   "titulo": "Cartão de indicação 9 × 5 cm",
+   "uso": "A partir de 16/01/2027 (código R$ 10 + R$ 10).",
+   "arquivo": "marca/cartao-indicacao-90x50.png"
+  },
+  {
+   "grupo": "Clube da Raquel",
+   "chave": "clube-logotipo",
+   "titulo": "Marca do Clube da Raquel",
+   "uso": "Nunca substitui o logotipo da RM.",
+   "arquivo": "marca/clube-logotipo.png"
+  },
+  {
+   "grupo": "Clube da Raquel",
+   "chave": "clube-selo",
+   "titulo": "Bolo de 5 pedaços (Clube)",
+   "uso": "Símbolo do Clube.",
+   "arquivo": "marca/clube-selo.png"
+  },
+  {
+   "grupo": "Clube da Raquel",
+   "chave": "adesivo-clube-50mm",
+   "titulo": "Adesivo do Clube 5 cm",
+   "uso": "Na caixa do 5º pedido (mimo de 2 cookies).",
+   "arquivo": "marca/adesivo-clube-50mm.png"
+  },
+  {
+   "grupo": "Clube da Raquel",
+   "chave": "cartao-clube-90x50",
+   "titulo": "Cartão do Clube 9 × 5 cm",
+   "uso": "\"[Nome], faltam N pedaços para o seu mimo\".",
+   "arquivo": "marca/cartao-clube-90x50.png"
+  }
+ ]
+}

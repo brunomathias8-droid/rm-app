@@ -155,7 +155,7 @@ rep('<button id="bHelp" class="ib" aria-label="Ajuda"></button>', '<button id="b
 rep("$('#bRef').innerHTML = ic('refresh'); $('#bHelp').innerHTML = ic('help');", "$('#bRef').innerHTML = ic('refresh'); $('#bHelp').innerHTML = ic('help'); $('#bAvisos').innerHTML = ic('bell'); $('#bAvisos').onclick = function () { avisosSheet(); };")
 rep("$('#bRef').classList.toggle('hide', form); $('#bHelp').classList.toggle('hide', form);", "$('#bRef').classList.toggle('hide', form); $('#bHelp').classList.toggle('hide', form); $('#bAvisos').classList.toggle('hide', form);")
 rep("var IC = {\n", "var IC = {\n  bell: '<path d=\"M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z\"/><path d=\"M10 20a2 2 0 0 0 4 0\"/>',\n")
-rep("""  S.token = store('token'); S.pessoa = store('pessoa');""", """  var hv = (location.hash || '').replace(/^#\\/?/, ''); if (hv && ['hoje', 'pedidos', 'gestao', 'plano', 'estoque'].indexOf(hv) >= 0 && !FORM[hv]) S.view = hv;
+rep("""  S.token = store('token'); S.pessoa = store('pessoa');""", """  var hv = (location.hash || '').replace(/^#\\/?/, ''); if (/^mural\\/[\\w-]+$/.test(hv)) { S.mu = S.mu || {}; S.mu.abrir = hv.slice(6); hv = 'mural'; } if (hv && ['hoje', 'pedidos', 'gestao', 'plano', 'estoque', 'mural'].indexOf(hv) >= 0 && !FORM[hv]) S.view = hv;
   S.token = store('token'); S.pessoa = store('pessoa');""")
 AVISOS = r"""<script>
 /* ============ Avisos no celular (Web Push pelo Firebase Cloud Messaging) ============
@@ -230,7 +230,7 @@ function revisarPush() {
 }
 setTimeout(revisarPush, 8000);
 /* Tocar num aviso abre o app na tela certa (o service worker avisa qual) */
-if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', function (e) { var v = e.data && e.data.ir && String(e.data.ir).replace(/^#\/?/, ''); if (v && S.token && ['hoje', 'pedidos', 'gestao', 'plano', 'estoque'].indexOf(v) >= 0) go(v); });
+if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', function (e) { var v = e.data && e.data.ir && String(e.data.ir).replace(/^#\/?/, ''); if (v && S.token && /^mural\/[\w-]+$/.test(v)) { S.mu.abrir = v.slice(6); return go('mural'); } if (v && S.token && ['hoje', 'pedidos', 'gestao', 'plano', 'estoque', 'mural'].indexOf(v) >= 0) go(v); });
 </script>
 <style>.painel-marca{display:flex;align-items:baseline;gap:9px}.painel-marca .bm-rm{font:26px/1 var(--serif);color:var(--linho)}.painel-marca .bm-t{font:italic 18px/1 var(--serif);color:var(--rosaT)}.av-l{display:flex;flex-direction:column;gap:2px;margin:4px 0 12px}.av-i{display:flex;gap:12px;align-items:flex-start;padding:10px 2px;border-top:1px solid var(--linha);font-size:15px;line-height:1.35}.av-i input{width:22px;height:22px;flex:0 0 auto;margin:0;padding:0;border:1.5px solid var(--ameixa);border-radius:6px;background:#fff center/16px no-repeat}.av-i input:checked{background-color:var(--ameixa);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E")}</style>
 """
@@ -259,12 +259,20 @@ document.addEventListener('visibilitychange', function () {
 </script>
 <style>html.curta{--safe:0px}</style>
 </body>""")
+# 4d. Mural (extras/mural.js + servidor/Mural.gs): aba no lugar de Plano (o Plano abre de dentro do Mural)
+rep('<button data-v="plano"></button>', '<button data-v="mural"></button>')
+rep("var tabs = { hoje: ['home', 'Hoje'], pedidos: ['bag', 'Pedidos'], plano: ['cal', 'Plano'], gestao: ['chart', 'Gestão'] };",
+    "var tabs = { hoje: ['home', 'Hoje'], pedidos: ['bag', 'Pedidos'], mural: ['mega', 'Mural'], plano: ['cal', 'Plano'], gestao: ['chart', 'Gestão'] };")
+rep("({ hoje: vHoje, pedidos: vPedidos,", "({ mural: vMural, cartao: vCartao, cardapio: vCardapio, hoje: vHoje, pedidos: vPedidos,")
+rep("var FORM = { novo: 'Novo pedido',", "var FORM = { cartao: 'Recado', cardapio: 'Cardápio da semana', novo: 'Novo pedido',")
+rep("$$('#tabs [data-v]').forEach(function (b) { var on = b.dataset.v === v;", "$$('#tabs [data-v]').forEach(function (b) { var on = b.dataset.v === v || (b.dataset.v === 'mural' && (v === 'plano' || ((v === 'cartao' || v === 'cardapio') && S.prev === 'mural')));")
 # 4c. Arquivos de extras/ (fila de pedidos e produção) e o estilo deles
-EXTRAS = ''.join('<script>\n' + (pathlib.Path(__file__).with_name('extras') / n).read_text() + '</script>\n' for n in ['fila.js', 'producao.js'])
+EXTRAS = ''.join('<script>\n' + (pathlib.Path(__file__).with_name('extras') / n).read_text() + '</script>\n' for n in ['fila.js', 'producao.js', 'mural.js'])
 EXTRAS += ('<style>.fila-av{position:fixed;top:calc(var(--top) + 8px);left:50%;transform:translateX(-50%);z-index:25;display:flex;align-items:center;gap:6px;padding:8px 14px;border:0;border-radius:999px;background:var(--ameixa);color:#fff;font:600 13px var(--sans);box-shadow:0 4px 14px rgba(0,0,0,.18);white-space:nowrap}'
   '.fila-av.hide{display:none}.fila-av.err{background:var(--err)}.fila-av svg{width:16px;height:16px}.fila-av .spin{animation:filaGira 1s linear infinite}@keyframes filaGira{to{transform:rotate(360deg)}}'
   '.prod-est .li{align-items:center}.prod-est .tx small{display:block;font-size:13px;margin-top:2px}.pe-n{text-align:right;min-width:72px}.pe-n b{display:block;font:26px/1 var(--serif);color:var(--ameixa)}.pe-n b.neg{color:var(--err)}.pe-n b.nd{color:var(--sub)}.pe-n span{font-size:12px;color:var(--sub)}'
   '.pr-est{font-size:13px;color:var(--ok);margin-left:6px;font-weight:600}.pr-est.neg{color:var(--err)}.step.big{justify-content:flex-start;gap:12px}.step.big input{width:96px;text-align:center;font-size:22px;padding:8px}</style>\n')
+EXTRAS += '<style>\n' + (pathlib.Path(__file__).with_name('extras') / 'mural.css').read_text() + '</style>\n'
 rep('</body>', EXTRAS + '</body>')
 # 5. Service worker: guarda o app no aparelho; versão nova recarrega sozinha
 rep('</body>', '''<script>
