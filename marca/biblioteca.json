@@ -1,5 +1,5 @@
 {
- "atualizado": "2026-10-18",
+ "atualizado": "2026-10-21",
  "marca": "RM Confeitaria Artesanal",
  "instagram": "@rm_confeitari4",
  "arquivos": [
@@ -107,6 +107,20 @@
    "titulo": "Cartão de indicação 9 × 5 cm",
    "uso": "A partir de 16/01/2027 (código R$ 10 + R$ 10).",
    "arquivo": "marca/cartao-indicacao-90x50.png"
+  },
+  {
+   "grupo": "Impressos",
+   "chave": "lacre-dobravel-sacola-40x120",
+   "titulo": "Lacre dobrável da sacola 4 × 12 cm",
+   "uso": "Dobra no meio sobre a boca da sacola kraft: marca na frente; WhatsApp, Instagram e QR atrás. Arte vertical com o verso invertido. Papel adesivo couché.",
+   "arquivo": "marca/lacre-dobravel-sacola-40x120.png"
+  },
+  {
+   "grupo": "Impressos",
+   "chave": "faixa-lacre-caixa-30x180",
+   "titulo": "Faixa-lacre da caixa 3 × 18 cm",
+   "uso": "Fecha a embalagem secundária (caixa): passa por cima da tampa e desce pelas laterais. WhatsApp e Instagram numa ponta; nome do cliente e data de retirada na outra. Papel adesivo couché. Conferir o comprimento na caixa real.",
+   "arquivo": "marca/faixa-lacre-caixa-30x180.png"
   },
   {
    "grupo": "Clube da Raquel",
