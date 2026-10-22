@@ -388,7 +388,10 @@ function atualizarV10() {
       log.push('Estoque: coluna Tipo criada (vazio = insumo, Massa = bolinhas no congelador).');
     } else log.push('Estoque: coluna Tipo já existia.');
   }
-  // 8. Gatilhos: a lista de produção de terça saiu do código (Push.gs e Mural.gs); entra verificarMassa de hora em hora
+  // 8. Gatilhos: a lista de produção de terça saiu do código (Push.gs, Mural.gs e Code.gs); entra verificarMassa de hora em hora
+  ScriptApp.getProjectTriggers().forEach(function (t) {   // e-mail da lista de produção de terça (emailFechamento), se ainda existir
+    if (t.getHandlerFunction() === 'emailFechamento') { ScriptApp.deleteTrigger(t); log.push('Gatilho emailFechamento (lista de produção de terça 20h30) removido.'); }
+  });
   var tem = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'verificarMassa'; });
   if (!tem) { ScriptApp.newTrigger('verificarMassa').timeBased().everyHours(1).create(); log.push('Gatilho verificarMassa (de hora em hora) criado.'); }
   else log.push('Gatilho verificarMassa já existia.');
@@ -495,7 +498,7 @@ function massaCab_(sh) { var lc = sh.getLastColumn(); return lc ? sh.getRange(1,
 function massaColIni_(cab, ini) { for (var i = 0; i < cab.length; i++) if (cab[i].indexOf(ini) === 0) return i; return -1; }
 function massaLetra_(c) { var s = ''; while (c > 0) { var m = (c - 1) % 26; s = String.fromCharCode(65 + m) + s; c = Math.floor((c - 1) / 26); } return s; }
 function massaIso_(v) {
-  if (v instanceof Date) return Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  if (Object.prototype.toString.call(v) === '[object Date]') return isNaN(v) ? '' : Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
   var s = String(v || '').trim(), m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
   return m ? m[3] + '-' + m[2] + '-' + m[1] : s.slice(0, 10);
 }

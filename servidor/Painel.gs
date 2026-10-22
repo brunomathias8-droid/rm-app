@@ -53,8 +53,11 @@ function painelSemana_(iso) {
   var ult = readRows_('Reunioes', 9).filter(function (r) { return r[0]; }).slice(-1)[0];
   var reuniao = ult ? { data: iso_(ult[0]), tipo: String(ult[1]), decisoes: String(ult[6] || '') } : null;
   var pausa = inPause_(ini) && inPause_(fim);
+  // versão 10: massa no congelador e margem de contribuição por produto
+  var massa = null; if (typeof estoqueMassa_ === 'function') { try { massa = estoqueMassa_(); } catch (e) { Logger.log('massa no painel: ' + e.message); } }
   return { semana: w, ini: ini, fim: fim, fase: fase, meta: meta, prioridades: prio.slice(0, 6), totalPendentes: prio.length,
-    dias: dias, anterior: ant, marcos: marcos, reuniao: reuniao, acoesAbertas: acoesAbertas_().length, pausa: pausa };
+    dias: dias, anterior: ant, marcos: marcos, reuniao: reuniao, acoesAbertas: acoesAbertas_().length, pausa: pausa,
+    massa: massa, margens: margemProdutosSeguro_().slice(0, 6) };
 }
 
 function dBr_(iso) { return iso ? DIAS[parseD_(iso).getDay()] + ' ' + iso.slice(8) + '/' + iso.slice(5, 7) : ''; }
@@ -72,12 +75,11 @@ function painelHtml_(p, appUrl) {
   var h = '<div style="font-family:Arial,Helvetica,sans-serif;color:' + T + ';background:' + B + ';padding:0;margin:0">';
   h += '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:' + B + '">';
   // cabeçalho
-  var fn = fornadaNum_(p.ini);
   h += '<tr><td style="background:' + V + ';padding:22px 20px;color:#fff"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td valign="middle">' + marcaEmail_() +
     '<div style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:' + RA + ';font-weight:bold;margin-top:16px">Painel da semana</div>' +
     '<div style="' + SERIF + 'font-size:26px;margin:4px 0 2px">' + (p.semana >= 1 ? 'Semana ' + p.semana : 'Antes da semana 1') + ' · ' + esc_(p.fase) + '</div>' +
     '<div style="font-size:14px;color:' + RA + '">' + dBr_(p.ini) + ' a ' + dBr_(p.fim) + (p.meta ? ' · meta de receita ' + brl_(p.meta) : '') + '</div></td>' +
-    (fn ? '<td width="90" align="right" valign="middle">' + carimboEmail_(fn, RA, V) + '</td>' : '') + '</tr></table></td></tr>';
+    '</tr></table></td></tr>';   // o carimbo "Fornada nº" saiu da marca em 03/10/2026
   if (p.pausa) {
     h += '<tr><td style="padding:20px"><div style="background:#fff;border:1px solid ' + L + ';border-radius:12px;padding:16px;font-size:15px">Semana de pausa (viagem). Retomada: cardápio em 18/04.</div></td></tr></table></div>';
     return h;
@@ -128,13 +130,25 @@ function painelHtml_(p, appUrl) {
     }).join('') + '</tr>';
   }
   h += '</table></td></tr>';
+  // massa no congelador (versão 10)
+  if (p.massa && p.massa.sabores.length) {
+    h += '<tr><td style="padding:18px 20px 6px"><div style="' + SERIF + 'font-size:21px;color:' + V + '">Massa no congelador</div><div style="font-size:13px;color:' + S + '">' + p.massa.total + ' bolinhas · mínimo ' + p.massa.cfg.minimo + ' por sabor</div></td></tr><tr><td style="padding:6px 20px">' +
+      p.massa.sabores.map(function (x) {
+        var al = x.alertas.map(function (a) { return a.texto; }).join(' · '), cor = x.saldo < p.massa.cfg.minimo ? ER : T;
+        return '<div style="font-size:14px;margin:4px 0;color:' + cor + '"><b>' + esc_(x.produto) + '</b>: ' + x.saldo + ' bolinha(s)' + (x.diasEstoque !== null ? ' · ~' + x.diasEstoque + ' dia(s) de venda' : '') + (al ? '<br><span style="font-size:12px">' + esc_(al) + '</span>' : '') + '</div>';
+      }).join('') + '</td></tr>';
+  }
+  if (p.margens && p.margens.length) {
+    h += '<tr><td style="padding:18px 20px 6px"><div style="' + SERIF + 'font-size:21px;color:' + V + '">Margem de contribuição por produto</div><div style="font-size:13px;color:' + S + '">Preço − custo da ficha técnica, da maior para a menor</div></td></tr><tr><td style="padding:6px 20px">' +
+      p.margens.map(function (x) { return '<div style="font-size:14px;margin:4px 0"><b>' + esc_(x.nome) + '</b>: ' + brl_(x.margem) + ' por unidade (' + Math.round(x.pct * 100) + '%)</div>'; }).join('') + '</td></tr>';
+  }
   // decisões e marcos
   if (p.reuniao && p.reuniao.decisoes) h += '<tr><td style="padding:14px 20px 0"><div style="background:' + R + ';border-radius:12px;padding:14px;font-size:14px;line-height:1.4"><b style="color:' + V + '">Decidido na reunião ' + esc_(p.reuniao.tipo.toLowerCase()) + ' de ' + dBr_(p.reuniao.data) + ':</b><br>' + esc_(p.reuniao.decisoes) + '</div></td></tr>';
   if (p.marcos.length) h += '<tr><td style="padding:14px 20px 0"><div style="' + SERIF + 'font-size:21px;color:' + V + ';margin-bottom:6px">Próximos marcos</div>' +
     p.marcos.map(function (m) { return '<div style="font-size:14px;margin:4px 0"><b>' + dBr_(m[0]) + '</b> · ' + esc_(m[1]) + '</div>'; }).join('') + '</td></tr>';
   h += '<tr><td style="padding:16px 20px 24px;font-size:13px;color:' + S + '">' + p.acoesAbertas + ' ação(ões) aberta(s) no plano de ação.' +
     (appUrl ? '<br><br><a href="' + appUrl + '" style="background:' + V + ';color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:bold;display:inline-block">Abrir o app</a>' : '') + '</td></tr>' +
-    '<tr><td style="padding:0 20px 26px;font-size:12px;letter-spacing:2px;color:' + MARCA.caramelo + ';font-weight:bold">RM CONFEITARIA DO DIA A DIA · POR RAQUEL MIRANDA</td></tr>';
+    '<tr><td style="padding:0 20px 26px;font-size:12px;letter-spacing:2px;color:' + MARCA.caramelo + ';font-weight:bold">RM CONFEITARIA ARTESANAL · POR RAQUEL MIRANDA</td></tr>';
   h += '</table></div>';
   return h;
 }

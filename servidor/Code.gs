@@ -61,17 +61,23 @@ function getBootstrap(pin) {
     pix: { chave: String(cfg.pix_chave || '').trim(), titular: String(cfg.pix_titular || '').trim() } };
 }
 
+/* Versão 10: lê também a coluna Tipo (Pronta-entrega ou Encomenda; vazio = pedido antigo = Encomenda), procurada pelo nome */
+function colTipoPedido_(sh) {
+  var lc = sh.getLastColumn(); if (lc < 16) return -1;
+  return sh.getRange(1, 1, 1, lc).getValues()[0].map(function (c) { return String(c).trim(); }).indexOf('Tipo');
+}
 function readPedidos_() {
   var sh = sh_('Pedidos'), n = sh.getLastRow() - 1;
   if (n < 1) return [];
-  return sh.getRange(2, 1, n, 15).getValues().map(function (r, i) {
+  var cT = colTipoPedido_(sh), nc = Math.max(15, cT + 1);
+  return sh.getRange(2, 1, n, nc).getValues().map(function (r, i) {
     var valor = Number(r[3]) || 0, repasse = Number(r[14]) || 0;
     return {
       row: i + 2, data: iso_(r[0]), cliente: String(r[1] || ''), itens: String(r[2] || ''), valor: valor,
       repasse: repasse, receita: Math.round((valor - repasse) * 100) / 100,   // valor = cobrado da cliente; receita = sem a taxa de entrega repassada
       canal: String(r[4] || ''), codigo: String(r[5] || ''), janela: String(r[6] || ''), retirada: iso_(r[7]),
       pix: String(r[8] || ''), assinatura: String(r[9] || ''), status: String(r[10] || ''), obs: String(r[11] || ''),
-      id: String(r[12] || '')
+      id: String(r[12] || ''), tipo: tipoPedido_(cT >= 0 ? r[cT] : '')
     };
   }).filter(function (p) { return p.data || p.cliente; });
 }
@@ -108,6 +114,7 @@ function salvarPedido(pin, p) {
   try {
     if (!p.cliente) throw new Error('Informe o cliente');
     if (!p.itens) throw new Error('Escolha pelo menos um item');
+    var tipo = validarTipoPedido_(p.tipo, 'Encomenda');   // o app antigo não manda Tipo: entra como Encomenda
     garantirCliente_(p.cliente, p.whats, p.canal);
     var sh = sh_('Pedidos');
     var id = 'P' + fmt_(new Date(), 'yyMMddHHmmss');
@@ -121,6 +128,7 @@ function salvarPedido(pin, p) {
     sh.getRange(r, 1).setNumberFormat('dd/mm/yyyy');
     sh.getRange(r, 8).setNumberFormat('dd/mm/yyyy');
     sh.getRange(r, 4).setNumberFormat('"R$" #,##0.00'); sh.getRange(r, 15).setNumberFormat('"R$" #,##0.00');
+    var cT = colTipoPedido_(sh); if (cT >= 0) sh.getRange(r, cT + 1).setValue(tipo);
     return { ok: true, id: id, clube: clube };
   } finally { lock.releaseLock(); }
 }
@@ -160,8 +168,7 @@ function salvarSemana(pin, s) {
   checkPin_(pin);
   var w = Number(s.semana);
   if (!(w >= 1 && w <= 31)) throw new Error('Semana fora do plano (1 a 31)');
-  var sh = sh_('Semanal');
-  sh.getRange(w + 1, 5).setValue(num_(s.horas));
+  var sh = sh_('Semanal');   // versão 10: a coluna de horas (E) fica sem uso
   sh.getRange(w + 1, 7, 1, 3).setValues([[num_(s.unidades), num_(s.sobra), num_(s.quebra)]]);
   if (s.notas) sh.getRange(w + 1, 18).setValue(s.notas);
   return { ok: true };
@@ -172,8 +179,10 @@ function getSemana(pin, w) {
   checkPin_(pin);
   w = Number(w);
   var v = sh_('Semanal').getRange(w + 1, 1, 1, 18).getValues()[0];
-  return { semana: w, inicio: iso_(v[1]), fim: iso_(v[2]), horas: v[4], custo: v[5], unidades: v[6], sobra: v[7], quebra: v[8],
-    receita: v[9], pedidos: v[10], margemHora: v[13], meta: v[16], notas: v[17] };
+  var ini = iso_(v[1]), fim = iso_(v[2]), massa = null;
+  if (ini && fim && typeof massaPeriodo_ === 'function') { try { massa = massaPeriodo_(ini, fim); delete massa.porSabor; } catch (e) { Logger.log('massa na semana: ' + e.message); } }
+  return { semana: w, inicio: ini, fim: fim, custo: v[5], unidades: v[6], sobra: v[7], quebra: v[8],
+    receita: v[9], pedidos: v[10], meta: v[16], notas: v[17], massa: massa };
 }
 
 function marcarTarefa(pin, row, feita, acao) {
@@ -219,15 +228,15 @@ function ciclo_(iso) {
     return iso < CICLO_INICIO ? [{ resp: 'Raquel', tarefa: 'Encomendas avulsas: registrar cada pedido no app assim que o Pix cair' }] : [];
   }
   var dow = parseD_(iso).getDay();
-  var extra = addDays_(iso, 1).slice(8) === '01' ? [{ resp: 'Raquel', tarefa: 'Contar o estoque dos insumos marcados no app (+ › Contar o estoque)' }] : [];   // último dia do mês
+  var extra = addDays_(iso, 1).slice(8) === '01' ? [{ resp: 'Raquel', tarefa: 'Contar o estoque dos insumos marcados e a massa do congelador no app (+ › Contar o estoque)' }] : [];   // último dia do mês
+  /* Versão 10 (22/10/2026): cookie de pronta-entrega com massa congelada; sem prazo de terça nem janelas fixas */
   var m = {
-    0: [['Raquel', 'Publicar o cardápio da semana até 18h']],
-    1: [['Raquel', 'Responder pedidos, confirmar Pix e registrar no app'], ['Raquel', 'Compras secas e pré-preparo']],
-    2: [['Raquel', 'Pedidos até 20h: registrar os últimos no app (a lista de produção chega por e-mail às 20h30)']],
-    3: [['Raquel', 'Compras frescas, produção do lote 1, reel de processo'], ['Raquel', 'Lembrete aos clientes que retiram na quinta']],
-    4: [['Raquel', 'Produção do lote 2 e embalagem; retirada 16–19h'], ['Raquel', 'Lembrete aos clientes que retiram na sexta']],
-    5: [['Raquel', 'Retirada 8–11h; post de prova social'], ['Ambos', 'Reunião semanal de 15 min no app (Gestão → Reunião): números, horas, sobra, decisões e ações']],
-    6: [['Bruno', 'Aprovar cardápio e legendas do agente de Marketing'], ['Raquel', 'Mensagem pedindo foto aos clientes da semana']]
+    1: [['Raquel', 'Conferir a massa no congelador (Hoje › Massa no congelador) e fazer a massa dos sabores em falta'], ['Raquel', 'Responder pedidos, confirmar Pix e registrar no app']],
+    2: [['Raquel', 'Responder pedidos e registrar no app; bolo só com 2 dias de antecedência']],
+    3: [['Raquel', 'Assar os cookies dos pedidos do dia e marcar como assado'], ['Raquel', 'Lembrete às clientes de encomenda que retiram amanhã']],
+    4: [['Raquel', 'Assar os cookies dos pedidos do dia e marcar como assado'], ['Raquel', 'Lembrete às clientes de encomenda que retiram amanhã']],
+    5: [['Raquel', 'Assar os cookies dos pedidos do dia; post de prova social'], ['Ambos', 'Reunião semanal de 15 min no app (Gestão → Reunião): números, massa, sobra, decisões e ações']],
+    6: [['Raquel', 'Assar os cookies dos pedidos do dia'], ['Bruno', 'Aprovar as legendas do agente de Marketing'], ['Raquel', 'Mensagem pedindo foto às clientes da semana']]
   }[dow] || [];
   return m.map(function (x) { return { resp: x[0], tarefa: x[1] }; }).concat(extra);
 }
@@ -239,7 +248,7 @@ function emailDiario() {
   var pessoas = [['Raquel', c.email_raquel], ['Bruno', c.email_bruno]];
   var peds = readPedidos_().filter(function (p) { return p.status !== 'Cancelado' && p.status !== 'Retirado'; });
   var retHoje = peds.filter(function (p) { return p.retirada === hoje; });
-  var retAmanha = peds.filter(function (p) { return p.retirada === addDays_(hoje, 1); });
+  var retAmanha = peds.filter(function (p) { return p.retirada === addDays_(hoje, 1) && p.tipo === 'Encomenda'; });   // pronta-entrega não leva lembrete
   var semPix = peds.filter(function (p) { return p.pix !== 'Sim'; });
   var res = resumoSemana_(hoje);
   pessoas.forEach(function (pp) {
@@ -248,7 +257,7 @@ function emailDiario() {
     var html = abreEmail_('Bom dia, ' + pp[0], fmt_(new Date(), "EEEE, dd/MM") + ' · semana ' + res.semana + ' do plano');
     html += secao_('Tarefas de hoje', t.map(function (x) { return (x.atrasada ? '<b style="color:#B00020">Atrasada (' + x.data.slice(8) + '/' + x.data.slice(5, 7) + ')</b> ' : '') + esc_(x.tarefa) + (x.resp === 'Ambos' ? ' <i>(os dois)</i>' : ''); }));
     html += secao_('Retiradas de hoje', retHoje.map(linhaPed_));
-    html += secao_('Retiradas de amanhã (mandar lembrete)', retAmanha.map(linhaPed_));
+    html += secao_('Encomendas de amanhã (mandar lembrete)', retAmanha.map(linhaPed_));
     html += secao_('Pix pendente', semPix.map(linhaPed_));
     if (pp[0] === 'Bruno') {
       html += secao_('Semana até agora', ['Pedidos: ' + res.pedidos, 'Receita: ' + brl_(res.receita) + (res.meta ? ' de ' + brl_(res.meta) + ' (meta)' : ''), 'Ticket médio: ' + brl_(res.ticket)]);
@@ -260,7 +269,10 @@ function emailDiario() {
   });
 }
 
+/* Lista de produção de terça: saiu na versão 10 (a massa é congelada; a sugestão de produção vem do Massa.gs).
+   A função fica para referência; atualizarV10 apaga o gatilho dela e o setup não o cria mais. */
 function emailFechamento() {
+  return;
   var c = config_(), hoje = today_();
   if (hoje < CICLO_INICIO || inPause_(hoje) || hoje > '2027-05-02') return;
   var ini = weekStart_(hoje);
@@ -348,9 +360,9 @@ function setupInterno_(ss) {
   // Leia-me
   var lm = ss.getSheetByName('Leia-me');
   lm.getRange('B4').setValue('Um registro por pedido, feito pelo app (botão Novo pedido). Não precisa abrir a planilha.');
-  lm.getRange('B5').setValue('Sexta, na revisão de 15 min, pelo app (aba Semana): horas, custo de insumo, unidades, sobra e quebra.');
+  lm.getRange('B5').setValue('Sexta, na revisão de 15 min, pelo app (aba Semana): unidades, sobra e quebra.');
   lm.getRange('B7').setValue('Base de WhatsApp antiga + clientes novos. Cliente novo é criado automaticamente ao registrar pedido no app.');
-  lm.getRange('A11:B11').setValues([['App', 'Link do app na aba Config. Tarefas na aba Tarefas; e-mail diário às 6h, lista de produção terça 20h30 e painel da semana domingo 18h.']]);
+  lm.getRange('A11:B11').setValues([['App', 'Link do app na aba Config. Tarefas na aba Tarefas; avisos no celular, Mural e painel da semana domingo 18h.']]);
   lm.getRange('A14:B17').setValues([['Custos', 'Insumos (preço de compra) + Receitas (quantidade por lote) calculam o custo em Fichas técnicas.'],
     ['Despesas', 'Toda compra e conta do negócio, lançada pelo app (+ → Nova despesa).'],
     ['DRE', 'Resultado mensal: receita, margem de contribuição, despesas fixas, pró-labore, ponto de equilíbrio, limite do MEI.'],
@@ -358,7 +370,6 @@ function setupInterno_(ss) {
   // Gatilhos
   ScriptApp.getProjectTriggers().forEach(function (t) { ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('emailDiario').timeBased().everyDays(1).atHour(6).nearMinute(0).inTimezone(TZ).create();
-  ScriptApp.newTrigger('emailFechamento').timeBased().onWeekDay(ScriptApp.WeekDay.TUESDAY).atHour(20).nearMinute(30).inTimezone(TZ).create();
   setupGestao_(ss);
   setupPainel_();
   atualizarPlano();
@@ -436,10 +447,10 @@ var TAREFAS_SEED = [
   ['2027-05-01', 'Ambos', 'Plano de maio a setembro; revisão de março e abril']
 ];
 
-/* ---------------- Identidade: RM Confeitaria do dia a dia, por Raquel Miranda ---------------- */
+/* ---------------- Identidade: RM Confeitaria Artesanal, por Raquel Miranda (nome trocado em 10/2026) ---------------- */
 /* Marca final (03/10/2026): "RM Confeitaria do dia a dia", selo com o RM dentro do papel rendado, DM Serif Display + Nunito Sans,
    ameixa, rosa antigo, linho e ouro velho. Sem arco e sem carimbo numerado "Fornada nº". */
-var MARCA = { nome: 'RM Confeitaria do dia a dia', vinho: '#4E1730', rosa: '#E3B3BE', rosaAntigo: '#C98695', rosaClaro: '#F2E1E1', creme: '#F4ECE2', caramelo: '#7A5A1E', ouro: '#A57A2F', cacau: '#231318', sub: '#6B5560', linha: '#E3D6C8' };
+var MARCA = { nome: 'RM Confeitaria Artesanal', vinho: '#4E1730', rosa: '#E3B3BE', rosaAntigo: '#C98695', rosaClaro: '#F2E1E1', creme: '#F4ECE2', caramelo: '#7A5A1E', ouro: '#A57A2F', cacau: '#231318', sub: '#6B5560', linha: '#E3D6C8' };
 
 /* Número da semana de produção desde 19/10 (uso interno; o carimbo "Fornada nº" saiu da marca em 03/10/2026). */
 function fornadaNum_(iso) {
@@ -452,7 +463,7 @@ function fornadaNum_(iso) {
 /* Selo do cabeçalho dos e-mails: PNG embutido no próprio e-mail (o Gmail não mostra SVG nem fontes da web).
    A imagem (SELO_EMAIL_B64) fica no arquivo Selo.gs. */
 function seloBlob_() { return Utilities.newBlob(Utilities.base64Decode(SELO_EMAIL_B64), 'image/png', 'rm-selo.png'); }
-function marcaEmail_() { return '<img src="cid:rmselo" width="208" height="62" alt="RM Confeitaria do dia a dia" style="display:block;border:0;width:208px;height:62px">'; }
+function marcaEmail_() { return '<img src="cid:rmselo" width="208" height="62" alt="RM Confeitaria Artesanal" style="display:block;border:0;width:208px;height:62px">'; }
 /* Todo e-mail da RM passa por aqui: inclui o selo embutido e o nome do remetente. */
 function enviarEmail_(opts) {
   opts.inlineImages = opts.inlineImages || {}; opts.inlineImages.rmselo = seloBlob_();
@@ -473,7 +484,7 @@ function abreEmail_(titulo, sub) {
 function fechaEmail_(appUrl) {
   var M = MARCA;
   return (appUrl ? '<p style="margin:22px 0 6px"><a href="' + appUrl + '" style="background:' + M.vinho + ';color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:bold;display:inline-block">Abrir o app</a></p>' : '') +
-    '</td></tr><tr><td style="padding:18px 22px 26px;font-size:12px;letter-spacing:2px;color:' + M.caramelo + ';font-weight:bold">RM CONFEITARIA DO DIA A DIA · POR RAQUEL MIRANDA</td></tr></table></div>';
+    '</td></tr><tr><td style="padding:18px 22px 26px;font-size:12px;letter-spacing:2px;color:' + M.caramelo + ';font-weight:bold">RM CONFEITARIA ARTESANAL · POR RAQUEL MIRANDA</td></tr></table></div>';
 }
 
 /* ---------------- Clube da Raquel (aprovado em 26/09/2026) ----------------
@@ -630,17 +641,16 @@ var MARCO_PORQUE = {
 };
 function porque_(texto, colG) { return String(colG || '') || CONTEXTO[String(texto || '').trim()] || ''; }
 function porqueRotina_(t) {
-  var m = [[/cardápio da semana/i, 'O cardápio de domingo abre a semana de pedidos. Publicado até 18h, dá tempo de as clientes pedirem até terça.'],
-    [/Responder pedidos/i, 'Pix antes de produzir elimina o prejuízo de quem encomenda e não busca. Registrar no app é o que alimenta a lista de produção e os números.'],
-    [/Compras secas/i, 'Comprar e adiantar o pré-preparo na segunda deixa quarta e quinta só para produção.'],
-    [/Pedidos até 20h/i, 'Pedido registrado até terça 20h entra na lista de produção que chega às 20h30. Depois disso, vai para a semana seguinte.'],
-    [/lote 1|lote 2/i, 'Produzir em lote é o que faz a margem por hora subir. O reel de processo mostra a técnica que sustenta o preço.'],
-    [/Lembrete/i, 'Lembrar na véspera reduz esquecimento na retirada e sobra de produto.'],
-    [/Retirada 8/i, 'A prova social de sexta, com foto de cliente real, gera mais confiança que foto profissional.'],
-    [/Reunião semanal/i, '15 minutos com os números da semana evitam decidir no escuro. É aqui que horas, sobra e quebra entram no sistema.'],
-    [/Aprovar cardápio/i, 'O agente de Marketing prepara o rascunho; a aprovação garante preço certo, quantidade dentro da capacidade e tom da marca.'],
+  var m = [[/massa no congelador/i, 'Massa pronta no congelador é o que permite vender cookie na hora. Produzir antes de zerar evita perder venda; o app avisa quando um sabor fica abaixo do mínimo.'],
+    [/Responder pedidos/i, 'Registrar no app é o que baixa a massa do estoque e alimenta os números. Encomenda só com Pix antecipado; pronta-entrega pode pagar na retirada.'],
+    [/antecedência/i, 'O bolo é feito sob encomenda: com 2 dias de antecedência dá para comprar e produzir sem correria.'],
+    [/Assar os cookies/i, 'O cookie sai do congelador e é assado no dia, sempre do lote mais antigo. Marcar como assado mostra o que já está pronto para retirar.'],
+    [/Lembrete/i, 'Lembrar na véspera reduz esquecimento na retirada das encomendas.'],
+    [/prova social/i, 'A prova social, com foto de cliente real, gera mais confiança que foto profissional.'],
+    [/Reunião semanal/i, '15 minutos com os números da semana evitam decidir no escuro: receita, massa produzida e descartada, sobra e ações.'],
+    [/legendas/i, 'O agente de Marketing prepara o rascunho; a aprovação garante preço certo e tom da marca.'],
     [/pedindo foto/i, 'Foto de cliente real é o conteúdo mais barato e mais convincente do perfil.'],
-    [/Contar o estoque/i, 'A contagem mostra quanto dos insumos caros foi realmente usado no mês. Comparado ao previsto pelas fichas técnicas, revela perda, porção maior que a receita ou ficha errada. Leva uns 10 minutos.'],
+    [/Contar o estoque/i, 'A contagem mostra quanto dos insumos caros foi realmente usado no mês. A massa do congelador entra na conta, porque guarda chocolate e recheio que ainda não foram vendidos. Leva uns 10 minutos.'],
     [/Encomendas avulsas/i, 'A meta de outubro é 100% dos pedidos registrados. Sem registro, custo, margem e clientes ficam errados.']];
   for (var i = 0; i < m.length; i++) if (m[i][0].test(t)) return m[i][1];
   return '';

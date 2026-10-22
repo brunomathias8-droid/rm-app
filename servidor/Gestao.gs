@@ -20,7 +20,9 @@ var DRE_NOTA = 'Regime de competência: Insumos e Embalagem = custo dos itens ve
   'Perda = consumo real dos insumos marcados para contagem (estoque inicial + compras − estoque final) menos o previsto pela ficha. Valores calculados pelo script (não editar): atualizam a cada registro no app, no botão Recalcular agora e todo dia às 5h.';
 var REPASSE_RE = /\b(entrega|frete|uber|motoboy|99\s*pop|corrida)\b/i;
 var ACAO_STATUS = ['Aberta', 'Em andamento', 'Concluída', 'Cancelada'];
-var METAS = { ticket: 85, margemHora: 80, sobra: 0.05, canal: 0.6, insumo: 0.5 };
+var METAS = { ticket: 85, sobra: 0.05, canal: 0.6, insumo: 0.5, perdaMassa: 0.05 };   // margem por hora saiu em 22/10/2026 (decisão 37)
+/* Linhas da DRE que saíram de uso na versão 10 (ficam ocultas na planilha e o recálculo não escreve nelas) */
+var DRE_SEM_USO = ['Horas trabalhadas', 'Margem de contribuição por hora'];
 
 /* ---------------- Instalação ---------------- */
 function setupGestao_(ss) {
@@ -74,7 +76,7 @@ function setupGestao_(ss) {
   ft.getRange(2, 3, 8, 2).clearContent(); ft.getRange(2, 5, 8, 1).clearContent(); ft.getRange(2, 13, 8, 1).clearContent();
   ft.getRange('C1').setValue('Custo de insumo por unidade (R$) — automático');
   ft.getRange('D1').setValue('Custo de embalagem por unidade (R$) — automático');
-  ft.getRange('A11').setValue('Custo automático a partir da aba Receitas. Preencha "Unidades por lote" (1 para caixas, kits e assinatura) e "Tempo do lote" para a margem por hora.');
+  ft.getRange('A11').setValue('Custo automático a partir da aba Receitas. Preencha "Unidades por lote" (1 para caixas, kits e assinatura) e "Bolinhas por unidade vendida" nos produtos com massa congelada.');
 
   // Despesas
   var des = ss.getSheetByName('Despesas');
@@ -189,8 +191,7 @@ function fichas_() {
   sh_('Fichas técnicas').getRange(2, 1, 19, 13).getValues().forEach(function (r) {
     if (!r[0]) return;
     out[String(r[0]).trim()] = { preco: Number(r[1]) || 0, custo: typeof r[12] === 'number' ? r[12] : null,
-      ins: typeof r[2] === 'number' ? r[2] : null, emb: typeof r[3] === 'number' ? r[3] : null,
-      margemHora: typeof r[9] === 'number' ? r[9] : null, porHora: typeof r[8] === 'number' ? r[8] : null };
+      ins: typeof r[2] === 'number' ? r[2] : null, emb: typeof r[3] === 'number' ? r[3] : null };
   });
   return out;
 }
@@ -267,25 +268,24 @@ function indicadoresSemana_(iso) {
   var peds = readPedidos_().filter(function (p) { return p.status !== 'Cancelado' && p.data >= ini && p.data <= fim; });
   var rec = peds.reduce(function (s, p) { return s + p.receita; }, 0);
   var sem = (w >= 1 && w <= 31) ? sh_('Semanal').getRange(w + 1, 1, 1, 18).getValues()[0] : [];
-  var horas = Number(sem[4]) || 0, unid = Number(sem[6]) || 0, sobra = (Number(sem[7]) || 0) + (Number(sem[8]) || 0), meta = Number(sem[16]) || 0;
+  var unid = Number(sem[6]) || 0, sobra = (Number(sem[7]) || 0) + (Number(sem[8]) || 0), meta = Number(sem[16]) || 0;
   var ctS = custoTeorico_(peds, fichas_()), custo = ctS.ins + ctS.emb;   // competência: custo dos itens vendidos na semana
   var canais = {}; peds.forEach(function (p) { var c = p.canal || 'Sem canal'; canais[c] = (canais[c] || 0) + 1; });
   var topCanal = Object.keys(canais).sort(function (a, b) { return canais[b] - canais[a]; })[0];
   var topShare = peds.length ? canais[topCanal] / peds.length : null;
   var ticket = peds.length ? rec / peds.length : null;
-  var mh = horas ? (rec - custo) / horas : null;
   var pixPend = readPedidos_().filter(function (p) { return p.status !== 'Cancelado' && p.pix !== 'Sim'; }).length;
   var ind = [
     { id: 'receita', nome: 'Receita da semana', valor: rec, fmt: 'brl', meta: meta || null, metaTxt: meta ? 'meta ' + brl_(meta) : 'sem meta', st: meta ? status_(rec >= meta * 0.9, parcial) : 'sem dado' },
     { id: 'pedidos', nome: 'Pedidos', valor: peds.length, fmt: 'int', metaTxt: '', st: 'info' },
     { id: 'ticket', nome: 'Ticket médio', valor: ticket, fmt: 'brl', metaTxt: 'meta ≥ R$ 85', st: status_(ticket === null ? null : ticket >= METAS.ticket) },
-    { id: 'margemHora', nome: 'Margem por hora', valor: mh, fmt: 'brl', metaTxt: 'meta > R$ 80', st: status_(mh === null ? null : mh > METAS.margemHora, parcial) },
     { id: 'sobra', nome: 'Sobra e quebra', valor: unid ? sobra / unid : null, fmt: 'pct', metaTxt: 'meta < 5%', st: status_(unid ? sobra / unid < METAS.sobra : null) },
     { id: 'canal', nome: 'Maior canal', valor: topShare, fmt: 'pct', extra: topCanal || '', metaTxt: 'meta ≤ 60%', st: status_(topShare === null ? null : topShare <= METAS.canal) },
     { id: 'pix', nome: 'Pix pendente (total)', valor: pixPend, fmt: 'int', metaTxt: 'meta 0', st: status_(pixPend === 0) }
   ];
-  return { tipo: 'semana', titulo: 'Semana ' + w + ' · ' + ini.slice(8) + '/' + ini.slice(5, 7) + ' a ' + fim.slice(8) + '/' + fim.slice(5, 7), semana: w, parcial: parcial, indicadores: ind,
-    base: { horas: sem[4], unidades: sem[6], sobra: sem[7], quebra: sem[8], notas: sem[17], custo: custo, receita: rec, semCusto: ctS.semCusto } };
+  var mx = massaGestao_(ini, fim); ind = ind.concat(mx.indicadores);
+  return { massa: mx.massa, margemProdutos: margemProdutosSeguro_(), tipo: 'semana', titulo: 'Semana ' + w + ' · ' + ini.slice(8) + '/' + ini.slice(5, 7) + ' a ' + fim.slice(8) + '/' + fim.slice(5, 7), semana: w, parcial: parcial, indicadores: ind,
+    base: { unidades: sem[6], sobra: sem[7], quebra: sem[8], notas: sem[17], custo: custo, receita: rec, semCusto: ctS.semCusto } };
 }
 
 function mesIdx_(iso) {
@@ -330,6 +330,7 @@ function indicadoresMes_(iso) {
     { id: 'compras', nome: 'Compras de insumo e embalagem', valor: compras, fmt: 'brl', metaTxt: 'caixa do mês (informativo)', st: 'info' },
     { id: 'mei', nome: 'Limite anual do MEI usado', valor: lim, fmt: 'pct', metaTxt: 'alerta a partir de 80%', st: status_(lim === null ? null : lim < 0.8) }
   ];
+  var mx = massaGestao_(ini, fim, true); ind = ind.concat(mx.indicadores);
   // produtos do mês
   var fichas = fichas_(), prod = {};
   peds.filter(function (p) { return p.data >= ini && p.data <= fim; }).forEach(function (p) {
@@ -341,10 +342,31 @@ function indicadoresMes_(iso) {
   });
   var produtos = Object.keys(prod).map(function (n) {
     var f = fichaDe_(fichas, n) || {};
-    return { nome: n, qtd: prod[n], receita: f.preco ? f.preco * prod[n] : null, margemHora: f.margemHora === undefined ? null : f.margemHora };
+    return { nome: n, qtd: prod[n], receita: f.preco ? f.preco * prod[n] : null };
   }).sort(function (a, b) { return (b.receita || 0) - (a.receita || 0); });
-  return { tipo: 'mes', titulo: m[2], mesIdx: i, parcial: parcial, indicadores: ind, dre: dre, produtos: produtos, semCusto: semCusto };
+  return { tipo: 'mes', titulo: m[2], mesIdx: i, parcial: parcial, indicadores: ind, dre: dre.filter(function (x) { return DRE_SEM_USO.indexOf(x.linha) < 0; }), produtos: produtos, semCusto: semCusto,
+    massa: mx.massa, margemProdutos: margemProdutosSeguro_() };
 }
+
+/* Versão 10: estoque de massa, dias de estoque, lotes perto de vencer e perda de massa (Massa.gs) para Números e Reunião.
+   Pontos de atenção: sabor zerado (ou negativo), lote perto de vencer e, no mês, perda de massa acima de 5%. */
+function massaGestao_(ini, fim, doMes) {
+  var out = { indicadores: [], massa: null };
+  if (typeof estoqueMassa_ !== 'function') return out;
+  try {
+    var est = estoqueMassa_(), per = massaPeriodo_(ini, fim);
+    var zerados = est.sabores.filter(function (s) { return s.saldo <= 0 && (s.produzido || s.vendido); });
+    var lotes = 0; est.sabores.forEach(function (s) { lotes += s.lotes.filter(function (l) { return l.perto || l.vencido; }).length; });
+    out.massa = { total: est.total, minimo: est.cfg.minimo, perda: per.perda, produzidoMes: per.produzido, descartadoMes: per.descartado,
+      sabores: est.sabores.map(function (s) { return { produto: s.produto, saldo: s.saldo, diasEstoque: s.diasEstoque }; }) };
+    if (!est.sabores.length) return out;
+    out.indicadores.push({ id: 'massa', nome: 'Massa no congelador', valor: est.total, fmt: 'int', metaTxt: zerados.length ? 'sem massa: ' + zerados.map(function (s) { return massaSabor_(s.produto); }).join(', ') : 'bolinhas · mínimo ' + est.cfg.minimo + ' por sabor', st: zerados.length ? 'atenção' : 'ok' });
+    out.indicadores.push({ id: 'lotes', nome: 'Lotes perto de vencer', valor: lotes, fmt: 'int', metaTxt: 'lotes com ' + est.cfg.alertaDias + ' dias ou mais', st: lotes ? 'atenção' : 'ok' });
+    if (doMes) out.indicadores.push({ id: 'perdaMassa', nome: 'Perda de massa', valor: per.perda, fmt: 'pct', metaTxt: per.produzido ? per.descartado + ' de ' + per.produzido + ' bolinhas · meta < 5%' : 'sem lote no mês', st: per.perda === null ? 'sem dado' : status_(per.perda < METAS.perdaMassa) });
+  } catch (e) { Logger.log('massaGestao_: ' + e.message); }
+  return out;
+}
+function margemProdutosSeguro_() { try { return typeof margemPorProduto_ === 'function' ? margemPorProduto_() : []; } catch (e) { return []; } }
 
 function getIndicadores(pin, tipo, iso) {
   checkPin_(pin);
@@ -354,14 +376,15 @@ function getIndicadores(pin, tipo, iso) {
 
 /* ---------------- Reuniões ---------------- */
 var PAUTAS = {
-  Semanal: ['Números da semana (5 min): receita x meta, ticket, margem por hora, Pix pendente',
-    'Lançar horas, unidades, sobra e quebra',
+  Semanal: ['Números da semana (5 min): receita x meta, ticket, massa no congelador, Pix pendente',
+    'Lançar unidades, sobra e quebra',
     'O que funcionou e o que não funcionou (causa, não culpa)',
     'Revisar as ações abertas: concluir, ajustar prazo ou cancelar',
-    'Decidir: cardápio de domingo e até 2 ações novas'],
+    'Decidir: sabores e lotes de massa da próxima semana e até 2 ações novas'],
   Mensal: ['DRE do mês: receita, margem de contribuição, resultado após pró-labore',
     'Indicadores x metas: o que ficou em atenção e por quê',
-    'Produtos: quanto vendeu cada um e margem por hora — qual sai, qual testar',
+    'Produtos: quanto vendeu cada um e a margem de contribuição por produto — qual sai, qual testar',
+    'Massa: perda do mês (meta < 5%), lotes perto de vencer e dias de estoque por sabor',
     'Clientes e canais: ativos, recompra, assinantes, origem dos pedidos',
     'Preço e custo: custo real x teórico; algum preço precisa mudar?',
     'Plano de ação: fechar as do mês, criar até 3 novas com dono e prazo'],
@@ -390,8 +413,7 @@ function salvarReuniao(pin, r) {
   var lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
     if (r.tipo === 'Semanal' && r.semana >= 1 && r.semana <= 31) {
-      var sem = sh_('Semanal');
-      sem.getRange(r.semana + 1, 5).setValue(num_(r.horas));
+      var sem = sh_('Semanal');   // versão 10: horas não são mais registradas
       sem.getRange(r.semana + 1, 7, 1, 3).setValues([[num_(r.unidades), num_(r.sobra), num_(r.quebra)]]);
       if (r.decisoes) sem.getRange(r.semana + 1, 18).setValue(r.decisoes);
     }
@@ -605,20 +627,25 @@ function abaEstoque_() {
   var ss = ss_(), sh = ss.getSheetByName('Estoque');
   if (!sh) {
     sh = ss.insertSheet('Estoque');
-    sh.getRange(1, 1, 1, 8).setValues([['Mês de referência (fim do mês)', 'Insumo', 'Quantidade contada', 'Unidade', 'Custo unitário na contagem (R$)', 'Valor (R$)', 'Contado em', 'Por']])
+    sh.getRange(1, 1, 1, 9).setValues([['Mês de referência (fim do mês)', 'Insumo', 'Quantidade contada', 'Unidade', 'Custo unitário na contagem (R$)', 'Valor (R$)', 'Contado em', 'Por', 'Tipo']])
       .setFontWeight('bold').setBackground(MARCA.vinho).setFontColor('#FFFFFF');
     sh.setFrozenRows(1); sh.setColumnWidth(1, 200); sh.setColumnWidth(2, 240);
     sh.getRange('A2:A2000').setNumberFormat('@');
   }
   return sh;
 }
-function readEstoque_() {
+/* Insumos contados: { ref: { chaveInsumo: q } }. Linhas de Tipo "Massa" (versão 10) ficam de fora: são lidas por readEstoqueMassa_. */
+function readEstoque_() { return lerEstoque_(false); }
+/* Massa contada no congelador: { ref: { nome do sabor: bolinhas } } */
+function readEstoqueMassa_() { return lerEstoque_(true); }
+function lerEstoque_(massa) {
   var sh = ss_().getSheetByName('Estoque'), out = {};
   if (!sh || sh.getLastRow() < 2) return out;
-  sh.getRange(2, 1, sh.getLastRow() - 1, 3).getValues().forEach(function (r) {
+  sh.getRange(2, 1, sh.getLastRow() - 1, 9).getValues().forEach(function (r) {
     var ref = isDate_(r[0]) ? fmt_(r[0], 'yyyy-MM') : String(r[0] || '').trim().slice(0, 7), q = numG_(r[2]);
     if (!/^\d{4}-\d{2}$/.test(ref) || !r[1] || isNaN(q)) return;
-    (out[ref] = out[ref] || {})[chave_(r[1])] = q;
+    if ((String(r[8] || '').trim() === 'Massa') !== massa) return;
+    (out[ref] = out[ref] || {})[massa ? String(r[1]).trim() : chave_(r[1])] = q;
   });
   return out;
 }
@@ -632,13 +659,19 @@ function estoqueMes_(ref, ctx) {
   var pm = peds.filter(function (p) { return p.data >= ini && p.data < fimEx; });
   var prev = consumoPrevisto_(base, pm);
   var refIni = refAnterior_(ref), temIni = !!est[refIni] || refIni <= ESTOQUE_INICIO, temFim = !!est[ref];
+  // versão 10: insumo guardado na massa congelada também é estoque (bolinhas × quantidade do insumo por bolinha)
+  var estM = ctx.estMassa || readEstoqueMassa_(), pb = null, guardIni = {}, guardFim = {};
+  if ((estM[ref] || estM[refIni]) && typeof massaInsumosPorBolinha_ === 'function') {
+    pb = ctx.porBolinha || massaInsumosPorBolinha_();
+    guardIni = massaInsumosGuardados_(estM[refIni] || {}, pb); guardFim = massaInsumosGuardados_(estM[ref] || {}, pb);
+  }
   var itens = [], tot = { ini: 0, compras: 0, fim: 0, real: 0, prev: 0 }, semPreco = [];
   Object.keys(base.ins).forEach(function (k) {
     var i = base.ins[k]; if (!i.contar) return;
     var compras = des.filter(function (d) { return d.data >= ini && d.data < fimEx && chave_(d.insumo) === k; }).reduce(function (s, d) { return s + d.qtd; }, 0);
-    var qIni = temIni ? ((est[refIni] || {})[k] || 0) : null, qFim = temFim ? ((est[ref] || {})[k] || 0) : null;
+    var qIni = temIni ? ((est[refIni] || {})[k] || 0) + (guardIni[k] || 0) : null, qFim = temFim ? ((est[ref] || {})[k] || 0) + (guardFim[k] || 0) : null;
     var real = qIni !== null && qFim !== null ? qIni + compras - qFim : null, pv = prev[k] || 0;
-    itens.push({ nome: i.nome, un: i.un, custo: i.custo, ini: qIni, compras: compras, fim: qFim, real: real, previsto: Math.round(pv * 10) / 10, dif: real === null ? null : Math.round((real - pv) * 10) / 10 });
+    itens.push({ nome: i.nome, un: i.un, custo: i.custo, naMassa: Math.round((guardFim[k] || 0) * 10) / 10, ini: qIni, compras: compras, fim: qFim, real: real, previsto: Math.round(pv * 10) / 10, dif: real === null ? null : Math.round((real - pv) * 10) / 10 });
     if (i.custo === null) { semPreco.push(i.nome); return; }
     tot.prev += pv * i.custo; tot.compras += compras * i.custo;
     if (qIni !== null) tot.ini += qIni * i.custo;
@@ -646,7 +679,8 @@ function estoqueMes_(ref, ctx) {
     if (real !== null) tot.real += real * i.custo;
   });
   var completo = temIni && temFim;
-  return { ref: ref, nome: nomeRef_(ref), temIni: temIni, temFim: temFim, completo: completo, itens: itens, semPreco: semPreco,
+  return { ref: ref, nome: nomeRef_(ref), temIni: temIni, temFim: temFim, completo: completo, itens: itens, semPreco: semPreco, avisosMassa: pb ? pb.avisos : [],
+    massa: estM[ref] || null,
     ini: temIni ? round2_(tot.ini) : null, fim: temFim ? round2_(tot.fim) : null, real: completo ? round2_(tot.real) : null, previsto: round2_(tot.prev),
     perda: completo ? round2_(tot.real - tot.prev) : null, perdaPct: completo && tot.prev > 0 ? Math.round((tot.real - tot.prev) / tot.prev * 10000) / 10000 : null };
 }
@@ -659,15 +693,21 @@ function getEstoque(pin) {
   var itens = Object.keys(base.ins).filter(function (k) { return base.ins[k].contar; }).map(function (k) { var i = base.ins[k]; return { nome: i.nome, un: i.un || 'g', temPreco: i.custo !== null, salvo: { atual: (est[atual] || {})[k], anterior: (est[anterior] || {})[k] } }; })
     .sort(function (a, b) { return a.nome.localeCompare(b.nome); });
   var refs = Object.keys(est).sort(), ultimo = refs.length ? refs[refs.length - 1] : null;
-  return { itens: itens, refs: [{ ref: anterior, nome: nomeRef_(anterior), contado: !!est[anterior] }, { ref: atual, nome: nomeRef_(atual), contado: !!est[atual] }], padrao: padrao,
-    resultado: ultimo ? estoqueMes_(ultimo, { base: base, est: est }) : null };
+  // versão 10: massa no congelador, preenchida com o saldo do app (a Raquel confirma ou corrige)
+  var estM = readEstoqueMassa_(), massa = [];
+  if (typeof estoqueMassa_ === 'function') { try { massa = estoqueMassa_().sabores.filter(function (s) { return s.cadastrado || s.produzido; }).map(function (s) { return { produto: s.produto, saldo: s.saldo, salvo: { atual: (estM[atual] || {})[s.produto], anterior: (estM[anterior] || {})[s.produto] } }; }); } catch (e) { Logger.log('massa na contagem: ' + e.message); } }
+  return { massa: massa, itens: itens, refs: [{ ref: anterior, nome: nomeRef_(anterior), contado: !!est[anterior] }, { ref: atual, nome: nomeRef_(atual), contado: !!est[atual] }], padrao: padrao,
+    resultado: ultimo ? estoqueMes_(ultimo, { base: base, est: est, estMassa: estM }) : null };
 }
 
-function salvarContagem(pin, ref, itens, pessoa) {
+/* massa (versão 10) = [{ produto, q }]: bolinhas contadas no congelador. Gravadas no Estoque com Tipo "Massa" e,
+   se a contagem for diferente do saldo do app, viram um Ajuste com motivo Contagem na aba Massa. */
+function salvarContagem(pin, ref, itens, pessoa, massa) {
   checkPin_(pin);
   ref = String(ref || '');
   if (!/^\d{4}-\d{2}$/.test(ref)) throw new Error('Mês de referência inválido');
-  if (!itens || !itens.length) throw new Error('Informe pelo menos um item');
+  itens = itens || []; massa = Array.isArray(massa) ? massa : [];
+  if (!itens.length && !massa.length) throw new Error('Informe pelo menos um item');
   var base = baseCustos_();
   var lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
@@ -686,9 +726,35 @@ function salvarContagem(pin, ref, itens, pessoa) {
       if (pos < 0) atuais.push(ref + '|' + chave_(i.nome));
       gravados++;
     });
+    var ajustes = massa.length ? salvarContagemMassa_(sh, ref, massa, pessoa) : 0;
+    gravados += massa.length ? massa.filter(function (m) { return m && m.q !== '' && m.q !== null && !isNaN(Number(m.q)); }).length : 0;
     if (!gravados) throw new Error('Nenhuma quantidade válida');
-    return { ok: true, gravados: gravados };
+    return { ok: true, gravados: gravados, ajustes: ajustes };
   } finally { lock.releaseLock(); }
+}
+
+function salvarContagemMassa_(sh, ref, massa, pessoa) {
+  if (typeof estoqueMassa_ !== 'function') throw new Error('Falta o arquivo Massa.gs no servidor.');
+  var F = massaFichas_(), est = estoqueMassa_(), saldo = {}, ajustes = 0;
+  est.sabores.forEach(function (s) { saldo[massaChave_(s.produto)] = s.saldo; });
+  var n = Math.max(sh.getLastRow() - 1, 0);
+  var atuais = n ? sh.getRange(2, 1, n, 9).getValues().map(function (r) { return String(r[0]).trim().slice(0, 7) + '|' + String(r[1]).trim() + '|' + String(r[8]).trim(); }) : [];
+  massa.forEach(function (m) {
+    var q = Number(String(m && m.q).replace(',', '.')), f = F[massaChave_(m && m.produto)];
+    if (!m || m.q === '' || m.q === null || isNaN(q) || q < 0 || q !== Math.round(q) || !f || !(f.bpu > 0) || f.kit) return;
+    var linha = [ref, f.nome, q, 'bolinhas', '', '', new Date(), pessoa || '', 'Massa'];
+    var pos = atuais.indexOf(ref + '|' + f.nome + '|Massa'), row = pos >= 0 ? pos + 2 : sh.getLastRow() + 1;
+    sh.getRange(row, 1, 1, 9).setValues([linha]);
+    sh.getRange(row, 1).setNumberFormat('@'); sh.getRange(row, 7).setNumberFormat('dd/mm/yyyy HH:mm');
+    if (pos < 0) atuais.push(ref + '|' + f.nome + '|Massa');
+    var dif = q - (saldo[massaChave_(f.nome)] || 0);
+    if (dif) {
+      massaAba_().appendRow(['M' + fmt_(new Date(), 'yyMMddHHmmss') + Math.floor(Math.random() * 90 + 10), today_(), 'Ajuste', f.nome, dif, '', 'Contagem',
+        'Contagem do fim de ' + nomeRef_(ref) + ': ' + q + ' (o app esperava ' + (saldo[massaChave_(f.nome)] || 0) + ')', pessoa || '', fmt_(new Date(), 'yyyy-MM-dd HH:mm')]);
+      ajustes++;
+    }
+  });
+  return ajustes;
 }
 
 /* ---------------- DRE em regime de competência (03/10/2026) ---------------- */
@@ -697,8 +763,7 @@ function recalcDRE_() {
   var c = config_();
   var peds = readPedidos_().filter(function (p) { return p.status !== 'Cancelado' && p.data; });
   var des = readDespesas_();
-  var sem = sh_('Semanal').getRange(2, 2, 31, 4).getValues();   // B..E
-  var fichas = fichas_(), base = baseCustos_(), est = readEstoque_();
+  var fichas = fichas_(), base = baseCustos_(), est = readEstoque_(), estMassa = readEstoqueMassa_();
   var rateio = Number(c.rateio_gas_energia) || 0, prol = Number(c.prolabore_mensal) || 0, lim = Number(c.limite_mei) || 0;
   var soma = function (arr) { return arr.reduce(function (s, x) { return s + x.valor; }, 0); };
   var somaRec = function (arr) { return arr.reduce(function (s, p) { return s + p.receita; }, 0); };
@@ -713,10 +778,9 @@ function recalcDRE_() {
     var r9 = r5 - r6 - r7 - r8, r10 = r3 ? r9 / r3 : '';
     var r11 = Math.max(cat('Gás e energia'), rateio), r12 = cat('Marketing'), r13 = cat('Equipamentos e manutenção'), r14 = cat('Outras fixas');
     var r15 = r9 - r11 - r12 - r13 - r14, r16 = prol, r17 = r15 - r16;
-    var r19 = sem.reduce(function (s, r) { return s + (isDate_(r[0]) && fmt_(r[0]) >= ini && fmt_(r[0]) < fim ? (Number(r[3]) || 0) : 0); }, 0);
-    var r20 = r19 ? r9 / r19 : '';
+    var r19 = '', r20 = '';   // horas e margem por hora: sem uso desde a versão 10 (não são gravadas)
     var r21 = ct.valor === null ? '' : ct.valor;
-    var em = estoqueMes_(refMes_(mm[0], mm[1]), { base: base, est: est, des: des, peds: peds });
+    var em = estoqueMes_(refMes_(mm[0], mm[1]), { base: base, est: est, estMassa: estMassa, des: des, peds: peds });
     var r22 = em.perda === null ? '' : em.perda;
     var r23 = (r10 === '' || r10 <= 0) ? '' : (r11 + r12 + r13 + r14 + r16) / r10;
     var r24 = somaRec(peds.filter(function (p) { return p.data >= anoIni && p.data < fim; }));
@@ -728,9 +792,15 @@ function recalcDRE_() {
       .map(function (v) { return typeof v === 'number' ? Math.round(v * 10000) / 10000 : v; });
   });
   var linhas = DRE_LINHAS.map(function (_, i) { return cols.map(function (col) { return col[i]; }); });
-  var nL = DRE_LINHAS.length;
-  dre.getRange(3, 1, nL, 1).setValues(DRE_LINHAS.map(function (l) { return [l]; }));
-  dre.getRange(3, 2, nL, DRE_MESES.length).setValues(linhas);
+  // escreve em blocos, pulando as linhas sem uso (horas e margem por hora ficam como estão, ocultas)
+  var nL = DRE_LINHAS.length, k = 0;
+  while (k < nL) {
+    if (DRE_SEM_USO.indexOf(DRE_LINHAS[k]) >= 0) { k++; continue; }
+    var f = k; while (f < nL && DRE_SEM_USO.indexOf(DRE_LINHAS[f]) < 0) f++;
+    dre.getRange(3 + k, 1, f - k, 1).setValues(DRE_LINHAS.slice(k, f).map(function (l) { return [l]; }));
+    dre.getRange(3 + k, 2, f - k, DRE_MESES.length).setValues(linhas.slice(k, f));
+    k = f;
+  }
   // formatos das linhas novas (26 a 34) e nota abaixo da tabela
   dre.getRange(27, 2, 6, DRE_MESES.length).setNumberFormat('"R$" #,##0.00');
   dre.getRange(33, 2, 1, DRE_MESES.length).setNumberFormat('0.0%');

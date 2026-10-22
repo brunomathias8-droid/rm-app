@@ -1538,13 +1538,21 @@ function vEstoque(ref) {
   call('getEstoque').then(function (e) {
     ref = ref || e.padrao;
     var refInfo = e.refs.filter(function (r) { return r.ref === ref; })[0] || e.refs[1];
-    var html = '<div class="page"><div class="lt" style="padding-top:4px"><h1>Contar o estoque</h1><p>Pese ou conte o que sobrou de cada insumo, na unidade indicada. Leva uns 10 minutos.</p></div>';
+    var html = '<div class="page"><div class="lt" style="padding-top:4px"><h1>Contar o estoque</h1><p>Conte a massa do congelador e pese ou conte o que sobrou de cada insumo, na unidade indicada. Leva uns 10 minutos.</p></div>';
     html += '<div class="fld"><span class="lab">Estoque do fim de</span>' + seg('eRef', e.refs.map(function (r) { return [r.ref, r.nome.replace(/ de \d{4}$/, '') + (r.contado ? ' ✓' : '')]; }), ref) + '</div>';
-    if (!e.itens.length) {
+    var mx = e.massa || [];
+    if (!e.itens.length && !mx.length) {
       html += '<div class="card flat">' + vazio('box', 'Nenhum insumo marcado', 'Na aba Insumos da planilha, escreva Sim na coluna "Contar no estoque" dos insumos caros.') + '</div></div>';
       $('#app').innerHTML = html; ligarRef(); return;
     }
-    html += '<div class="card">' + e.itens.map(function (it, k) {
+    /* Versão 10: massa no congelador, preenchida com o saldo do app. Corrigir gera um Ajuste (motivo Contagem). */
+    if (mx.length) html += '<div class="sec" style="margin-top:6px"><h2>Massa no congelador</h2><span class="cnt">bolinhas</span></div><div class="card">' + mx.map(function (m, k) {
+      var salvo = ref === e.refs[1].ref ? m.salvo.atual : m.salvo.anterior, v = salvo === undefined || salvo === null ? Math.max(0, m.saldo) : salvo;
+      return '<div class="fld"' + (k === mx.length - 1 ? ' style="margin:0"' : '') + '><label for="mq' + k + '">' + esc(m.produto) + ' <span class="muted" style="font-weight:600">· app: ' + m.saldo + '</span></label>' +
+        '<div class="row" style="gap:8px"><input id="mq' + k + '" class="mq" inputmode="numeric" value="' + v + '"><span class="muted" style="min-width:28px">bolinhas</span></div></div>';
+    }).join('') + '<p class="muted" style="margin:10px 0 0">Confira e corrija se for diferente: a diferença vira um ajuste de contagem. Os insumos guardados na massa entram no estoque final.</p></div>' +
+      (e.itens.length ? '<div class="sec"><h2>Insumos</h2></div>' : '');
+    if (e.itens.length) html += '<div class="card">' + e.itens.map(function (it, k) {
       var salvo = ref === e.refs[1].ref ? it.salvo.atual : it.salvo.anterior;
       return '<div class="fld"' + (k === e.itens.length - 1 ? ' style="margin:0"' : '') + '><label for="q' + k + '">' + esc(it.nome) + (it.temPreco ? '' : ' <span class="pill nd">sem preço</span>') + '</label>' +
         '<div class="row" style="gap:8px"><input id="q' + k + '" class="eq" inputmode="decimal" placeholder="quanto sobrou" value="' + (salvo === undefined || salvo === null ? '' : String(salvo).replace('.', ',')) + '"><span class="muted" style="min-width:28px">' + esc(it.un) + '</span></div></div>';
@@ -1553,18 +1561,19 @@ function vEstoque(ref) {
     html += resultadoHtml(e.resultado);
     html += '</div><div class="actbar"><div class="in"><div class="sum"><b id="eCnt">0 de ' + e.itens.length + '</b><span id="eFalta">' + esc('Fim de ' + refInfo.nome) + '</span></div><button class="btn" id="eOk">Salvar</button></div></div>';
     $('#app').innerHTML = html;
-    var conta = function () { var n = $$('#app .eq').filter(function (i) { return i.value.trim() !== ''; }).length; $('#eCnt').textContent = n + ' de ' + e.itens.length; return n; };
+    var conta = function () { var n = $$('#app .eq').filter(function (i) { return i.value.trim() !== ''; }).length; $('#eCnt').textContent = n + ' de ' + e.itens.length + (mx.length ? ' · massa' : ''); return n; };
     $$('#app .eq').forEach(function (i) { i.oninput = conta; }); conta();
     ligarRef();
     $('#eOk').onclick = function () {
       var vazios = $$('#app .eq').filter(function (i) { return i.value.trim() === ''; });
-      var invalido = $$('#app .eq').filter(function (i) { var v = i.value.trim(); return v !== '' && (num(v) === null || num(v) < 0); })[0];
+      var invalido = $$('#app .eq').filter(function (i) { var v = i.value.trim(); return v !== '' && (num(v) === null || num(v) < 0); }).concat($$('#app .mq').filter(function (i) { return !/^\d+$/.test(i.value.trim()); }))[0];
       if (invalido) { invalido.classList.add('falta'); invalido.focus(); setTimeout(function () { invalido.classList.remove('falta'); }, 600); return toast('Quantidade inválida', true); }
       var salvar = function () {
         var itens = e.itens.map(function (it, k) { var v = $('#q' + k).value.trim(); return v === '' ? null : { nome: it.nome, q: num(v) }; }).filter(Boolean);
-        if (!itens.length) return toast('Preencha pelo menos um insumo', true);
+        var massa = mx.map(function (m, k) { return { produto: m.produto, q: parseInt($('#mq' + k).value, 10) }; });
+        if (!itens.length && !massa.length) return toast('Preencha pelo menos um insumo', true);
         var bt = $('#eOk'); bt.disabled = true; bt.textContent = 'Salvando…';
-        call('salvarContagem', ref, itens, S.pessoa).then(function (r) { toast('Contagem salva: ' + r.gravados + ' insumo(s)'); vEstoque(ref); })
+        call('salvarContagem', ref, itens, S.pessoa, massa).then(function (r) { S.massaT = 0; toast('Contagem salva: ' + r.gravados + ' item(ns)' + (r.ajustes ? ' · ' + r.ajustes + ' ajuste(s) de massa' : '')); vEstoque(ref); })
           .catch(function (er) { bt.disabled = false; bt.textContent = 'Salvar'; fail(er); });
       };
       if (vazios.length) confirmar('Faltam ' + vazios.length + ' insumo(s)', 'Os que ficarem em branco não entram nesta contagem e o consumo real deles não será calculado. Salvar assim mesmo?', 'Salvar assim').then(function (ok) { if (ok) salvar(); });
@@ -1579,13 +1588,15 @@ function resultadoHtml(r) {
   if (!r.completo) h += '<div class="aviso av" style="margin:0 0 10px">' + ic('alert', 's') + '<span>' + (r.temIni ? 'Falta a contagem do fim do mês.' : 'Falta a contagem do mês anterior, que é o estoque inicial deste mês.') + ' Sem ela, o consumo real não é calculado.</span></div>';
   h += '<table class="tbl"><tr class="b"><td>Insumo</td><td>Previsto · real</td></tr>' + r.itens.slice().sort(function (a, b) { return a.nome.localeCompare(b.nome); }).map(function (i) {
     var negativo = i.real !== null && i.real < 0, alerta = negativo || (i.dif !== null && i.previsto > 0 && i.dif > i.previsto * 0.1);
-    var nota = negativo ? '<div style="font-size:13px;color:var(--err)">Sobrou mais do que havia: falta lançar uma compra deste insumo?</div>'
-      : i.dif !== null ? '<div class="muted" style="font-size:13px">' + (i.dif > 0 ? 'usou ' + fmtQ(i.dif, i.un) + ' a mais' : i.dif < 0 ? 'usou ' + fmtQ(-i.dif, i.un) + ' a menos' : 'igual ao previsto') + '</div>' : '';
+    var nm = i.naMassa ? '<div class="muted" style="font-size:13px">inclui ' + fmtQ(i.naMassa, i.un) + ' guardados na massa congelada</div>' : '';
+    var nota = nm + (negativo ? '<div style="font-size:13px;color:var(--err)">Sobrou mais do que havia: falta lançar uma compra deste insumo?</div>'
+      : i.dif !== null ? '<div class="muted" style="font-size:13px">' + (i.dif > 0 ? 'usou ' + fmtQ(i.dif, i.un) + ' a mais' : i.dif < 0 ? 'usou ' + fmtQ(-i.dif, i.un) + ' a menos' : 'igual ao previsto') + '</div>' : '');
     return '<tr><td>' + esc(i.nome) + nota + '</td>' +
       '<td' + (alerta ? ' style="color:var(--err);font-weight:800"' : '') + '>' + fmtQ(i.previsto, i.un) + ' · ' + fmtQ(i.real, i.un) + '</td></tr>';
   }).join('') + '</table>';
   if (r.completo) h += '<p style="margin:12px 0 0"><b>Perda do mês: ' + brl(r.perda) + (r.perdaPct !== null ? ' (' + String(Math.abs(Math.round(r.perdaPct * 1000) / 10)).replace('.', ',') + '% ' + (r.perdaPct >= 0 ? 'acima' : 'abaixo') + ' do previsto)' : '') + '</b><br><span class="muted">Meta: até 10% acima do previsto. Real = estoque inicial + compras − estoque final.</span></p>';
   if (r.semPreco && r.semPreco.length) h += '<p class="muted" style="margin:8px 0 0">Sem preço, fora do valor: ' + esc(r.semPreco.join(', ')) + '.</p>';
+  if (r.avisosMassa && r.avisosMassa.length) h += r.avisosMassa.map(function (a) { return '<div class="aviso av">' + ic('alert', 's') + '<span>' + esc(a) + '</span></div>'; }).join('');
   return h + '</div>';
 }
 
