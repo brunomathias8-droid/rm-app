@@ -51,7 +51,7 @@ function api(corpo) {
     });
 }
 /* Cache local: as telas abrem na hora com os últimos dados e atualizam quando o servidor responde */
-var CACHE_FNS = { getProducao: 1, getBootstrap: 1, getHoje: 1, getPedidosAbertos: 1, getPedidosHistorico: 1, getRoadmap: 1, getAcoes: 1, getPainel: 1, getMensagens: 1, getEstoque: 1, getAjuda: 1 };
+var CACHE_FNS = { lerEstoqueMassa: 1, getBootstrap: 1, getHoje: 1, getPedidosAbertos: 1, getPedidosHistorico: 1, getRoadmap: 1, getAcoes: 1, getPainel: 1, getMensagens: 1, getEstoque: 1, getAjuda: 1 };
 function chaveCache(fn, args) { return 'c_' + fn + ':' + JSON.stringify(args || []); }
 function guardarCache(fn, args, d) { if (CACHE_FNS[fn]) store(chaveCache(fn, args), JSON.stringify({ t: Date.now(), d: d })); }
 function lerCache(fn, args) { try { var o = JSON.parse(store(chaveCache(fn, args)) || 'null'); return o && o.d; } catch (e) { return null; } }
@@ -127,18 +127,8 @@ rep("""    call('salvarPedido', p).then(function (r) {
     S.h = null; S.ps = null;
     enfileirarPedido(p);
     sucessoPedido(p, cl);""")
-# 3c. Controle de produção (extras/producao.js): cartão na Hoje, item no menu +, livres e sabores das caixas no pedido
-rep("  var pend = h.tarefas.filter(", "  html += prodCardHtml();\n  var pend = h.tarefas.filter(")
-rep("""'<button class="mi" data-g="despesa">""", """'<button class="mi" data-g="producao"><span class="ic">' + ic('box') + '</span><span><b>Produção</b><span>O que ficou pronto ou congelado</span></span></button>' +
-    '<button class="mi" data-g="despesa">""")
-rep("if (b.dataset.g === 'tarefa')", "if (b.dataset.g === 'producao') { fecharSheet(); setTimeout(function () { prodSheet(); }, 260); } else if (b.dataset.g === 'tarefa')")
-rep("""+ '</div><div class="pr">' + brl(p.preco, true) + '</div></div>""", """+ '</div><div class="pr">' + brl(p.preco, true) + ' <span class="pr-est" id="est' + i + '"></span></div></div>""")
-rep("Item fora do cardápio</button></div>' +", "Item fora do cardápio</button></div><div id=\"sabBox\" class=\"hide\"></div>' +")
-rep("  function extrasHtml() {", "  prodFormIni(f, b, pre, ed);\n  function extrasHtml() {")
-rep("  function atualizar() {\n    var v = total(), n = nItens(), m = faltando();", "  function atualizar() {\n    prodForm(f, b, atualizar);\n    var v = total(), n = nItens(), m = faltando();")
-rep("if (!f.canal) m.push('como chegou'); return m; }", "if (!f.canal) m.push('como chegou'); if (prodSabFalta(f, b)) m.push('sabores da caixa'); return m; }")
-rep("obs: $('#obs').value.trim(), data:", "obs: prodObs($('#obs').value.trim(), f, b), data:")
-rep("esc(ed ? ed.obs : '')", "esc(ed ? prodSemSabores(ed.obs) : '')")
+# 3c. (versão 10) O controle de produção (extras/producao.js) saiu: a massa no congelador, o disponível por sabor e os
+#     sabores das caixas estão no Index.html (seção MASSA NO CONGELADOR) e no servidor/Massa.gs
 rep("function msgErro(e) { var m = (e && e.message) || String(e || '');", "function msgErro(e) { var m = (e && e.message) || String(e || ''); if (m === 'timeout') return 'O servidor demorou para responder. Confira se salvou antes de tentar de novo.';")
 # 4a. Painel da semana: o HTML vem do Painel.gs (o mesmo do e-mail). Imagem que não carrega no app vira a marca em texto
 rep("function gPai() { call('getPainel').then(function (r) { $('#gBody').innerHTML = '<div class=\"painel\">' + r.html + '</div>'; }).catch(function (e) { gErro(e, gPai); }); }",
@@ -185,7 +175,7 @@ function avisosSheet() {
       Object.keys(nomes).map(function (k) { return '<label class="av-i"><input type="checkbox" data-t="' + k + '"' + (tipos.indexOf(k) >= 0 ? ' checked' : '') + '><span>' + esc(nomes[k]) + '</span></label>'; }).join('') +
       '</div><div class="btns"><button class="btn sec" id="avTeste">Enviar um teste</button><button class="btn sec" id="avOff">Desligar neste aparelho</button></div>';
     if (!PUSH.cfg) pushCfg().then(function () { if ($('#avTeste')) avisosSheet(); }).catch(function () {});
-  } else corpo = '<p class="desc">Receba no celular o bom dia com as tarefas, a véspera das retiradas, Pix pendente, a lista de produção, o lembrete do estoque e o painel da semana. Você escolhe quais depois.</p><button class="btn" id="avOn">' + ic('bell', 's') + 'Ativar avisos</button>';
+  } else corpo = '<p class="desc">Receba no celular o bom dia com as tarefas, a véspera das encomendas, Pix pendente, massa baixa e lote perto de vencer, o lembrete do estoque e o painel da semana. Você escolhe quais depois.</p><button class="btn" id="avOn">' + ic('bell', 's') + 'Ativar avisos</button>';
   var sh = sheet(cab + corpo);
   var on = $('#avOn', sh), off = $('#avOff', sh), te = $('#avTeste', sh);
   if (on) on.onclick = function () {
@@ -263,15 +253,14 @@ document.addEventListener('visibilitychange', function () {
 rep('<button data-v="plano"></button>', '<button data-v="mural"></button>')
 rep("var tabs = { hoje: ['home', 'Hoje'], pedidos: ['bag', 'Pedidos'], plano: ['cal', 'Plano'], gestao: ['chart', 'Gestão'] };",
     "var tabs = { hoje: ['home', 'Hoje'], pedidos: ['bag', 'Pedidos'], mural: ['mega', 'Mural'], plano: ['cal', 'Plano'], gestao: ['chart', 'Gestão'] };")
-rep("({ hoje: vHoje, pedidos: vPedidos,", "({ mural: vMural, cartao: vCartao, cardapio: vCardapio, hoje: vHoje, pedidos: vPedidos,")
-rep("var FORM = { novo: 'Novo pedido',", "var FORM = { cartao: 'Recado', cardapio: 'Cardápio da semana', novo: 'Novo pedido',")
+rep("({ massa: vMassa, massaAjuste: vMassaAjuste, hoje: vHoje,", "({ mural: vMural, cartao: vCartao, cardapio: vCardapio, massa: vMassa, massaAjuste: vMassaAjuste, hoje: vHoje,")
+rep("var FORM = { massa:", "var FORM = { cartao: 'Recado', cardapio: 'Cardápio da semana', massa:")
 rep("$$('#tabs [data-v]').forEach(function (b) { var on = b.dataset.v === v;", "$$('#tabs [data-v]').forEach(function (b) { var on = b.dataset.v === v || (b.dataset.v === 'mural' && (v === 'plano' || ((v === 'cartao' || v === 'cardapio') && S.prev === 'mural')));")
-# 4c. Arquivos de extras/ (fila de pedidos e produção) e o estilo deles
-EXTRAS = ''.join('<script>\n' + (pathlib.Path(__file__).with_name('extras') / n).read_text() + '</script>\n' for n in ['fila.js', 'producao.js', 'mural.js'])
+# 4c. Arquivos de extras/ (fila de pedidos e Mural) e o estilo deles
+EXTRAS = ''.join('<script>\n' + (pathlib.Path(__file__).with_name('extras') / n).read_text() + '</script>\n' for n in ['fila.js', 'mural.js'])
 EXTRAS += ('<style>.fila-av{position:fixed;top:calc(var(--top) + 8px);left:50%;transform:translateX(-50%);z-index:25;display:flex;align-items:center;gap:6px;padding:8px 14px;border:0;border-radius:999px;background:var(--ameixa);color:#fff;font:600 13px var(--sans);box-shadow:0 4px 14px rgba(0,0,0,.18);white-space:nowrap}'
   '.fila-av.hide{display:none}.fila-av.err{background:var(--err)}.fila-av svg{width:16px;height:16px}.fila-av .spin{animation:filaGira 1s linear infinite}@keyframes filaGira{to{transform:rotate(360deg)}}'
-  '.prod-est .li{align-items:center}.prod-est .tx small{display:block;font-size:13px;margin-top:2px}.pe-n{text-align:right;min-width:72px}.pe-n b{display:block;font:26px/1 var(--serif);color:var(--ameixa)}.pe-n b.neg{color:var(--err)}.pe-n b.nd{color:var(--sub)}.pe-n span{font-size:12px;color:var(--sub)}'
-  '.pr-est{font-size:13px;color:var(--ok);margin-left:6px;font-weight:600}.pr-est.neg{color:var(--err)}.step.big{justify-content:flex-start;gap:12px}.step.big input{width:96px;text-align:center;font-size:22px;padding:8px}</style>\n')
+  '</style>\n')
 EXTRAS += '<style>\n' + (pathlib.Path(__file__).with_name('extras') / 'mural.css').read_text() + '</style>\n'
 rep('</body>', EXTRAS + '</body>')
 # 5. Service worker: guarda o app no aparelho; versão nova recarrega sozinha

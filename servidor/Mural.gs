@@ -279,13 +279,13 @@ function muralSistemaIA_() {
     'O QUE VOCÊ FAZ: rascunhos e respostas — legendas, roteiros de reel, textos de story, cardápio da semana, respostas para clientes no WhatsApp (a Raquel copia e envia ela mesma), cálculo de preço e margem com os dados da ficha técnica, ideias de ação comercial, dúvidas sobre o plano ou o app. Use só os dados enviados abaixo; se faltar dado, diga qual e marque a estimativa como "premissa". Não invente números. Nada é publicado nem enviado por você.',
     '',
     'MARCA E TOM (obrigatório em todo texto para cliente): nome "RM Confeitaria Artesanal", assinatura "por Raquel Miranda". Instagram @rm_confeitari4 (nunca o antigo @rm_bolosartesanais; nunca o nome antigo "RM Confeitaria do dia a dia"). WhatsApp de pedidos (85) 98690-0420, link wa.me/5585986900420. Tom direto e específico: sabor, textura, peso, prazo, preço publicado. No máximo 1 emoji por texto, sem frases de efeito, nunca "feito com amor", nunca "fornada", nunca "caseiro rústico". "Artesanal" = feito à mão em pequenos lotes, com ingrediente de verdade: diga isso com fatos. Nunca ofereça bolo de festa, pasta americana ou encomenda personalizada. Pedido mínimo R$ 45; cookie só em caixa fechada; entrega por motoboy ou Uber paga pela cliente. Embalagem do cookie: sacola kraft com lacre da marca e cada cookie em saquinho com selo.',
-    'MODELO: cardápio publicado domingo, pedidos até terça 20h, produção quarta e quinta, retirada quinta 16–19h e sexta 8–11h, Pix antecipado. Cardápio com 3 a 4 itens (1 fixo, o mais vendido; 2 que giram; 1 teste ocasional), quantidade limitada. Capacidade: cerca de 16 h de produção por semana; não sugira ação que gere demanda acima disso sem dizer como absorver. O cookie é o produto mais vendido.',
+    'MODELO (decisão 36, 22/10/2026): cookie é pronta-entrega. A Raquel faz a massa em lote, porciona em bolinhas cruas e congela (validade de 90 dias por lote); assa conforme a venda, de quarta a sábado ou em qualquer dia. Bolo caseirinho é sob encomenda, com pelo menos 2 dias de antecedência. Pudim está fora do cardápio por ora. Não existe prazo semanal de pedido: nunca escreva "pedidos até terça" nem janelas fixas de retirada; a retirada é combinada com cada cliente (data e hora). Pagamento: encomenda com Pix antecipado; pronta-entrega pode pagar o Pix até a retirada. O cookie é o produto mais vendido; o estoque de massa por sabor vem nos dados abaixo. Não existe mais margem por hora nem registro de horas: para decidir o mix, use a margem de contribuição por produto (preço − custo da ficha).',
     'CLUBE DA RAQUEL: a cada 5º pedido, 2 cookies de mimo; frequente (3 ou mais pedidos em 60 dias) recebe o cardápio no sábado 18h e reserva até domingo 12h; assinatura R$ 250/mês com lugar garantido; indicação com código (R$ 10 para os dois lados) a partir de 16/01/2027. Não prometa desconto ou brinde fora disso.',
     'TEXTO INTERNO (para Raquel e Bruno): neutro e objetivo, frases curtas, ação primeiro; avalie com honestidade e aponte problema quando houver (preço abaixo do custo, demanda acima da capacidade, regra da marca quebrada).',
     'Se o pedido pedir algo fora dessas regras, explique no cartão o que não pode e entregue a parte possível.',
     '',
     'FORMATO DA RESPOSTA: responda SOMENTE com um objeto JSON válido, sem texto antes ou depois e sem bloco de código, com estes campos (inclua só os que fizerem sentido):',
-    '{"tipo": "post" se houver texto para Instagram ou WhatsApp, "cardapio" se for cardápio, senão "resposta"; "titulo": até 80 caracteres, diz o que é; "resumo": uma linha, o que a pessoa faz com isto; "legenda": texto pronto para colar, até 2200 caracteres; "corpo": explicação, outras opções, cálculos (aceita **negrito**, listas "- " ou "1. " e tabelas com |, com linha |---|); "passos": lista de 2 a 6 ações concretas; "anexos": chaves de arquivos da marca, só destas: avatar, destaque-cardapio, destaque-como-pedir, destaque-retirada, destaque-clientes, destaque-portfolio, logotipo-horizontal, logotipo-horizontal-negativo, logotipo-vertical, logotipo-so-texto, selo-cor, selo-negativo, selo-pequeno, lacre-50mm, cartao-indicacao-90x50, clube-logotipo, clube-selo, adesivo-clube-50mm, cartao-clube-90x50; "cardapio": {"titulo": "Cardápio da semana", "periodo": "26 a 30/10", "itens": [{"nome": até 60 caracteres, "desc": até 110 caracteres (sabor e textura), "peso": "900 g", "preco": "R$ 70", "qtd": "10 unidades", "destaque": true só no mais vendido}], "prazo": "Pedidos até terça, 20h", "retirada": "Retirada quinta 16–19h ou sexta 8–11h", "nota": "Pix antecipado · entrega por motoboy por conta da cliente"} — só em pedido de cardápio, 1 a 6 itens, preços iguais aos da ficha}.',
+    '{"tipo": "post" se houver texto para Instagram ou WhatsApp, "cardapio" se for cardápio, senão "resposta"; "titulo": até 80 caracteres, diz o que é; "resumo": uma linha, o que a pessoa faz com isto; "legenda": texto pronto para colar, até 2200 caracteres; "corpo": explicação, outras opções, cálculos (aceita **negrito**, listas "- " ou "1. " e tabelas com |, com linha |---|); "passos": lista de 2 a 6 ações concretas; "anexos": chaves de arquivos da marca, só destas: avatar, destaque-cardapio, destaque-como-pedir, destaque-retirada, destaque-clientes, destaque-portfolio, logotipo-horizontal, logotipo-horizontal-negativo, logotipo-vertical, logotipo-so-texto, selo-cor, selo-negativo, selo-pequeno, lacre-50mm, cartao-indicacao-90x50, clube-logotipo, clube-selo, adesivo-clube-50mm, cartao-clube-90x50; "cardapio": {"titulo": "Cardápio da semana", "periodo": "26 a 30/10", "itens": [{"nome": até 60 caracteres, "desc": até 110 caracteres (sabor e textura), "peso": "900 g", "preco": "R$ 70", "qtd": "10 unidades", "destaque": true só no mais vendido}], "prazo": "Pronta-entrega: cookies assados no dia", "retirada": "Retirada combinada pelo WhatsApp", "nota": "Bolo sob encomenda com 2 dias de antecedência · entrega por motoboy por conta da cliente"} — só em pedido de cardápio, 1 a 6 itens, preços iguais aos da ficha}.',
     'Com duas ou três opções de texto, ponha a recomendada em "legenda" e as outras no "corpo". Se o pedido trouxer "Recado de referência", entregue a versão ajustada completa e diga no resumo o que mudou. Seja conciso: o corpo com no máximo 250 palavras.'
   ].join('\n');
 }
@@ -293,16 +293,15 @@ function muralSistemaIA_() {
 /* Dados do dia: produtos e preços, o que mais vendeu nas últimas 4 semanas e o último cardápio */
 function muralContextoIA_() {
   var l = [], hoje = today_(), dSem = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'][new Date(hoje + 'T12:00:00').getDay()];
-  var dow = new Date(hoje + 'T12:00:00').getDay(), seg = addDays_(hoje, ((8 - dow) % 7) || 7), sex = addDays_(seg, 4);
-  l.push('DADOS DE HOJE (' + dSem + ', ' + hoje.split('-').reverse().join('/') + '). Próxima semana de produção: ' + seg.slice(8) + '/' + seg.slice(5, 7) + ' a ' + sex.slice(8) + '/' + sex.slice(5, 7) + '.');
+  l.push('DADOS DE HOJE (' + dSem + ', ' + hoje.split('-').reverse().join('/') + ').');
   try {
     var sh = sh_('Fichas técnicas'), n = Math.min(Math.max(sh.getLastRow() - 1, 0), 60);
     if (n) {
-      l.push('', 'PRODUTOS (aba Fichas técnicas: nome | preço | custo por unidade | margem por hora | status do preço):');
+      l.push('', 'PRODUTOS (aba Fichas técnicas: nome | preço | custo por unidade | margem de contribuição por unidade | status do preço):');
       sh.getRange(2, 1, n, 13).getValues().forEach(function (r) {
         if (!r[0]) return;
         var f = function (v) { return typeof v === 'number' ? 'R$ ' + v.toFixed(2).replace('.', ',') : '—'; };
-        l.push('- ' + r[0] + ' | ' + f(r[1]) + ' | ' + f(r[12]) + ' | ' + f(r[9]) + ' | ' + (r[11] || '—'));
+        l.push('- ' + r[0] + ' | ' + f(r[1]) + ' | ' + f(r[12]) + ' | ' + (typeof r[1] === 'number' && typeof r[12] === 'number' ? f(r[1] - r[12]) : '—') + ' | ' + (r[11] || '—'));
       });
     }
   } catch (e) { l.push('(fichas técnicas indisponíveis agora)'); }
@@ -320,6 +319,12 @@ function muralContextoIA_() {
     var top = Object.keys(cont).sort(function (a, b) { return cont[b] - cont[a]; }).slice(0, 10);
     l.push('', 'VENDAS DAS ÚLTIMAS 4 SEMANAS: ' + nPed + ' pedidos, receita R$ ' + rec.toFixed(2).replace('.', ',') + ' (sem taxa de entrega).' + (top.length ? ' Mais vendidos (unidades): ' + top.map(function (k) { return k + ' ' + cont[k]; }).join('; ') + '.' : ''));
   } catch (e) { l.push('(pedidos indisponíveis agora)'); }
+  try {
+    if (typeof estoqueMassa_ === 'function') {
+      var em = estoqueMassa_(hoje);
+      if (em.sabores.length) l.push('', 'MASSA NO CONGELADOR (bolinhas por sabor; mínimo ' + em.cfg.minimo + '): ' + em.sabores.map(function (s) { return s.produto + ' ' + s.saldo + (s.lotes.length ? ' (lote mais antigo de ' + massaDm_(s.lotes[0].data) + ', ' + s.lotes[0].idade + ' dias)' : ''); }).join('; ') + '.');
+    }
+  } catch (e) { l.push('(estoque de massa indisponível agora)'); }
   try { var u = muralUltimoCardapio_(); if (u) l.push('', 'ÚLTIMO CARDÁPIO SALVO NO APP: ' + JSON.stringify(u).slice(0, 1500)); } catch (e) {}
   return l.join('\n');
 }
@@ -465,9 +470,7 @@ function verificarMural() {
         if (!silencio) muralPush_(muralPara_(p.Pessoa), { titulo: 'O assistente não respondeu', corpo: String(p.Texto).slice(0, 80) + ' — peça de novo no Mural.', url: '#mural', tag: 'ped-' + p.ID });
       }
     });
-    // 4) terça a partir de 20h30 (ciclo semanal): cartão com a lista de produção, no lugar do e-mail
-    var dow = parseD_(hoje).getDay();
-    if (dow === 2 && hm >= '20:30' && hoje >= CICLO_INICIO && !inPause_(hoje)) muralListaProducao_(hoje);
+    // (versão 10) o cartão da lista de produção de terça saiu: a sugestão de produção da massa sai pelo Massa.gs (verificarMassa)
   } catch (e) { Logger.log('verificarMural: ' + (e.stack || e)); }
   finally { lock.releaseLock(); }
 }
@@ -483,31 +486,7 @@ function muralPush_(pessoa, msg) {
   return k;
 }
 
-function muralListaProducao_(hoje) {
-  var p = PropertiesService.getScriptProperties(), marca = 'MURAL_PROD_' + hoje;
-  if (p.getProperty(marca)) return;
-  p.setProperty(marca, '1');
-  var ini = weekStart_(hoje), ps = readPedidos_().filter(function (x) { return x.status !== 'Cancelado' && x.data >= ini; });
-  var tot = {}, porJ = {};
-  ps.forEach(function (x) {
-    String(x.itens).split(';').forEach(function (s) {
-      var m = s.trim().match(/^(\d+)\s*x\s*(.+)$/i), q = m ? +m[1] : 1, nome = (m ? m[2] : s).trim();
-      if (!nome || REPASSE_RE.test(nome)) return;
-      tot[nome] = (tot[nome] || 0) + q;
-      var j = x.janela || 'Sem janela'; porJ[j] = porJ[j] || {}; porJ[j][nome] = (porJ[j][nome] || 0) + q;
-    });
-  });
-  var semPix = ps.filter(function (x) { return x.pix !== 'Sim'; });
-  var corpo = '**Total a produzir**\n' + Object.keys(tot).map(function (k) { return '- ' + tot[k] + ' × ' + k; }).join('\n') +
-    Object.keys(porJ).map(function (j) { return '\n\n**Retirada: ' + j + '**\n' + Object.keys(porJ[j]).map(function (k) { return '- ' + porJ[j][k] + ' × ' + k; }).join('\n'); }).join('') +
-    (semPix.length ? '\n\n**Sem Pix confirmado (não produzir ainda)**\n' + semPix.map(function (x) { return '- ' + x.cliente + ' — R$ ' + Number(x.valor).toFixed(2).replace('.', ','); }).join('\n') : '');
-  var un = Object.keys(tot).reduce(function (a, k) { return a + tot[k]; }, 0);
-  muralNovo_({ Origem: 'Sistema', Para: 'Ambos', Tipo: 'tarefa', Titulo: 'Lista de produção da semana ' + weekOf_(hoje),
-    Resumo: ps.length + ' pedidos · ' + un + ' itens', Corpo: corpo, Passos: 'Conferir os Pix pendentes antes de comprar\nCompras frescas na quarta de manhã\nProduzir o lote 1 na quarta e o lote 2 na quinta',
-    Prazo: addDays_(hoje, 1), Hora: '07:30' });
-}
-
-/** Cria um cartão pelo próprio servidor (lista de produção, avisos do sistema). */
+/** Cria um cartão pelo próprio servidor (sugestão de produção, lote perto de vencer, avisos do sistema). */
 function muralNovo_(o) {
   var sh = muralAba_('Mural', MURAL_CAB), id = 'M' + Date.now() + Math.floor(Math.random() * 1000);
   sh.appendRow(MURAL_CAB.map(function (c) { return c === 'ID' ? id : c === 'CriadoEm' ? new Date().toISOString() : c === 'Status' ? 'novo' : (o[c] === undefined ? '' : String(o[c])); }));

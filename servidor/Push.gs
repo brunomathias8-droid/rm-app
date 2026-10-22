@@ -13,10 +13,10 @@
  */
 var PUSH_CAB = ['Token', 'Pessoa', 'Plataforma', 'Tipos', 'CriadoEm', 'AtualizadoEm', 'Ativo', 'UltimoErro'];
 var PUSH_TIPOS = {
-  manha: 'Bom dia às 7h: tarefas, retiradas e Pix pendente',
-  vespera: 'Véspera de retirada, às 18h (para lembrar as clientes)',
+  manha: 'Bom dia às 7h: tarefas, retiradas, Pix pendente e massa baixa',
+  vespera: 'Véspera de retirada das encomendas, às 18h (para lembrar as clientes)',
   pix: 'Pix pendente há mais de 1 dia, às 10h',
-  producao: 'Lista de produção pronta (terça, 20h30)',
+  producao: 'Massa baixa (segunda, 7h) e lote de massa perto de vencer (9h)',
   estoque: 'Contar o estoque (último dia do mês, 9h)',
   painel: 'Painel da semana (domingo, 18h)',
   pedido: 'Pedido novo registrado pela outra pessoa'
@@ -181,12 +181,14 @@ function verificarAvisos() {
 
   if (hora === 7 && !feito('manha')) {
     var retHoje = abertos.filter(function (p) { return p.retirada === hoje; }), semPix = peds.filter(function (p) { return p.pix !== 'Sim'; });
+    var massaBaixa = '';   // Massa.gs (versão 10): sabores abaixo do mínimo
+    if (typeof estoqueMassa_ === 'function') { try { var mb = massaBaixosTxt_(estoqueMassa_(hoje)); if (mb) massaBaixa = '\nMassa baixa: ' + mb + '.'; } catch (e) { Logger.log('massa no bom dia: ' + e); } }
     API_PESSOAS.forEach(function (pe) {
       var t = tarefasDe_(pe, hoje).filter(function (x) { return !x.feita; }), atr = t.filter(function (x) { return x.atrasada; }).length;
       var partes = [plural(t.length, 'tarefa', 'tarefas') + (atr ? ' (' + atr + ' atrasada' + (atr === 1 ? '' : 's') + ')' : '')];
       if (retHoje.length) partes.push(plural(retHoje.length, 'retirada', 'retiradas'));
       if (semPix.length) partes.push(plural(semPix.length, 'Pix pendente', 'Pix pendentes'));
-      pushAvisar_(pe, 'manha', { titulo: 'Bom dia, ' + pe, corpo: 'Hoje: ' + partes.join(' · ') + '.', url: '#hoje', tag: 'manha' });
+      pushAvisar_(pe, 'manha', { titulo: 'Bom dia, ' + pe, corpo: 'Hoje: ' + partes.join(' · ') + '.' + massaBaixa, url: '#hoje', tag: 'manha' });
     });
   }
   if (hora === 10 && !feito('pix')) {
@@ -201,7 +203,7 @@ function verificarAvisos() {
     API_PESSOAS.forEach(function (pe) { pushAvisar_(pe, 'estoque', { titulo: 'Hoje: contar o estoque', corpo: 'Último dia do mês. No app: + › Contar o estoque (só os insumos marcados).', url: '#estoque', tag: 'estoque' }); });
   }
   if (hora === 18 && !feito('vespera')) {
-    var amanha = abertos.filter(function (p) { return p.retirada === addDays_(hoje, 1); });
+    var amanha = abertos.filter(function (p) { return p.retirada === addDays_(hoje, 1) && tipoPedido_(p.tipo) === 'Encomenda'; });   // pronta-entrega não leva lembrete
     if (amanha.length) {
       var semP = amanha.filter(function (p) { return p.pix !== 'Sim'; }).length;
       API_PESSOAS.forEach(function (pe) { pushAvisar_(pe, 'vespera', { titulo: 'Amanhã: ' + plural(amanha.length, 'retirada', 'retiradas'), corpo: 'Mande o lembrete pelo WhatsApp (Pedidos › Amanhã).' + (semP ? ' ' + plural(semP, 'ainda sem Pix', 'ainda sem Pix') + '.' : ''), url: '#pedidos', tag: 'vespera' }); });
@@ -211,11 +213,7 @@ function verificarAvisos() {
     var r = resumoSemana_(hoje);
     API_PESSOAS.forEach(function (pe) { pushAvisar_(pe, 'painel', { titulo: 'Painel da semana ' + r.semana, corpo: plural(r.pedidos, 'pedido', 'pedidos') + ' · ' + brl_(r.receita) + (r.meta ? ' de ' + brl_(r.meta) : '') + '. Prioridades da semana no app.', url: '#gestao', tag: 'painel' }); });
   }
-  if (dow === 2 && hora === 20 && hoje >= CICLO_INICIO && !feito('producao')) {
-    var ini = weekStart_(hoje), sem = peds.filter(function (p) { return p.data >= ini; }), un = 0;
-    sem.forEach(function (p) { String(p.itens).split(';').forEach(function (s) { var m = s.trim().match(/^(\d+)\s*x/i); if (s.trim() && !REPASSE_RE.test(s)) un += m ? +m[1] : 1; }); });
-    API_PESSOAS.forEach(function (pe) { pushAvisar_(pe, 'producao', { titulo: 'Lista de produção pronta', corpo: plural(sem.length, 'pedido', 'pedidos') + ' · ' + un + ' itens. Detalhe no e-mail das 20h30.', url: '#pedidos', tag: 'producao' }); });
-  }
+  // A lista de produção de terça (20h) saiu na versão 10: a massa é congelada e a sugestão de produção sai pelo Massa.gs (verificarMassa)
   if (hora === 3) pushLimparMarcas_();
 }
 

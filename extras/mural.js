@@ -274,7 +274,7 @@ function muCardapioBase() {
   var u = S.mu.dados && S.mu.dados.ultimoCardapio, h = S.boot.hoje, dow = pd(h).getDay(), seg = isoAdd(h, ((8 - dow) % 7) || 7), sex = isoAdd(seg, 4);
   var per = seg.slice(8) + ' a ' + sex.slice(8) + '/' + sex.slice(5, 7);
   if (u) { var c = JSON.parse(JSON.stringify(u)); c.periodo = per; return c; }
-  return { titulo: 'Cardápio da semana', periodo: per, itens: ((S.boot && S.boot.produtos) || []).slice(0, 3).map(function (p) { return { nome: p.nome, desc: '', peso: '', preco: 'R$ ' + String(p.preco).replace('.', ','), qtd: '' }; }), prazo: 'Pedidos até terça, 20h', retirada: 'Retirada quinta 16–19h ou sexta 8–11h', nota: 'Pix antecipado · entrega por motoboy por conta da cliente' };
+  return { titulo: 'Cardápio da semana', periodo: per, itens: ((S.boot && S.boot.produtos) || []).slice(0, 3).map(function (p) { return { nome: p.nome, desc: '', peso: '', preco: 'R$ ' + String(p.preco).replace('.', ','), qtd: '' }; }), prazo: 'Cookies de pronta-entrega, assados no dia', retirada: 'Retirada combinada pelo WhatsApp', nota: 'Bolo sob encomenda com 2 dias de antecedência · entrega por motoboy por conta da cliente' };
 }
 function vCardapio() {
   if (!S.cdp) S.cdp = { id: '', dados: muCardapioBase(), legenda: '' };
@@ -290,7 +290,7 @@ function vCardapio() {
     '<div class="seg" id="cdFmt"><button class="on" data-k="post">Post 1080×1080</button><button data-k="story">Story 1080×1920</button></div>' +
     '<div class="card"><div class="fld"><label>Título</label><input id="cdT" value="' + esc(c.titulo) + '" maxlength="60"></div><div class="fld"><label>Semana</label><input id="cdP" value="' + esc(c.periodo) + '" maxlength="40" placeholder="19 a 23/10"></div></div>' +
     '<div id="cdIts">' + c.itens.map(item).join('') + '</div>' + (c.itens.length < 6 ? '<button class="btn sec" id="cdAdd">' + ic('plus', 's') + 'Adicionar item</button>' : '') +
-    '<div class="card" style="margin-top:12px"><div class="fld"><label>Prazo do pedido</label><input id="cdPz" value="' + esc(c.prazo) + '" maxlength="80"></div><div class="fld"><label>Retirada</label><input id="cdRt" value="' + esc(c.retirada) + '" maxlength="100"></div><div class="fld" style="margin:0"><label>Observação</label><input id="cdNt" value="' + esc(c.nota) + '" maxlength="140"></div></div>' +
+    '<div class="card" style="margin-top:12px"><div class="fld"><label>Como pedir</label><input id="cdPz" value="' + esc(c.prazo) + '" maxlength="80"></div><div class="fld"><label>Retirada</label><input id="cdRt" value="' + esc(c.retirada) + '" maxlength="100"></div><div class="fld" style="margin:0"><label>Observação</label><input id="cdNt" value="' + esc(c.nota) + '" maxlength="140"></div></div>' +
     '<div class="btns"><button class="btn" id="cdGer">' + ic('out', 's') + 'Gerar e salvar a imagem</button>' + (S.cdp.legenda ? '<button class="btn sec" id="cdLeg">' + ic('doc', 's') + 'Copiar a legenda</button>' : '') + '<button class="btn sec" id="cdIg">Abrir o Instagram</button></div>' +
     '<p class="muted" style="margin:10px 0 24px">Gere o post e, se quiser, troque para Story e gere de novo. As duas imagens saem com o nome e as cores da marca. O texto fica guardado para a próxima semana.</p></div>';
   $('#app').innerHTML = h;

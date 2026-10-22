@@ -9,7 +9,7 @@
  * permitida e chama a mesma função que o app antigo usa, passando o PIN da Config no lugar do PIN digitado.
  * Assim as regras de negócio (pedidos, DRE, estoque, Clube) ficam num lugar só.
  */
-var API_VERSAO = '1.2.0';
+var API_VERSAO = '1.3.0';
 var API_PESSOAS = ['Raquel', 'Bruno'];
 var API_CAB_SESSOES = ['ID', 'TokenHash', 'Pessoa', 'CriadoEm', 'ExpiraEmMs', 'Aparelho', 'UltimoUso', 'Ativa'];
 
@@ -28,6 +28,7 @@ function apiFuncoes_() {
     getMensagens: getMensagens, salvarMensagem: salvarMensagem
   };
   if (typeof getProducao === 'function') { m.getProducao = getProducao; m.salvarProducao = salvarProducao; }   // Producao.gs
+  if (typeof lerEstoqueMassa === 'function') { m.lerEstoqueMassa = lerEstoqueMassa; m.registrarMassa = registrarMassa; m.desfazerMassa = desfazerMassa; }   // Massa.gs (versão 10)
   // Arquivos novos do servidor registram as próprias funções em apiExtras_ (ex.: Mural.gs): não é preciso mexer neste arquivo
   if (typeof apiExtras_ === 'function') { var x = apiExtras_(); Object.keys(x).forEach(function (k) { if (typeof x[k] === 'function') m[k] = x[k]; }); }
   return m;
