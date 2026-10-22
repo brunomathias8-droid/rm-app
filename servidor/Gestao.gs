@@ -472,8 +472,10 @@ function acoesDe_(pessoa, iso) {
  * Roda: após cada registro no app, a cada edição manual nas abas de origem (gatilho aoEditar) e todo dia às 5h. */
 var ABAS_ORIGEM = ['Insumos', 'Receitas', 'Fichas técnicas', 'Despesas', 'Pedidos', 'Semanal', 'Config'];
 
+/* Trava própria (a do documento): o recálculo demora e, com a trava dos registros, fazia pedido, despesa e produção
+   esperarem até 20 segundos. Registros usam a trava do script; o Mural, a de usuário (ver muralTrava_). */
 function recalcular() {
-  var lock = LockService.getScriptLock();
+  var lock = LockService.getDocumentLock() || LockService.getScriptLock();
   if (!lock.tryLock(20000)) return 'Recalculo já em andamento';
   try {
     recalcFichas_();

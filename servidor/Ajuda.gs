@@ -23,6 +23,7 @@ function editarPedido(pin, row, orig, p) {
     sh.getRange(row, 8).setNumberFormat('dd/mm/yyyy');
     sh.getRange(row, 4).setNumberFormat('"R$" #,##0.00');
     if (tipo && cT >= 0) sh.getRange(row, cT + 1).setValue(tipo);
+    pedidosAlterados_();
     return { ok: true };
   } finally { lock.releaseLock(); }
 }

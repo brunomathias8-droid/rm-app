@@ -218,7 +218,7 @@ details.more[open]>summary svg{transform:rotate(90deg)}
 .opt.on{border-color:var(--ameixa);background:#FBF1F1;box-shadow:inset 0 0 0 1px var(--ameixa)}
 
 /* Barra de ação fixa (formulários) */
-.actbar{position:fixed;left:0;right:0;bottom:0;z-index:15;background:rgba(255,252,248,.97);backdrop-filter:blur(8px);border-top:1px solid var(--linha);padding:10px 16px calc(10px + var(--safe))}
+.actbar{position:fixed;left:0;right:0;bottom:var(--kb,0px);z-index:15;background:rgba(255,252,248,.97);backdrop-filter:blur(8px);border-top:1px solid var(--linha);padding:10px 16px calc(10px + var(--safe))}
 .actbar .in{max-width:600px;margin:0 auto;display:flex;align-items:center;gap:12px}
 .actbar .sum{flex:1;min-width:0}
 .actbar .sum b{display:block;font:24px/1.1 var(--serif);color:var(--ameixa)}
@@ -227,7 +227,7 @@ details.more[open]>summary svg{transform:rotate(90deg)}
 .actbar .btn{width:auto;flex:0 0 auto;padding:12px 22px}
 
 /* ============ Tab bar ============ */
-.tabs{position:fixed;left:0;right:0;bottom:0;z-index:15;background:rgba(255,252,248,.97);backdrop-filter:blur(8px);border-top:1px solid var(--linha);display:flex;justify-content:space-around;padding:6px 4px calc(6px + var(--safe));height:calc(var(--tab) + var(--safe))}
+.tabs{position:fixed;left:0;right:0;bottom:var(--kb,0px);z-index:15;background:rgba(255,252,248,.97);backdrop-filter:blur(8px);border-top:1px solid var(--linha);display:flex;justify-content:space-around;padding:6px 4px calc(6px + var(--safe));height:calc(var(--tab) + var(--safe))}
 body.form .tabs{display:none}
 .tabs button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:700;color:var(--sub2);min-width:0}
 .tabs button.on{color:var(--ameixa)}
@@ -324,8 +324,8 @@ body.form .tabs{display:none}
 .faq details p{margin:0;padding:0 16px 14px 42px;font-size:15px;line-height:1.55;color:var(--tinta)}
 .faq .cat{font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--ouro);margin:18px 2px 8px}
 /* ============ Toast ============ */
-.toast{position:fixed;left:16px;right:16px;bottom:calc(var(--tab) + var(--safe) + 14px);z-index:50;background:var(--tinta);color:#fff;padding:12px 14px 12px 16px;border-radius:14px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;transform:translateY(12px);transition:.22s;pointer-events:none;max-width:568px;margin:0 auto;font-size:15px}
-body.form .toast{bottom:calc(var(--safe) + 96px)}
+.toast{position:fixed;left:16px;right:16px;bottom:calc(var(--tab) + var(--safe) + 14px + var(--kb,0px));z-index:50;background:var(--tinta);color:#fff;padding:12px 14px 12px 16px;border-radius:14px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;transform:translateY(12px);transition:.22s;pointer-events:none;max-width:568px;margin:0 auto;font-size:15px}
+body.form .toast{bottom:calc(var(--safe) + 96px + var(--kb,0px))}
 .toast.show{opacity:1;transform:none;pointer-events:auto}
 .toast.err{background:var(--err)}
 .toast span{flex:1}
@@ -2161,6 +2161,25 @@ function renderMensagens() {
   });
 }
 
+/* iPhone (22/10/2026): depois de fechar o teclado, e ao rolar no app instalado, o iOS às vezes desloca a área do app e as
+   barras fixas de baixo (abas e a barra de Salvar) ficavam soltas no meio da tela. Elas passam a seguir a parte visível
+   da tela (visualViewport). Com o teclado aberto, ficam no lugar de sempre (atrás do teclado). */
+(function () {
+  var vv = window.visualViewport; if (!vv) return;
+  var pedido = 0, raiz = document.documentElement;
+  var digitando = function () { var a = document.activeElement; return !!a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && !/^(button|checkbox|radio|submit)$/.test(a.type || ''); };
+  function ajustar() {
+    pedido = 0;
+    var d = digitando() ? 0 : Math.round(window.innerHeight - (vv.offsetTop + vv.height));
+    if (Math.abs(d) < 2 || Math.abs(d) > window.innerHeight / 2) d = 0;
+    raiz.style.setProperty('--kb', d + 'px');
+  }
+  function agendar() { if (!pedido) pedido = requestAnimationFrame(ajustar); }
+  vv.addEventListener('resize', agendar); vv.addEventListener('scroll', agendar);
+  window.addEventListener('scroll', agendar, { passive: true }); window.addEventListener('resize', agendar);
+  document.addEventListener('focusin', agendar);
+  document.addEventListener('focusout', function () { setTimeout(function () { if (!digitando()) window.scrollTo(window.scrollX, window.scrollY); ajustar(); }, 250); });
+})();
 montarChrome();
 start();
 </script>

@@ -133,7 +133,7 @@ function validarTipoPedido_(v, padrao) {
 function verificarMassa() {
   var hoje = today_(), hora = Number(fmt_(new Date(), 'H')), dow = parseD_(hoje).getDay();
   if (hora >= 22 || hora < 7 || dow !== 1) return;
-  var lock = LockService.getScriptLock(); if (!lock.tryLock(10000)) return;
+  var lock = muralTrava_(); if (!lock.tryLock(10000)) return;
   try { v10Sugestao_(estoqueProducao_(hoje), hoje); }
   catch (e) { Logger.log('verificarMassa: ' + (e.stack || e)); }
   finally { lock.releaseLock(); }

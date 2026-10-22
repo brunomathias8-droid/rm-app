@@ -37,6 +37,7 @@ function setConfig_(chave, valor, uso) {
   var sh = sh_('Config'), n = Math.max(sh.getLastRow() - 1, 0);
   var chaves = n ? sh.getRange(2, 1, n, 1).getValues().map(function (r) { return String(r[0]).trim(); }) : [];
   var i = chaves.indexOf(chave);
+  CONFIG_CACHE_ = null;
   if (i >= 0) { sh.getRange(i + 2, 2).setValue(valor); return; }
   sh.getRange(sh.getLastRow() + 1, 1, 1, 3).setValues([[chave, valor, uso || '']]);
 }

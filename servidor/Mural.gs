@@ -26,6 +26,10 @@ function apiExtras_() {
   return { getMural: getMural, muralAcao: muralAcao, salvarCardapio: salvarCardapio, pedirAssistente: pedirAssistente, responderPedido: responderPedido };
 }
 
+/* Trava do Mural (22/10/2026): a de usuário, separada da trava dos registros do app. A verificação de 5 em 5 minutos
+   manda avisos e espera o assistente com a trava fechada; com a mesma trava dos registros, pedidos e despesas esperavam. */
+function muralTrava_() { return LockService.getUserLock() || LockService.getScriptLock(); }
+
 /* ------------------------------ abas ------------------------------ */
 
 function muralAba_(nome, cab) {
@@ -54,7 +58,7 @@ function muralLer_(nome, cab) {
 function muralGarantirIds_(t) {
   var faltam = t.linhas.filter(function (c) { return !c.ID || !c.CriadoEm || !c.Status; });
   if (!faltam.length) return;
-  var lock = LockService.getScriptLock(); lock.waitLock(10000);
+  var lock = muralTrava_(); lock.waitLock(10000);
   try {
     faltam.forEach(function (c, i) {
       if (!c.ID) c.ID = 'M' + Date.now() + String(i).padStart(3, '0');
@@ -123,7 +127,7 @@ function muralPublico_(c, pessoa, hoje) {
 function muralAcao(pin, id, acao, pessoa, valor) {
   checkPin_(pin);
   if (API_PESSOAS.indexOf(pessoa) < 0) throw new Error('Pessoa inválida.');
-  var lock = LockService.getScriptLock(); lock.waitLock(15000);
+  var lock = muralTrava_(); lock.waitLock(15000);
   try {
     var t = muralLer_('Mural', MURAL_CAB), c = t.linhas.filter(function (x) { return x.ID === String(id); })[0];
     if (!c) throw new Error('Cartão não encontrado (pode ter sido apagado na planilha).');
@@ -232,7 +236,7 @@ function muralDisparar_(id) {
 var MURAL_IA_MODELO = 'claude-sonnet-5-5', MURAL_IA_RESERVA = 'claude-haiku-4-5-20251001';
 
 function muralResponderApi_(id) {
-  var lock = LockService.getScriptLock(); lock.waitLock(10000);
+  var lock = muralTrava_(); lock.waitLock(10000);
   var t, p, tent;
   try {   // reserva o pedido: o app e o gatilho de 5 min nunca respondem o mesmo pedido duas vezes
     t = muralLer_('PedidosAssistente', PEDAS_CAB); p = t.linhas.filter(function (x) { return x.ID === id; })[0];
@@ -258,7 +262,7 @@ function muralResponderApi_(id) {
     if (m) { try { var j = JSON.parse(m[0]); c = Array.isArray(j) ? j[0] : j && Array.isArray(j.cartoes) ? j.cartoes[0] : j; } catch (e) { c = null; } }
     if (!c || typeof c !== 'object' || !c.titulo) c = { titulo: 'Resposta do assistente', tipo: 'resposta', corpo: texto };   // veio fora do formato: entrega o texto mesmo assim
     c.pedidoId = p.ID; c.origem = 'Assistente'; c.para = p.Pessoa; delete c.chave;
-    var lk = LockService.getScriptLock(); lk.waitLock(10000);
+    var lk = muralTrava_(); lk.waitLock(10000);
     try { if (!muralDoAgente_(c)) throw new Error('Resposta sem título.'); } finally { lk.releaseLock(); }
     var d = muralLer_('PedidosAssistente', PEDAS_CAB).linhas.filter(function (x) { return x.ID === id; })[0] || {};
     return { ok: true, status: 'respondido', muralId: d.MuralID || '' };
@@ -368,6 +372,7 @@ function muralPasta_(criar) {
   return pasta;
 }
 function muralConfig_(chave, valor, uso) {
+  CONFIG_CACHE_ = null;
   var sh = sh_('Config'), n = sh.getLastRow() - 1, v = n > 0 ? sh.getRange(2, 1, n, 1).getValues() : [];
   for (var i = 0; i < v.length; i++) if (String(v[i][0]).trim() === chave) { sh.getRange(i + 2, 2).setValue(valor); return; }
   sh.appendRow([chave, valor, uso || '']);
@@ -382,7 +387,7 @@ function muralLerArquivo_(f) {
 }
 function muralImportar_() {
   var pasta = muralPasta_(false); if (!pasta) return 0;
-  var lock = LockService.getScriptLock(); if (!lock.tryLock(8000)) return 0;
+  var lock = muralTrava_(); if (!lock.tryLock(8000)) return 0;
   var n = 0;
   try {
     var it = pasta.getFiles(), arquivos = [];
@@ -434,7 +439,7 @@ function muralDoAgente_(c) {
 
 function verificarMural() {
   try { muralImportar_(); } catch (e) { Logger.log('importar: ' + (e.stack || e)); }
-  var lock = LockService.getScriptLock(); if (!lock.tryLock(5000)) return;
+  var lock = muralTrava_(); if (!lock.tryLock(5000)) return;
   try {
     var agora = new Date(), hoje = today_(), hm = fmt_(agora, 'HH:mm'), hora = Number(hm.slice(0, 2)), silencio = hora >= 22 || hora < 7;
     var t = muralLer_('Mural', MURAL_CAB);

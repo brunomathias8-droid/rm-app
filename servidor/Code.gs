@@ -20,7 +20,11 @@ function doGet() {
     .addMetaTag('apple-mobile-web-app-capable', 'yes');
 }
 
-function ss_() { return SpreadsheetApp.openById(SHEET_ID); }
+/* Planilha, Config e Pedidos lidos uma vez por execução (antes cada leitura reabria a planilha: deixava o app lento).
+   Quem grava em Pedidos chama pedidosAlterados_() para a próxima leitura vir da planilha. */
+var SS_CACHE_ = null, CONFIG_CACHE_ = null, PEDIDOS_CACHE_ = null;
+function ss_() { return SS_CACHE_ || (SS_CACHE_ = SpreadsheetApp.openById(SHEET_ID)); }
+function pedidosAlterados_() { PEDIDOS_CACHE_ = null; }
 function sh_(name) { return ss_().getSheetByName(name); }
 function fmt_(d, p) { return Utilities.formatDate(d, TZ, p || 'yyyy-MM-dd'); }
 function today_() { return fmt_(new Date()); }
@@ -33,12 +37,13 @@ function addDays_(iso, n) { var d = parseD_(iso); d.setDate(d.getDate() + n); re
 function inPause_(iso) { return iso >= PAUSA_INI && iso <= PAUSA_FIM; }
 
 function config_() {
+  if (CONFIG_CACHE_) return CONFIG_CACHE_;
   var sh = sh_('Config'), out = {};
   if (!sh) return out;
   sh.getRange(2, 1, Math.max(sh.getLastRow() - 1, 1), 2).getValues().forEach(function (r) {
     if (r[0]) out[String(r[0]).trim()] = r[1];
   });
-  return out;
+  return (CONFIG_CACHE_ = out);
 }
 
 function checkPin_(pin) {
@@ -67,10 +72,11 @@ function colTipoPedido_(sh) {
   return sh.getRange(1, 1, 1, lc).getValues()[0].map(function (c) { return String(c).trim(); }).indexOf('Tipo');
 }
 function readPedidos_() {
+  if (PEDIDOS_CACHE_) return PEDIDOS_CACHE_.map(function (p) { return Object.assign({}, p); });   // cópia: quem lê pode mexer no objeto
   var sh = sh_('Pedidos'), n = sh.getLastRow() - 1;
   if (n < 1) return [];
   var cT = colTipoPedido_(sh), nc = Math.max(15, cT + 1);
-  return sh.getRange(2, 1, n, nc).getValues().map(function (r, i) {
+  var lista = sh.getRange(2, 1, n, nc).getValues().map(function (r, i) {
     var valor = Number(r[3]) || 0, repasse = Number(r[14]) || 0;
     return {
       row: i + 2, data: iso_(r[0]), cliente: String(r[1] || ''), itens: String(r[2] || ''), valor: valor,
@@ -80,6 +86,8 @@ function readPedidos_() {
       id: String(r[12] || ''), tipo: tipoPedido_(cT >= 0 ? r[cT] : '')
     };
   }).filter(function (p) { return p.data || p.cliente; });
+  PEDIDOS_CACHE_ = lista;
+  return lista.map(function (p) { return Object.assign({}, p); });
 }
 
 function getPedidosAbertos(pin) {
@@ -129,6 +137,7 @@ function salvarPedido(pin, p) {
     sh.getRange(r, 8).setNumberFormat('dd/mm/yyyy');
     sh.getRange(r, 4).setNumberFormat('"R$" #,##0.00'); sh.getRange(r, 15).setNumberFormat('"R$" #,##0.00');
     var cT = colTipoPedido_(sh); if (cT >= 0) sh.getRange(r, cT + 1).setValue(tipo);
+    pedidosAlterados_();
     return { ok: true, id: id, clube: clube };
   } finally { lock.releaseLock(); }
 }
@@ -161,6 +170,7 @@ function atualizarPedido(pin, row, campo, valor) {
   var ok = { pix: ['Sim', 'Não'], status: ['Confirmado', 'Produzido', 'Retirado', 'Cancelado'] }[campo];
   if (ok.indexOf(valor) < 0) throw new Error('Valor inválido: ' + valor);
   sh_('Pedidos').getRange(row, col).setValue(valor);
+  pedidosAlterados_();
   return { ok: true };
 }
 
