@@ -279,7 +279,7 @@ function muralSistemaIA_() {
     'O QUE VOCÊ FAZ: rascunhos e respostas — legendas, roteiros de reel, textos de story, cardápio da semana, respostas para clientes no WhatsApp (a Raquel copia e envia ela mesma), cálculo de preço e margem com os dados da ficha técnica, ideias de ação comercial, dúvidas sobre o plano ou o app. Use só os dados enviados abaixo; se faltar dado, diga qual e marque a estimativa como "premissa". Não invente números. Nada é publicado nem enviado por você.',
     '',
     'MARCA E TOM (obrigatório em todo texto para cliente): nome "RM Confeitaria Artesanal", assinatura "por Raquel Miranda". Instagram @rm_confeitari4 (nunca o antigo @rm_bolosartesanais; nunca o nome antigo "RM Confeitaria do dia a dia"). WhatsApp de pedidos (85) 98690-0420, link wa.me/5585986900420. Tom direto e específico: sabor, textura, peso, prazo, preço publicado. No máximo 1 emoji por texto, sem frases de efeito, nunca "feito com amor", nunca "fornada", nunca "caseiro rústico". "Artesanal" = feito à mão em pequenos lotes, com ingrediente de verdade: diga isso com fatos. Nunca ofereça bolo de festa, pasta americana ou encomenda personalizada. Pedido mínimo R$ 45; cookie só em caixa fechada; entrega por motoboy ou Uber paga pela cliente. Embalagem do cookie: sacola kraft com lacre da marca e cada cookie em saquinho com selo.',
-    'MODELO (decisão 36, 22/10/2026): cookie é pronta-entrega. A Raquel faz a massa em lote, porciona em bolinhas cruas e congela (validade de 90 dias por lote); assa conforme a venda, de quarta a sábado ou em qualquer dia. Bolo caseirinho é sob encomenda, com pelo menos 2 dias de antecedência. Pudim está fora do cardápio por ora. Não existe prazo semanal de pedido: nunca escreva "pedidos até terça" nem janelas fixas de retirada; a retirada é combinada com cada cliente (data e hora). Pagamento: encomenda com Pix antecipado; pronta-entrega pode pagar o Pix até a retirada. O cookie é o produto mais vendido; o estoque de massa por sabor vem nos dados abaixo. Não existe mais margem por hora nem registro de horas: para decidir o mix, use a margem de contribuição por produto (preço − custo da ficha).',
+    'MODELO (decisão 36, 22/10/2026): cookie é pronta-entrega. A Raquel faz a massa em lote, porciona em bolinhas cruas e congela (lança no app como produção); assa conforme a venda, de quarta a sábado ou em qualquer dia. Bolo caseirinho é sob encomenda, com pelo menos 2 dias de antecedência. Pudim está fora do cardápio por ora. Não existe prazo semanal de pedido: nunca escreva "pedidos até terça" nem janelas fixas de retirada; a retirada é combinada com cada cliente (data e hora). Pagamento: encomenda com Pix antecipado; pronta-entrega pode pagar o Pix até a retirada. O cookie é o produto mais vendido; o estoque de produção por produto vem nos dados abaixo. Não existe mais margem por hora nem registro de horas: para decidir o mix, use a margem de contribuição por produto (preço − custo da ficha).',
     'CLUBE DA RAQUEL: a cada 5º pedido, 2 cookies de mimo; frequente (3 ou mais pedidos em 60 dias) recebe o cardápio no sábado 18h e reserva até domingo 12h; assinatura R$ 250/mês com lugar garantido; indicação com código (R$ 10 para os dois lados) a partir de 16/01/2027. Não prometa desconto ou brinde fora disso.',
     'TEXTO INTERNO (para Raquel e Bruno): neutro e objetivo, frases curtas, ação primeiro; avalie com honestidade e aponte problema quando houver (preço abaixo do custo, demanda acima da capacidade, regra da marca quebrada).',
     'Se o pedido pedir algo fora dessas regras, explique no cartão o que não pode e entregue a parte possível.',
@@ -320,11 +320,11 @@ function muralContextoIA_() {
     l.push('', 'VENDAS DAS ÚLTIMAS 4 SEMANAS: ' + nPed + ' pedidos, receita R$ ' + rec.toFixed(2).replace('.', ',') + ' (sem taxa de entrega).' + (top.length ? ' Mais vendidos (unidades): ' + top.map(function (k) { return k + ' ' + cont[k]; }).join('; ') + '.' : ''));
   } catch (e) { l.push('(pedidos indisponíveis agora)'); }
   try {
-    if (typeof estoqueMassa_ === 'function') {
-      var em = estoqueMassa_(hoje);
-      if (em.sabores.length) l.push('', 'MASSA NO CONGELADOR (bolinhas por sabor; mínimo ' + em.cfg.minimo + '): ' + em.sabores.map(function (s) { return s.produto + ' ' + s.saldo + (s.lotes.length ? ' (lote mais antigo de ' + massaDm_(s.lotes[0].data) + ', ' + s.lotes[0].idade + ' dias)' : ''); }).join('; ') + '.');
+    if (typeof estoqueProducao_ === 'function') {
+      var em = estoqueProducao_(hoje);
+      if (em.itens.length) l.push('', 'ESTOQUE DE PRODUÇÃO (cookie = bolinhas de massa congelada; mínimo ' + em.cfg.minimo + ' livres): ' + em.itens.map(function (x) { return x.produto + ' ' + x.estoque + ' no estoque, ' + x.reservado + ' em pedidos, ' + x.livre + ' livres'; }).join('; ') + '.');
     }
-  } catch (e) { l.push('(estoque de massa indisponível agora)'); }
+  } catch (e) { l.push('(estoque de produção indisponível agora)'); }
   try { var u = muralUltimoCardapio_(); if (u) l.push('', 'ÚLTIMO CARDÁPIO SALVO NO APP: ' + JSON.stringify(u).slice(0, 1500)); } catch (e) {}
   return l.join('\n');
 }
@@ -470,7 +470,7 @@ function verificarMural() {
         if (!silencio) muralPush_(muralPara_(p.Pessoa), { titulo: 'O assistente não respondeu', corpo: String(p.Texto).slice(0, 80) + ' — peça de novo no Mural.', url: '#mural', tag: 'ped-' + p.ID });
       }
     });
-    // (versão 10) o cartão da lista de produção de terça saiu: a sugestão de produção da massa sai pelo Massa.gs (verificarMassa)
+    // (versão 10) o cartão da lista de produção de terça saiu: a sugestão de produção sai pelo Massa.gs (verificarMassa)
   } catch (e) { Logger.log('verificarMural: ' + (e.stack || e)); }
   finally { lock.releaseLock(); }
 }
@@ -486,7 +486,7 @@ function muralPush_(pessoa, msg) {
   return k;
 }
 
-/** Cria um cartão pelo próprio servidor (sugestão de produção, lote perto de vencer, avisos do sistema). */
+/** Cria um cartão pelo próprio servidor (sugestão de produção, avisos do sistema). */
 function muralNovo_(o) {
   var sh = muralAba_('Mural', MURAL_CAB), id = 'M' + Date.now() + Math.floor(Math.random() * 1000);
   sh.appendRow(MURAL_CAB.map(function (c) { return c === 'ID' ? id : c === 'CriadoEm' ? new Date().toISOString() : c === 'Status' ? 'novo' : (o[c] === undefined ? '' : String(o[c])); }));

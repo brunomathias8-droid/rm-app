@@ -13,10 +13,10 @@
  */
 var PUSH_CAB = ['Token', 'Pessoa', 'Plataforma', 'Tipos', 'CriadoEm', 'AtualizadoEm', 'Ativo', 'UltimoErro'];
 var PUSH_TIPOS = {
-  manha: 'Bom dia às 7h: tarefas, retiradas, Pix pendente e massa baixa',
+  manha: 'Bom dia às 7h: tarefas, retiradas, Pix pendente e produção baixa',
   vespera: 'Véspera de retirada das encomendas, às 18h (para lembrar as clientes)',
   pix: 'Pix pendente há mais de 1 dia, às 10h',
-  producao: 'Massa baixa (segunda, 7h) e lote de massa perto de vencer (9h)',
+  producao: 'Produção baixa: sugestão de produção (segunda, 7h)',
   estoque: 'Contar o estoque (último dia do mês, 9h)',
   painel: 'Painel da semana (domingo, 18h)',
   pedido: 'Pedido novo registrado pela outra pessoa'
@@ -181,8 +181,8 @@ function verificarAvisos() {
 
   if (hora === 7 && !feito('manha')) {
     var retHoje = abertos.filter(function (p) { return p.retirada === hoje; }), semPix = peds.filter(function (p) { return p.pix !== 'Sim'; });
-    var massaBaixa = '';   // Massa.gs (versão 10): sabores abaixo do mínimo
-    if (typeof estoqueMassa_ === 'function') { try { var mb = massaBaixosTxt_(estoqueMassa_(hoje)); if (mb) massaBaixa = '\nMassa baixa: ' + mb + '.'; } catch (e) { Logger.log('massa no bom dia: ' + e); } }
+    var massaBaixa = '';   // versão 10 (Massa.gs): produtos com livres abaixo do mínimo
+    if (typeof estoqueProducao_ === 'function') { try { var mb = v10BaixosTxt_(estoqueProducao_(hoje)); if (mb) massaBaixa = '\nProdução baixa: ' + mb + '.'; } catch (e) { Logger.log('produção no bom dia: ' + e); } }
     API_PESSOAS.forEach(function (pe) {
       var t = tarefasDe_(pe, hoje).filter(function (x) { return !x.feita; }), atr = t.filter(function (x) { return x.atrasada; }).length;
       var partes = [plural(t.length, 'tarefa', 'tarefas') + (atr ? ' (' + atr + ' atrasada' + (atr === 1 ? '' : 's') + ')' : '')];

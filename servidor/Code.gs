@@ -179,10 +179,10 @@ function getSemana(pin, w) {
   checkPin_(pin);
   w = Number(w);
   var v = sh_('Semanal').getRange(w + 1, 1, 1, 18).getValues()[0];
-  var ini = iso_(v[1]), fim = iso_(v[2]), massa = null;
-  if (ini && fim && typeof massaPeriodo_ === 'function') { try { massa = massaPeriodo_(ini, fim); delete massa.porSabor; } catch (e) { Logger.log('massa na semana: ' + e.message); } }
+  var ini = iso_(v[1]), fim = iso_(v[2]), producao = null;
+  if (ini && fim && typeof producaoPeriodo_ === 'function') { try { producao = producaoPeriodo_(ini, fim); } catch (e) { Logger.log('produção na semana: ' + e.message); } }
   return { semana: w, inicio: ini, fim: fim, custo: v[5], unidades: v[6], sobra: v[7], quebra: v[8],
-    receita: v[9], pedidos: v[10], meta: v[16], notas: v[17], massa: massa };
+    receita: v[9], pedidos: v[10], meta: v[16], notas: v[17], producao: producao };
 }
 
 function marcarTarefa(pin, row, feita, acao) {
@@ -228,10 +228,10 @@ function ciclo_(iso) {
     return iso < CICLO_INICIO ? [{ resp: 'Raquel', tarefa: 'Encomendas avulsas: registrar cada pedido no app assim que o Pix cair' }] : [];
   }
   var dow = parseD_(iso).getDay();
-  var extra = addDays_(iso, 1).slice(8) === '01' ? [{ resp: 'Raquel', tarefa: 'Contar o estoque dos insumos marcados e a massa do congelador no app (+ › Contar o estoque)' }] : [];   // último dia do mês
+  var extra = addDays_(iso, 1).slice(8) === '01' ? [{ resp: 'Raquel', tarefa: 'Contar o estoque dos insumos marcados e a produção no congelador no app (+ › Contar o estoque)' }] : [];   // último dia do mês
   /* Versão 10 (22/10/2026): cookie de pronta-entrega com massa congelada; sem prazo de terça nem janelas fixas */
   var m = {
-    1: [['Raquel', 'Conferir a massa no congelador (Hoje › Massa no congelador) e fazer a massa dos sabores em falta'], ['Raquel', 'Responder pedidos, confirmar Pix e registrar no app']],
+    1: [['Raquel', 'Conferir a produção (Hoje › Produção) e fazer a massa do que está abaixo do mínimo'], ['Raquel', 'Responder pedidos, confirmar Pix e registrar no app']],
     2: [['Raquel', 'Responder pedidos e registrar no app; bolo só com 2 dias de antecedência']],
     3: [['Raquel', 'Assar os cookies dos pedidos do dia e marcar como assado'], ['Raquel', 'Lembrete às clientes de encomenda que retiram amanhã']],
     4: [['Raquel', 'Assar os cookies dos pedidos do dia e marcar como assado'], ['Raquel', 'Lembrete às clientes de encomenda que retiram amanhã']],
@@ -641,8 +641,8 @@ var MARCO_PORQUE = {
 };
 function porque_(texto, colG) { return String(colG || '') || CONTEXTO[String(texto || '').trim()] || ''; }
 function porqueRotina_(t) {
-  var m = [[/massa no congelador/i, 'Massa pronta no congelador é o que permite vender cookie na hora. Produzir antes de zerar evita perder venda; o app avisa quando um sabor fica abaixo do mínimo.'],
-    [/Responder pedidos/i, 'Registrar no app é o que baixa a massa do estoque e alimenta os números. Encomenda só com Pix antecipado; pronta-entrega pode pagar na retirada.'],
+  var m = [[/Conferir a produção/i, 'Massa pronta no congelador é o que permite vender cookie na hora. Produzir antes de zerar evita perder venda; o app avisa quando um produto fica abaixo do mínimo de livres.'],
+    [/Responder pedidos/i, 'Registrar no app é o que reserva a produção e alimenta os números. Encomenda só com Pix antecipado; pronta-entrega pode pagar na retirada.'],
     [/antecedência/i, 'O bolo é feito sob encomenda: com 2 dias de antecedência dá para comprar e produzir sem correria.'],
     [/Assar os cookies/i, 'O cookie sai do congelador e é assado no dia, sempre do lote mais antigo. Marcar como assado mostra o que já está pronto para retirar.'],
     [/Lembrete/i, 'Lembrar na véspera reduz esquecimento na retirada das encomendas.'],
@@ -650,7 +650,7 @@ function porqueRotina_(t) {
     [/Reunião semanal/i, '15 minutos com os números da semana evitam decidir no escuro: receita, massa produzida e descartada, sobra e ações.'],
     [/legendas/i, 'O agente de Marketing prepara o rascunho; a aprovação garante preço certo e tom da marca.'],
     [/pedindo foto/i, 'Foto de cliente real é o conteúdo mais barato e mais convincente do perfil.'],
-    [/Contar o estoque/i, 'A contagem mostra quanto dos insumos caros foi realmente usado no mês. A massa do congelador entra na conta, porque guarda chocolate e recheio que ainda não foram vendidos. Leva uns 10 minutos.'],
+    [/Contar o estoque/i, 'A contagem mostra quanto dos insumos caros foi realmente usado no mês. A produção no congelador entra na conta, porque guarda chocolate e recheio que ainda não foram vendidos. Leva uns 10 minutos.'],
     [/Encomendas avulsas/i, 'A meta de outubro é 100% dos pedidos registrados. Sem registro, custo, margem e clientes ficam errados.']];
   for (var i = 0; i < m.length; i++) if (m[i][0].test(t)) return m[i][1];
   return '';

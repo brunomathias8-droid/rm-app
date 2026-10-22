@@ -43,10 +43,10 @@ A pasta `servidor/` guarda todos os arquivos `.gs` do Apps Script (a partir da v
 | `servidor/Ajuda.gs` | Edição e histórico de pedidos, perguntas frequentes, IA da Ajuda, mensagens do WhatsApp |
 | `servidor/Plano.gs` | PDF do plano |
 | `servidor/Selo.gs` | Imagem do cabeçalho dos e-mails (`marca/selo-email-416x124.png` em base64) |
-| `servidor/Massa.gs` | Massa congelada (versão 10): aba Massa, estoque por sabor, `atualizarV10`, avisos de massa (`verificarMassa`) e `testarV10` |
+| `servidor/Massa.gs` | Versão 10 sobre o controle de produção: Tipo do pedido, sugestão de produção (`verificarMassa`), números de estoque, `atualizarV10` e `testarV10` |
 | `servidor/Api.gs` | Porta de entrada do app (login, sessões, funções permitidas, rotas dos avisos) |
 | `servidor/Push.gs` | Avisos no celular pelo Firebase Cloud Messaging e o gatilho de hora em hora `verificarAvisos` |
-| `servidor/Producao.gs` | Controle de produção antigo (sem uso desde a versão 10; a aba Producao fica) |
+| `servidor/Producao.gs` | Controle de produção: aba Producao, `getProducao`, `salvarProducao` e `desfazerProducao` |
 | `servidor/Mural.gs` | Aba Mural do app: recados dos agentes, pedidos ao assistente, cardápio da semana e o gatilho de 5 em 5 minutos `verificarMural` |
 
 Para copiar pelo celular: abrir o arquivo em `raw.githubusercontent.com/brunomathias8-droid/rm-app/main/servidor/<arquivo>` no Safari, tocar e segurar › Selecionar tudo › Copiar.
@@ -59,7 +59,7 @@ Substitui os e-mails dos agentes. Fluxo:
 |---|---|---|
 | Agentes (Marketing sáb., Fechamento ter., Gestão sex.) | criam um `.json` na pasta do Drive "RM · Mural (entrada)" (`mural_pasta_id` na Config) | o `Mural.gs` importa em até 5 min (ou ao abrir o app), manda o arquivo para a lixeira e avisa no celular |
 | Assistente (rotina acionada pelo app) | igual, com `pedidoId` | cartão "Resposta do assistente" para quem pediu |
-| Sistema | massa baixa (segunda 7h) e lote perto de vencer (9h), pelo `Massa.gs` | cartão automático para a Raquel |
+| Sistema | sugestão de produção (segunda 7h), pelo `Massa.gs` | cartão automático para a Raquel |
 
 - Formato do cartão: comentário no topo da seção "entrada dos agentes" do `Mural.gs`. Mesma `chave` atualiza o cartão em vez de duplicar.
 - Pedido ao assistente: grava na aba PedidosAssistente e responde pela API da Anthropic (chave em Config › `anthropic_api_key`, que vai para as Propriedades do script como `ANTHROPIC_API_KEY`; modelo `claude-sonnet-5-5`, reserva Haiku na 2ª tentativa; troca em Config › `assistente_modelo`). O app chama `responderPedido` logo depois de pedir; o gatilho de 5 min refaz o que ficou para trás (até 3 tentativas). O texto leva as fichas técnicas, as vendas das últimas 4 semanas e o último cardápio. Alternativa, se um dia houver gatilho de API na rotina: `assistente_url` + `assistente_token`.
@@ -75,14 +75,19 @@ Calculado no aparelho a partir dos pedidos (abertos + entregues) e dos indicador
 
 Ao tocar Salvar, o pedido fica guardado no aparelho e a tela "Pedido salvo" abre na hora. O envio continua sozinho e tenta de novo quando falha, com o aviso "Enviando 1 pedido…" no topo. Cada pedido leva um código (`_rid`); o `Api.gs` devolve o resultado do primeiro envio em vez de gravar de novo (por 6 horas). Sem confirmação em 5 horas, ou com erro do servidor, o aviso fica vermelho e a pessoa decide: enviar de novo ou descartar.
 
-## Massa no congelador (versão 10, decisões 36 e 37 de 22/10/2026)
+## Controle de produção (de volta na versão 10)
 
-Cookie é pronta-entrega: a massa é feita em lote, porcionada em bolinhas cruas e congelada. Bolo é encomenda (antecedência mínima em Config › `antecedencia_bolo_dias`). Não existe mais prazo de terça nem margem por hora.
+Tela Hoje › Produção (ou + › Produção). A Raquel lança o que produziu ("Produzi": bolinhas de massa congelada contam como unidade) e, quando quiser, conta o estoque ("Contei o estoque": o app grava a diferença). Os lançamentos têm Desfazer. O resto vem dos pedidos:
 
-- Aba **Massa**: `ID | Data | Tipo | Produto | Unidades | Validade | Motivo | Observação | Registrado por | Registrado em`. Tipo = Produção, Descarte ou Ajuste.
-- Nada fica gravado como saldo: `estoqueMassa_()` calcula na leitura. Vendido = quantidade × "Bolinhas por unidade vendida" (Fichas técnicas) nos pedidos não cancelados a partir do primeiro lote do sabor. A massa sai quando o pedido é registrado, do lote mais antigo.
-- Caixas e kits baixam dos sabores escolhidos no pedido (linha `Sabores: 3x Cookie de Nutella; …` na Observação). Sem essa linha, entram no aviso "itens com massa sem sabor definido".
-- Pedidos: coluna **Tipo** (Pronta-entrega ou Encomenda; vazio = Encomenda). As etapas gravadas continuam Confirmado → Produzido → Retirado; na pronta-entrega a tela mostra "Assado".
-- Contagem do fim do mês: a seção "Massa no congelador" grava linhas de Tipo "Massa" no Estoque; a diferença vira Ajuste (motivo Contagem). Os insumos guardados na massa entram no estoque final (bolinhas × insumo da receita ÷ unidades por lote ÷ bolinhas por unidade).
-- Config: `estoque_minimo_massa` (12), `validade_massa_dias` (90), `alerta_lote_dias` (75), `antecedencia_bolo_dias` (2).
-- Testes: `testarV10` no editor (cálculo, migração duas vezes, cartão de lote sem duplicar, lista fechada da API).
+- em pedidos = itens dos pedidos em aberto (reservados)
+- no estoque = produzido − itens dos pedidos retirados desde o início do controle
+- livres = no estoque − em pedidos
+
+Pronto é a etapa do pedido: na pronta-entrega, "Assado". Caixas e kits contam pelos sabores escolhidos no pedido (seção "O que vai nas caixas"), gravados na Observação numa linha `Sabores: 3x Cookie de Nutella; 3x Cookie de Kinder Bueno`. Os lançamentos ficam na aba Producao.
+
+Versão 10 (decisões 36 e 37 de 22/10/2026), em `servidor/Massa.gs`:
+- Pedidos: coluna **Tipo** (Pronta-entrega ou Encomenda; vazio = Encomenda). Bolo ou pudim no pedido = Encomenda por padrão; antecedência em Config › `antecedencia_bolo_dias`. Sem prazo de terça nem janelas fixas.
+- Sem horas e sem margem por hora (linhas e colunas ocultas, sem apagar). No lugar, margem de contribuição por produto.
+- Sugestão de produção na segunda às 7h quando um produto fica abaixo de Config › `estoque_minimo_massa` livres (cartão no Mural e aviso "producao").
+- Contagem do fim do mês: seção "Produção no estoque" (linhas de Tipo "Produção" no Estoque; a diferença vai para a aba Producao). Os insumos guardados nessas unidades entram no estoque final, pela receita.
+- Testes: `testarV10` no editor.

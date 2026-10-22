@@ -51,7 +51,7 @@ function api(corpo) {
     });
 }
 /* Cache local: as telas abrem na hora com os últimos dados e atualizam quando o servidor responde */
-var CACHE_FNS = { lerEstoqueMassa: 1, getBootstrap: 1, getHoje: 1, getPedidosAbertos: 1, getPedidosHistorico: 1, getRoadmap: 1, getAcoes: 1, getPainel: 1, getMensagens: 1, getEstoque: 1, getAjuda: 1 };
+var CACHE_FNS = { getProducao: 1, getBootstrap: 1, getHoje: 1, getPedidosAbertos: 1, getPedidosHistorico: 1, getRoadmap: 1, getAcoes: 1, getPainel: 1, getMensagens: 1, getEstoque: 1, getAjuda: 1 };
 function chaveCache(fn, args) { return 'c_' + fn + ':' + JSON.stringify(args || []); }
 function guardarCache(fn, args, d) { if (CACHE_FNS[fn]) store(chaveCache(fn, args), JSON.stringify({ t: Date.now(), d: d })); }
 function lerCache(fn, args) { try { var o = JSON.parse(store(chaveCache(fn, args)) || 'null'); return o && o.d; } catch (e) { return null; } }
@@ -127,8 +127,7 @@ rep("""    call('salvarPedido', p).then(function (r) {
     S.h = null; S.ps = null;
     enfileirarPedido(p);
     sucessoPedido(p, cl);""")
-# 3c. (versão 10) O controle de produção (extras/producao.js) saiu: a massa no congelador, o disponível por sabor e os
-#     sabores das caixas estão no Index.html (seção MASSA NO CONGELADOR) e no servidor/Massa.gs
+# 3c. (versão 10) O controle de produção (antes extras/producao.js) fica no próprio Index.html (seção PRODUÇÃO)
 rep("function msgErro(e) { var m = (e && e.message) || String(e || '');", "function msgErro(e) { var m = (e && e.message) || String(e || ''); if (m === 'timeout') return 'O servidor demorou para responder. Confira se salvou antes de tentar de novo.';")
 # 4a. Painel da semana: o HTML vem do Painel.gs (o mesmo do e-mail). Imagem que não carrega no app vira a marca em texto
 rep("function gPai() { call('getPainel').then(function (r) { $('#gBody').innerHTML = '<div class=\"painel\">' + r.html + '</div>'; }).catch(function (e) { gErro(e, gPai); }); }",
@@ -175,7 +174,7 @@ function avisosSheet() {
       Object.keys(nomes).map(function (k) { return '<label class="av-i"><input type="checkbox" data-t="' + k + '"' + (tipos.indexOf(k) >= 0 ? ' checked' : '') + '><span>' + esc(nomes[k]) + '</span></label>'; }).join('') +
       '</div><div class="btns"><button class="btn sec" id="avTeste">Enviar um teste</button><button class="btn sec" id="avOff">Desligar neste aparelho</button></div>';
     if (!PUSH.cfg) pushCfg().then(function () { if ($('#avTeste')) avisosSheet(); }).catch(function () {});
-  } else corpo = '<p class="desc">Receba no celular o bom dia com as tarefas, a véspera das encomendas, Pix pendente, massa baixa e lote perto de vencer, o lembrete do estoque e o painel da semana. Você escolhe quais depois.</p><button class="btn" id="avOn">' + ic('bell', 's') + 'Ativar avisos</button>';
+  } else corpo = '<p class="desc">Receba no celular o bom dia com as tarefas, a véspera das encomendas, Pix pendente, produção baixa, o lembrete do estoque e o painel da semana. Você escolhe quais depois.</p><button class="btn" id="avOn">' + ic('bell', 's') + 'Ativar avisos</button>';
   var sh = sheet(cab + corpo);
   var on = $('#avOn', sh), off = $('#avOff', sh), te = $('#avTeste', sh);
   if (on) on.onclick = function () {
@@ -253,8 +252,8 @@ document.addEventListener('visibilitychange', function () {
 rep('<button data-v="plano"></button>', '<button data-v="mural"></button>')
 rep("var tabs = { hoje: ['home', 'Hoje'], pedidos: ['bag', 'Pedidos'], plano: ['cal', 'Plano'], gestao: ['chart', 'Gestão'] };",
     "var tabs = { hoje: ['home', 'Hoje'], pedidos: ['bag', 'Pedidos'], mural: ['mega', 'Mural'], plano: ['cal', 'Plano'], gestao: ['chart', 'Gestão'] };")
-rep("({ massa: vMassa, massaAjuste: vMassaAjuste, hoje: vHoje,", "({ mural: vMural, cartao: vCartao, cardapio: vCardapio, massa: vMassa, massaAjuste: vMassaAjuste, hoje: vHoje,")
-rep("var FORM = { massa:", "var FORM = { cartao: 'Recado', cardapio: 'Cardápio da semana', massa:")
+rep("({ hoje: vHoje, pedidos: vPedidos,", "({ mural: vMural, cartao: vCartao, cardapio: vCardapio, hoje: vHoje, pedidos: vPedidos,")
+rep("var FORM = { novo: 'Novo pedido',", "var FORM = { cartao: 'Recado', cardapio: 'Cardápio da semana', novo: 'Novo pedido',")
 rep("$$('#tabs [data-v]').forEach(function (b) { var on = b.dataset.v === v;", "$$('#tabs [data-v]').forEach(function (b) { var on = b.dataset.v === v || (b.dataset.v === 'mural' && (v === 'plano' || ((v === 'cartao' || v === 'cardapio') && S.prev === 'mural')));")
 # 4c. Arquivos de extras/ (fila de pedidos e Mural) e o estilo deles
 EXTRAS = ''.join('<script>\n' + (pathlib.Path(__file__).with_name('extras') / n).read_text() + '</script>\n' for n in ['fila.js', 'mural.js'])

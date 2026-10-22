@@ -11,6 +11,8 @@
  * Início do controle: no primeiro lançamento o script guarda o ID do momento (mesmo formato dos IDs de pedido,
  * P + aammddhhmmss) e os IDs dos pedidos em aberto. Entram na conta os pedidos criados depois disso e os que
  * estavam em aberto; os já retirados antes ficam de fora. Contar o congelador corrige qualquer diferença.
+ * Versão 10 (22/10/2026): volta a ser o estoque do app (bolinhas de massa congelada contam como produzidas; pronto é a
+ * etapa Assado do pedido). Lançamentos têm Desfazer. Avisos, Gestão e contagem do fim do mês leem daqui (Massa.gs).
  */
 var PROD_CAB = ['Data', 'Produto', 'Quantidade', 'Tipo', 'Pessoa', 'RegistradoEm', 'Observação'];
 var PROD_KIT_RE = /^(caixa|kit|assinatura)\b/i;
@@ -20,7 +22,9 @@ var PROD_SABORES_RE = /(^|\n)\s*Sabores:\s*([^\n]*)/i;
 
 function getProducao(pin) {
   prodPin_(pin);
-  return prodResumo_();
+  var r = prodResumo_();
+  if (typeof v10Cfg_ === 'function') r.cfg = v10Cfg_();   // versão 10: mínimo de livres e antecedência das encomendas
+  return r;
 }
 
 /** reg = { produto, q, tipo: 'producao' | 'contagem', pessoa }. Produção soma; contagem grava a diferença para o estoque bater. */
@@ -47,6 +51,26 @@ function salvarProducao(pin, reg) {
     }
     prodAba_().appendRow(linha);
   } finally { lock.releaseLock(); }
+  var r = prodResumo_();
+  r.desfazer = { produto: linha[1], q: linha[2], tipo: linha[3], em: linha[5] };   // versão 10: o app oferece Desfazer
+  return r;
+}
+
+/** Desfaz um lançamento feito pelo app (produção ou contagem): apaga a última linha igual da aba Producao. */
+function desfazerProducao(pin, d) {
+  prodPin_(pin);
+  d = d || {};
+  var lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    var sh = prodAba_(), n = sh.getLastRow() - 1, achou = false;
+    if (n > 0) {
+      var v = sh.getRange(2, 1, n, PROD_CAB.length).getValues();
+      for (var i = v.length - 1; i >= 0; i--) {
+        if (String(v[i][1]) === String(d.produto) && Number(v[i][2]) === Number(d.q) && String(v[i][3]) === String(d.tipo) && String(v[i][5]) === String(d.em)) { sh.deleteRow(i + 2); achou = true; break; }
+      }
+    }
+    if (!achou) throw new Error('Lançamento não encontrado (já desfeito?).');
+  } finally { lock.releaseLock(); }
   return prodResumo_();
 }
 
@@ -67,7 +91,7 @@ function prodResumo_() {
   if (ini) prodPedidos_().forEach(function (p) {
     if (p.status === 'Cancelado') return;
     var aberto = p.status !== 'Retirado';
-    if (!aberto && !(p.id > ini || abertosIni.indexOf(p.id) >= 0)) return;   // retirado antes do início do controle
+    if (!aberto && !(p.id >= ini || abertosIni.indexOf(p.id) >= 0)) return;   // retirado antes do início do controle
     prodItens_(p.itens, p.obs).forEach(function (it) { if (aberto) item(it.nome).reservado += it.q; else item(it.nome).entregue += it.q; });
   });
 

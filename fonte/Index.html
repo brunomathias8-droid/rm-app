@@ -353,7 +353,7 @@ body.form .toast{bottom:calc(var(--safe) + 96px)}
 .quem .av{width:58px;height:58px;border-radius:50%;background:var(--ameixa);color:var(--linho);font:28px var(--serif);display:flex;align-items:center;justify-content:center}
 .quem button:nth-child(2) .av{background:var(--rosa);color:var(--ameixa)}
 
-/* ============ Massa no congelador (versão 10) ============ */
+/* ============ Produção (cartão na Hoje, livres no pedido) ============ */
 .prod-est .li{align-items:center}.prod-est .tx small{display:block;font-size:13px;margin-top:2px}.pe-n{text-align:right;min-width:72px}.pe-n b{display:block;font:26px/1 var(--serif);color:var(--ameixa)}.pe-n b.neg{color:var(--err)}.pe-n b.av{color:var(--av)}.pe-n span{font-size:12px;color:var(--sub)}
 .mx-al{display:flex!important;gap:4px;align-items:flex-start;color:var(--av);font-weight:700}.mx-al.err{color:var(--err)}.mx-al svg{width:15px;height:15px;flex:0 0 15px;margin-top:1px}
 .pr-est{font-size:13px;color:var(--ok);margin-left:6px;font-weight:600}.pr-est.neg{color:var(--err)}.step.big{justify-content:flex-start;gap:12px}.step.big input{width:96px;text-align:center;font-size:22px;padding:8px}
@@ -509,7 +509,7 @@ function toast(m, err, acao) {
 
 var REPASSE_RE = /\b(entrega|frete|uber|motoboy|99\s*pop|corrida)\b/i;   // igual ao Gestao.gs
 /* =================== Servidor =================== */
-var RECALC = { salvarPedido: 1, atualizarPedido: 1, editarPedido: 1, salvarDespesa: 1, salvarSemana: 1, salvarReuniao: 1, salvarContagem: 1, registrarMassa: 1, desfazerMassa: 1 };
+var RECALC = { salvarPedido: 1, atualizarPedido: 1, editarPedido: 1, salvarDespesa: 1, salvarSemana: 1, salvarReuniao: 1, salvarContagem: 1, salvarProducao: 1, desfazerProducao: 1 };
 var recT = null;
 function agendarRecalc() { clearTimeout(recT); recT = setTimeout(function () { call('posAlteracao').catch(function () {}); }, 1500); }
 function call(fn) {
@@ -625,7 +625,7 @@ function montarChrome() {
   $('#bRef').onclick = function () { var b = this; b.classList.add('spin'); setTimeout(function () { b.classList.remove('spin'); }, 700); go(S.view, true); };
   $('#bBack').onclick = function () { go(S.prev || 'hoje'); };
 }
-var FORM = { massa: 'Produzir massa', massaAjuste: 'Descartar ou ajustar massa', novo: 'Novo pedido', editar: 'Editar pedido', despesa: 'Nova despesa', semana: 'Fechar a semana', estoque: 'Contar o estoque', ajuda: 'Ajuda', mensagens: 'Mensagens do WhatsApp' };
+var FORM = { novo: 'Novo pedido', editar: 'Editar pedido', despesa: 'Nova despesa', semana: 'Fechar a semana', estoque: 'Contar o estoque', ajuda: 'Ajuda', mensagens: 'Mensagens do WhatsApp' };
 function go(v, refresh) {
   if (FORM[v] && !FORM[S.view]) S.prev = S.view;
   S.view = v; fecharSheet();
@@ -636,21 +636,20 @@ function go(v, refresh) {
   $('#bRef').classList.toggle('hide', form); $('#bHelp').classList.toggle('hide', form);
   $$('#tabs [data-v]').forEach(function (b) { var on = b.dataset.v === v; b.classList.toggle('on', on); if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   if (!refresh) window.scrollTo(0, 0);
-  ({ massa: vMassa, massaAjuste: vMassaAjuste, hoje: vHoje, pedidos: vPedidos, novo: vNovo, editar: vEditar, despesa: vDespesa, gestao: vGestao, semana: vSemana, estoque: vEstoque, plano: vPlano, ajuda: vAjuda, mensagens: vMensagens })[v]();
+  ({ hoje: vHoje, pedidos: vPedidos, novo: vNovo, editar: vEditar, despesa: vDespesa, gestao: vGestao, semana: vSemana, estoque: vEstoque, plano: vPlano, ajuda: vAjuda, mensagens: vMensagens })[v]();
 }
 function menuRegistrar() {
   var sex = S.boot && dow(S.boot.hoje) >= 5;
   var mi = function (g, icone, tit, sub) { return '<button class="mi" data-g="' + g + '"><span class="ic">' + ic(icone) + '</span><span><b>' + tit + '</b><span>' + sub + '</span></span></button>'; };
   var sh = sheet('<h3>Registrar</h3><p class="desc">O que aconteceu?</p><div class="menu">' +
     mi('novo', 'bag', 'Pedido', 'Pronta-entrega ou encomenda, retirada e Pix') +
-    mi('massa', 'cake', 'Produzir massa', 'Lote de bolinhas que foi para o congelador') +
+    mi('producao', 'cake', 'Produção', 'O que ficou pronto ou congelado (bolinhas contam)') +
     mi('despesa', 'receipt', 'Despesa ou compra', 'Ingrediente, embalagem, conta do negócio') +
     mi('tarefa', 'task', 'Tarefa', 'Algo para fazer, com data') +
     mi('semana', 'week', 'Fechar a semana', sex ? 'Hoje é dia: sobra, quebra e notas' : 'Sobra, quebra e notas (sexta)') + '</div>' +
     '<div class="stg"><span class="lab">Mais</span><div class="menu" style="margin:0">' +
-    mi('massaAjuste', 'trash', 'Descartar ou ajustar massa', 'Massa que estragou ou contagem diferente') +
-    mi('estoque', 'box', 'Contar o estoque', S.boot && fimMes(S.boot.hoje) ? 'Hoje é dia: insumos caros e massa do congelador' : 'Insumos caros e massa, no fim do mês') + '</div></div>');
-  $$('[data-g]', sh).forEach(function (b) { b.onclick = function () { if (b.dataset.g === 'tarefa') { fecharSheet(); setTimeout(function () { tarefaSheet(); }, 260); } else go(b.dataset.g); }; });
+    mi('estoque', 'box', 'Contar o estoque', S.boot && fimMes(S.boot.hoje) ? 'Hoje é dia: insumos caros e produção no congelador' : 'Insumos caros e produção, no fim do mês') + '</div></div>');
+  $$('[data-g]', sh).forEach(function (b) { b.onclick = function () { if (b.dataset.g === 'tarefa' || b.dataset.g === 'producao') { var g = b.dataset.g; fecharSheet(); setTimeout(function () { if (g === 'tarefa') tarefaSheet(); else prodSheet(); }, 260); } else go(b.dataset.g); }; });
 }
 
 /* =================== Entrada =================== */
@@ -873,12 +872,12 @@ function renderHoje() {
     '<div class="big">' + brl(r.receita, true) + (meta ? '<small>de ' + brl(meta, true) + '</small>' : '') + '</div>' +
     (meta ? '<div class="bar' + (pct >= 100 ? ' ok' : '') + '" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100"><i style="width:' + pct + '%"></i></div>' : '<div style="height:10px"></div>') +
     '<div class="stats"><div><b>' + r.pedidos + '</b>pedidos</div><div><b>' + (r.pedidos ? brl(r.ticket, true) : '—') + '</b>ticket médio</div>' + (meta ? '<div><b>' + pct + '%</b>da meta</div>' : '') + '</div></section>';
-  html += massaCardHtml();
   var rHoje = h.retiradas.filter(function (p) { return p.retirada && p.retirada <= hoje; }).length, rAm = h.retiradas.filter(function (p) { return p.retirada === isoAdd(hoje, 1); }).length, px = h.pixPendente.length;
   html += '<div class="tiles"><button class="tile" data-f="hoje"><span class="ic">' + ic('box') + '</span><b>' + rHoje + '</b><span>retirada' + (rHoje === 1 ? '' : 's') + ' hoje</span></button>' +
     '<button class="tile" data-f="amanha"><span class="ic">' + ic('clock') + '</span><b>' + rAm + '</b><span>para amanhã</span></button>' +
     '<button class="tile' + (px ? ' alert' : '') + '" data-f="pix"><span class="ic">' + ic('pix') + '</span><b>' + px + '</b><span>Pix pendente' + (px === 1 ? '' : 's') + '</span></button></div>';
 
+  html += prodCardHtml();
   var pend = h.tarefas.filter(function (t) { return !t.ciclo && !t.feita; }), feitas = h.tarefas.filter(function (t) { return !t.ciclo && t.feita; }), rot = h.tarefas.filter(function (t) { return t.ciclo; });
   html += '<div class="sec"><h2>Suas tarefas</h2><button class="lk" id="addT">+ Adicionar</button></div>';
   html += '<div class="list">' + (pend.length ? pend.map(liTarefa).join('') : '<div class="li"><div class="dot"><i style="background:var(--ok)"></i></div><div class="tx"><span>Nenhuma tarefa pendente para hoje.</span></div></div>') +
@@ -921,7 +920,6 @@ function renderHoje() {
     b.onclick = function () { var f = h.clube.frequentes.filter(function (x) { return x.nome === b.dataset.cw; })[0]; if (f) enviarWhats(f.whats, msgDe('clube', { nome: primeiro(f.nome), pedidos: f.n }), 'Reserva do Clube para ' + primeiro(f.nome)); };
   });
   ligarPeds($('#app'));
-  ligarMassaCard($('#app'));
 }
 function liTarefa(t) {
   S.hl.push(t); var i = S.hl.length - 1;
@@ -1067,7 +1065,7 @@ function histSheet(p) {
 }
 
 /* =================== NOVO PEDIDO =================== */
-/* Versão 10 (22/10/2026): sem prazo semanal. Pronta-entrega (cookie da massa congelada) ou encomenda (bolo, com antecedência);
+/* Versão 10 (22/10/2026): sem prazo semanal. Pronta-entrega (cookie assado da massa congelada) ou encomenda (bolo, com antecedência);
    data e horário de retirada livres, combinados com a cliente. */
 /* Formulário de pedido: novo (S.pedPre = pedido para repetir) ou edição (S.pedEd = pedido existente) */
 function parseItensTxt(txt) {
@@ -1109,7 +1107,7 @@ function vPedidoForm(ed) {
   html += '<div class="sec" style="margin-top:18px"><h2>Itens</h2></div><div class="list" id="prods">' + b.produtos.map(function (p, i) {
     var q = f.qt[i] || 0;
     return '<div class="prod' + (q ? ' sel' : '') + '" data-i="' + i + '"><div class="grow"><div class="nm">' + esc(p.nome) + '</div><div class="pr">' + brl(p.preco, true) + ' <span class="pr-est" id="est' + i + '"></span></div></div><div class="step"><button type="button" class="mn" data-m="' + i + '" aria-label="Menos ' + esc(p.nome) + '">' + ic('plus').replace('M12 5v14', '') + '</button><output id="q' + i + '">' + q + '</output><button type="button" class="plus" data-p="' + i + '" aria-label="Mais ' + esc(p.nome) + '">' + ic('plus') + '</button></div></div>';
-  }).join('') + '<div id="extras"></div><button type="button" class="addx" id="addX">' + ic('plus', 's') + 'Item fora do cardápio</button></div><div id="sabBox" class="hide"></div><div id="massaAv"></div>' +
+  }).join('') + '<div id="extras"></div><button type="button" class="addx" id="addX">' + ic('plus', 's') + 'Item fora do cardápio</button></div><div id="sabBox" class="hide"></div>' +
     '<div class="card flat" style="margin-top:10px"><div class="fld" style="margin:0"><label for="rep">Taxa de entrega (repasse)</label><input id="rep" inputmode="decimal" placeholder="Motoboy ou Uber pago pela cliente" value="' + (f.repasse ? String(f.repasse).replace('.', ',') : '') + '"><p class="muted" style="margin:6px 0 0;font-size:13px">Soma no total cobrado, mas não conta como receita.</p></div></div>' +
     '<details class="more"' + (vManPre ? ' open' : '') + '><summary>' + ic('chev', 's') + 'Ajustar valor final (desconto)</summary><div class="card flat"><div class="fld" style="margin:0"><label for="vMan">Valor final do pedido</label><input id="vMan" inputmode="decimal" placeholder="Deixe em branco para usar o total" value="' + esc(vManPre) + '"></div></div></details>';
   html += '<div class="sec"><h2>Retirada</h2></div><div class="card flat"><div class="fld"><span class="lab">Dia</span>' + chipsHtml('dRap', [[hoje, 'Hoje'], [isoAdd(hoje, 1), 'Amanhã'], [isoAdd(hoje, 2), dBR(isoAdd(hoje, 2))]], f.data) +
@@ -1117,7 +1115,7 @@ function vPedidoForm(ed) {
     '<div class="fld" style="margin:0"><span class="lab">Horário</span>' + chipsHtml('jan', jan0, f.janela) + '</div><div id="retAv"></div></div>';
   html += '<div class="sec"><h2>Como chegou</h2></div>' + chipsHtml('can', b.canais, f.canal) +
     '<div class="card" style="margin-top:14px"><div class="tog"><div class="tx"><b>Pix recebido</b><span>Desligue se ainda vai pagar</span></div><button type="button" class="sw' + (f.pix ? ' on' : '') + '" id="swPix" role="switch" aria-checked="' + f.pix + '" aria-label="Pix recebido"></button></div></div>' +
-    '<details class="more"' + (ed && (ed.obs || ed.codigo || f.assinatura) ? ' open' : '') + '><summary>' + ic('chev', 's') + 'Mais opções</summary><div class="card flat"><div class="tog" style="margin-bottom:8px"><div class="tx"><b>Pedido de assinatura</b></div><button type="button" class="sw' + (f.assinatura ? ' on' : '') + '" id="swAss" role="switch" aria-checked="' + f.assinatura + '" aria-label="Pedido de assinatura"></button></div><div class="fld"><label for="cod">Código de indicação</label><input id="cod" autocapitalize="characters" value="' + esc(ed ? ed.codigo : '') + '"></div><div class="fld" style="margin:0"><label for="obs">Observação</label><textarea id="obs" placeholder="Ex.: sem lactose, entregar para a filha">' + esc(ed ? massaSemSabores(ed.obs) : '') + '</textarea></div></div></details></div>';
+    '<details class="more"' + (ed && (ed.obs || ed.codigo || f.assinatura) ? ' open' : '') + '><summary>' + ic('chev', 's') + 'Mais opções</summary><div class="card flat"><div class="tog" style="margin-bottom:8px"><div class="tx"><b>Pedido de assinatura</b></div><button type="button" class="sw' + (f.assinatura ? ' on' : '') + '" id="swAss" role="switch" aria-checked="' + f.assinatura + '" aria-label="Pedido de assinatura"></button></div><div class="fld"><label for="cod">Código de indicação</label><input id="cod" autocapitalize="characters" value="' + esc(ed ? ed.codigo : '') + '"></div><div class="fld" style="margin:0"><label for="obs">Observação</label><textarea id="obs" placeholder="Ex.: sem lactose, entregar para a filha">' + esc(ed ? prodSemSabores(ed.obs) : '') + '</textarea></div></div></details></div>';
   html += '<div class="actbar"><div class="in"><div class="sum"><b id="tot">R$ 0</b><span id="falta">Escolha a cliente e os itens</span></div><button class="btn" id="salvar">' + (ed ? 'Salvar alterações' : 'Salvar') + '</button></div></div>';
   $('#app').innerHTML = html;
 
@@ -1143,10 +1141,10 @@ function vPedidoForm(ed) {
   function repasse() { var r = num($('#rep').value); return r && r > 0 ? r : 0; }
   function total() { var t = b.produtos.reduce(function (s, p, i) { return s + (f.qt[i] || 0) * p.preco; }, 0) + extrasOk().reduce(function (s, x) { return s + x.q * (Number(x.preco) || 0); }, 0); var m = num($('#vMan').value); return Math.round(((m === null ? t : m) + repasse()) * 100) / 100; }
   function semPreco() { return num($('#vMan').value) === null && extrasOk().some(function (x) { return x.preco === null || x.preco === undefined; }); }
-  function faltando() { var m = []; if (!$('#cli').value.trim()) m.push('cliente'); if (!itensTxt()) m.push('itens'); if (semPreco()) m.push('preço do item fora do cardápio'); if (!f.canal) m.push('como chegou'); if (massaSabFalta(f, b)) m.push('sabores da caixa'); return m; }
+  function faltando() { var m = []; if (!$('#cli').value.trim()) m.push('cliente'); if (!itensTxt()) m.push('itens'); if (semPreco()) m.push('preço do item fora do cardápio'); if (!f.canal) m.push('como chegou'); if (prodSabFalta(f, b)) m.push('sabores da caixa'); return m; }
   function atualizar() {
-    if (!f.tipoManual) { var t = massaTipoAuto(f, b, extrasOk().length); if (t && t !== f.tipo) { f.tipo = t; marcarTipo(); } }
-    massaForm(f, b, atualizar);
+    if (!f.tipoManual) { var t = tipoAuto(f, b, extrasOk().length); if (t && t !== f.tipo) { f.tipo = t; marcarTipo(); } }
+    prodForm(f, b, atualizar);
     avisoRetirada();
     var v = total(), n = nItens(), m = faltando();
     $('#tot').textContent = brl(v, true);
@@ -1160,7 +1158,7 @@ function vPedidoForm(ed) {
   /* Encomenda: avisa (sem bloquear) quando a retirada fica antes da antecedência mínima. Data no passado também avisa. */
   function avisoRetirada() {
     var el = $('#retAv'); if (!el) return;
-    var ant = massaCfg().antecedenciaBolo, t = '';
+    var ant = prodCfg().antecedenciaBolo, t = '';
     if (!f.data) t = 'Sem data: a retirada fica "a combinar".';
     else if (f.data < hoje && !ed) t = 'Data de retirada no passado.';
     else if (f.tipo === 'Encomenda' && ant > 0 && f.data < isoAdd(hoje, ant) && !ed) t = 'Encomenda com menos de ' + ant + ' dia' + (ant === 1 ? '' : 's') + ' de antecedência. Confirme com a Raquel antes de aceitar.';
@@ -1173,7 +1171,7 @@ function vPedidoForm(ed) {
       $('#q' + i).textContent = f.qt[i]; bt.closest('.prod').classList.toggle('sel', f.qt[i] > 0); atualizar();
     };
   });
-  massaFormIni(f, b, pre, ed);
+  prodFormIni(f, b, pre, ed);
   $('#addX').onclick = function () { f.extras.push({ nome: '', q: 1, preco: null }); extrasHtml(); atualizar(); var ins = $$('#extras .xn'); ins[ins.length - 1].focus(); };
   extrasHtml();
   $('#vMan').oninput = atualizar; $('#rep').oninput = atualizar;
@@ -1206,7 +1204,7 @@ function vPedidoForm(ed) {
       return toast('Falta: ' + m.join(', '), true);
     }
     var p = { cliente: $('#cli').value.trim(), whats: $('#wh').value.trim(), itens: itensTxt(), valor: total(), repasse: repasse(), canal: f.canal, janela: f.janela, retirada: f.data,
-      pix: f.pix, assinatura: f.assinatura, codigo: $('#cod').value.trim(), obs: massaObs($('#obs').value.trim(), f, b), tipo: f.tipo, data: ed ? ed.data : hoje };
+      pix: f.pix, assinatura: f.assinatura, codigo: $('#cod').value.trim(), obs: prodObs($('#obs').value.trim(), f, b), tipo: f.tipo, data: ed ? ed.data : hoje };
     var bt = this; bt.disabled = true; bt.textContent = 'Salvando…';
     if (!b.clientes.some(function (c) { return norm(c.nome) === norm(p.cliente); })) b.clientes.push({ nome: p.cliente, whats: p.whats });
     if (ed) {
@@ -1236,224 +1234,145 @@ function sucessoPedido(p, cl) {
   $('.bg').onclick = function () { fecharSheet(); vNovo(); window.scrollTo(0, 0); };
 }
 
-/* =================== MASSA NO CONGELADOR (versão 10, 22/10/2026) ===================
-   A Raquel faz a massa de cookie em lote, porciona em bolinhas cruas e congela. O app registra os lotes (Produzir massa),
-   os descartes e os ajustes; os pedidos baixam sozinhos quando são registrados (Massa.gs). Tudo é calculado no servidor
-   a partir da aba Massa e dos pedidos: aqui só se mostra e se registra. Caixas e kits baixam pelos sabores escolhidos
-   no pedido, gravados na Observação numa linha "Sabores: 3x Cookie de Nutella; 3x Cookie Chocolate". */
-var MASSA_KIT = /^(caixa|kit|assinatura)\b/;
-var MASSA_SAB = /(^|\n)\s*Sabores:\s*([^\n]*)/i;
-function massaCfg() { var c = (S.massa && S.massa.cfg) || {}; return { minimo: c.minimo == null ? 12 : c.minimo, validadeDias: c.validadeDias || 90, alertaDias: c.alertaDias || 75, antecedenciaBolo: c.antecedenciaBolo == null ? 2 : c.antecedenciaBolo }; }
-function massaCarregar(depois) {
-  if (S.massaCarregando) return;
-  if (!S.massa && typeof lerCache === 'function') S.massa = lerCache('lerEstoqueMassa', []);
-  S.massaCarregando = true; S.massaT = Date.now();
-  call('lerEstoqueMassa').then(function (r) { S.massaCarregando = false; S.massaErro = null; S.massa = r; if (depois) depois(); })
-    .catch(function (e) { S.massaCarregando = false; S.massaErro = e; if (depois && !S.massa) depois(); });
+/* =================== PRODUÇÃO (controle de 17/10/2026, de volta na versão 10) ===================
+   A Raquel lança o que produziu (bolinhas de massa congelada ou produto pronto) e, quando quiser, conta o estoque.
+   Os pedidos em aberto reservam e, ao serem retirados, descontam sozinhos (Producao.gs). Pronto é a etapa do pedido
+   (Assado, na pronta-entrega). Caixas e kits contam pelos sabores escolhidos no pedido, gravados na Observação numa
+   linha "Sabores: 3x Cookie de Nutella; 3x Cookie de Kinder Bueno". */
+var PROD_KIT = /^(caixa|kit|assinatura)\b/;
+var PROD_SAB = /(^|\n)\s*Sabores:\s*([^\n]*)/i;
+function prodKit(nome) { return PROD_KIT.test(norm(nome)); }
+function prodControlados() { return ((S.boot && S.boot.produtos) || []).filter(function (p) { return !prodKit(p.nome); }).map(function (p) { return p.nome; }); }
+function prodLerItens(txt, sep, pularKits) {
+  return String(txt || '').split(sep).map(function (s) { s = s.trim(); if (!s) return null; var m = s.match(/^(\d+)\s*x\s*(.+)$/i); return { q: m ? +m[1] : 1, nome: (m ? m[2] : s).trim() }; })
+    .filter(function (x) { return x && !(pularKits && prodKit(x.nome)); });
 }
-/* Fichas que usam massa: { chave: { nome, bpu, kit } } */
-function massaFichas() { var o = {}; ((S.massa && S.massa.fichas) || []).forEach(function (x) { o[norm(x.nome)] = x; }); return o; }
-function massaSaboresNomes() { return ((S.massa && S.massa.fichas) || []).filter(function (x) { return !x.kit; }).map(function (x) { return x.nome; }).sort(function (a, b) { return a.localeCompare(b); }); }
-function massaSabor(nome) { var k = norm(nome); return ((S.massa && S.massa.sabores) || []).filter(function (s) { return norm(s.produto) === k; })[0] || null; }
-function massaCurto(nome) { return String(nome || '').replace(/^cookies?\s+(de\s+|com\s+)?/i, '').trim() || nome; }
-function massaLerItens(txt) {
-  return String(txt || '').split(';').map(function (s) { s = s.trim(); if (!s) return null; var m = s.match(/^(\d+)\s*x\s*(.+)$/i); return { q: m ? +m[1] : 1, nome: (m ? m[2] : s).trim() }; }).filter(Boolean);
-}
-function massaSemSabores(obs) { return String(obs || '').replace(MASSA_SAB, '').trim(); }
-function massaSaboresDe(obs) { var m = String(obs || '').match(MASSA_SAB), o = {}; if (m) massaLerItens(m[2]).forEach(function (x) { o[x.nome] = (o[x.nome] || 0) + x.q; }); return o; }
-/* Bolinhas que um pedido usa, por sabor (chave norm): igual ao Massa.gs */
-function massaUsoPedido(itens, obs) {
-  var F = massaFichas(), out = {}, sab = String(obs || '').match(MASSA_SAB), kit = false;
-  massaLerItens(itens).forEach(function (it) {
-    var f = F[norm(it.nome)]; if (!f) return;
-    if (f.kit) { kit = true; return; }
-    out[norm(f.nome)] = (out[norm(f.nome)] || 0) + it.q * f.bpu;
+/* Itens que contam no estoque (igual ao Producao.gs): produtos sem caixas e kits + sabores das caixas */
+function prodItensPed(itens, obs) { var m = String(obs || '').match(PROD_SAB); return prodLerItens(itens, ';', true).concat(m ? prodLerItens(m[2], ';', false) : []); }
+function prodSemSabores(obs) { return String(obs || '').replace(PROD_SAB, '').trim(); }
+function prodSaboresDe(obs) { var m = String(obs || '').match(PROD_SAB), o = {}; if (m) prodLerItens(m[2], ';', false).forEach(function (x) { o[x.nome] = (o[x.nome] || 0) + x.q; }); return o; }
+
+/* Situação por produto (chave norm): dados do servidor + pedidos que ainda estão saindo do aparelho */
+function prodMapa() {
+  if (!S.prod) return null;
+  var m = {};
+  S.prod.itens.forEach(function (x) { m[norm(x.nome)] = Object.assign({}, x); });
+  if (typeof filaPendentes === 'function') filaPendentes().forEach(function (p) {
+    prodItensPed(p.itens, p.obs).forEach(function (it) {
+      var k = norm(it.nome), x = m[k] || (m[k] = { nome: it.nome, produzido: 0, entregue: 0, reservado: 0, estoque: 0, livre: 0, lancado: false });
+      x.reservado += it.q; x.livre -= it.q;
+    });
   });
-  if (kit && sab) massaLerItens(sab[2]).forEach(function (it) { var f = F[norm(it.nome)]; if (f && !f.kit) out[norm(f.nome)] = (out[norm(f.nome)] || 0) + it.q * f.bpu; });
-  return out;
+  return m;
 }
-/* Disponível por sabor: saldo do servidor − pedidos que ainda estão saindo do aparelho (fila) */
-function massaDisponivel() {
-  var d = {};
-  ((S.massa && S.massa.sabores) || []).forEach(function (s) { d[norm(s.produto)] = s.saldo; });
-  if (typeof filaPendentes === 'function') filaPendentes().forEach(function (p) { var u = massaUsoPedido(p.itens, p.obs); for (var k in u) if (k in d) d[k] -= u[k]; });
-  return d;
-}
-function massaDiasTxt(n) { return n === 0 ? 'hoje' : n === 1 ? '1 dia' : n + ' dias'; }
-
-/* ---------- Cartão na Hoje, logo abaixo do resumo da semana ---------- */
-function massaCardHtml() {
-  if (!S.massaT || Date.now() - S.massaT > 60000) setTimeout(function () { massaCarregar(function () { if (S.view === 'hoje' && S.h) renderHoje(); }); }, S.massa ? 2500 : 300);   // depois da Hoje, para não disputar o servidor
-  if (!S.massa) S.massa = typeof lerCache === 'function' ? lerCache('lerEstoqueMassa', []) : null;
-  var cab = '<div class="sec"><h2>Massa no congelador</h2>' + (S.massa && S.massa.sabores.length ? '<span class="cnt">' + S.massa.total + ' bolinhas</span>' : '') + '</div>';
-  if (!S.massa) return '';
-  var ls = S.massa.sabores.filter(function (s) { return s.produzido || s.saldo || s.vendido; });
-  if (!ls.length) return cab + '<div class="card flat"><p class="muted" style="margin:0 0 12px">' + (S.massa.fichas && S.massa.fichas.length ? 'Registre o primeiro lote de massa. Depois, cada pedido baixa as bolinhas sozinho.' : 'Na aba Fichas técnicas, preencha "Bolinhas por unidade vendida" nos cookies (1 por cookie, 6 na caixa de 6). Depois registre o primeiro lote.') + '</p><button class="btn sec" onclick="go(\'massa\')">' + ic('plus', 's') + 'Registre o primeiro lote de massa</button></div>';
-  return cab + '<div class="list prod-est">' + ls.map(function (s) {
-    var al = s.alertas || [], grave = al.some(function (a) { return a.tipo === 'negativo' || a.tipo === 'vencido' || a.tipo === 'zerado'; });
-    var velho = s.lotes[0], sub = velho ? 'lote de ' + velho.data.slice(8) + '/' + velho.data.slice(5, 7) + ', ' + massaDiasTxt(velho.idade) : 'sem lote com saldo';
-    var num = '<b class="' + (s.saldo < 0 ? 'neg' : grave || al.length ? 'av' : '') + '">' + s.saldo + '</b><span>bolinha' + (Math.abs(s.saldo) === 1 ? '' : 's') + '</span>';
-    return '<div class="li tap" data-ms="' + esc(s.produto) + '"><div class="tx"><span>' + esc(massaCurto(s.produto)) + '</span><small class="muted">' + sub + '</small>' +
-      (al.length ? '<small class="mx-al' + (grave ? ' err' : '') + '">' + ic('alert', 's') + esc(al.map(function (a) { return a.texto; }).join(' · ')) + '</small>' : '') + '</div><div class="pe-n">' + num + '</div></div>';
-  }).join('') + '</div>' + (S.massa.avisos || []).map(function (a) { return '<div class="aviso av" style="margin:0 0 10px">' + ic('alert', 's') + '<span>' + esc(a.texto) + '</span></div>'; }).join('');
-}
-function ligarMassaCard(root) { $$('[data-ms]', root).forEach(function (el) { el.onclick = function () { massaSaborSheet(el.dataset.ms); }; }); }
-function massaSaborSheet(nome) {
-  var s = massaSabor(nome); if (!s) return;
-  var sh = sheet('<h3>' + esc(s.produto) + '</h3><p class="desc">' + s.saldo + ' bolinha' + (Math.abs(s.saldo) === 1 ? '' : 's') + ' no congelador · ' + s.produzido + ' produzidas, ' + s.vendido + ' em pedidos, ' + s.descartado + ' descartadas' + (s.ajuste ? ', ajuste ' + (s.ajuste > 0 ? '+' : '') + s.ajuste : '') +
-    (s.diasEstoque !== null && s.diasEstoque !== undefined ? '. Dá para uns ' + s.diasEstoque + ' dias de venda.' : '.') + '</p>' +
-    ((s.alertas || []).length ? s.alertas.map(function (a) { return '<div class="aviso ' + (a.tipo === 'lote' || a.tipo === 'baixo' ? 'av' : '') + '" style="margin:0 0 8px">' + ic('alert', 's') + '<span>' + esc(a.texto) + '</span></div>'; }).join('') : '') +
-    '<div class="stg"><span class="lab">Lotes com saldo (sai primeiro o mais antigo)</span></div>' +
-    (s.lotes.length ? '<div class="list">' + s.lotes.map(function (l) {
-      return '<div class="li"><div class="tx"><span>' + dBR(l.data) + ' · ' + l.saldo + ' bolinha' + (l.saldo === 1 ? '' : 's') + '</span><div class="meta">' + massaDiasTxt(l.idade) + ' · validade ' + dBR(l.validade) +
-        (l.vencido ? ' <span class="pill err">vencido</span>' : l.perto ? ' <span class="pill av">perto de vencer</span>' : '') + '</div></div></div>';
-    }).join('') + '</div>' : '<div class="card flat"><p class="muted" style="margin:0">Nenhum lote com saldo.</p></div>') +
-    '<div class="btns"><button class="btn" id="msP">' + ic('plus', 's') + 'Produzir</button><button class="btn sec" id="msD">Descartar ou ajustar</button></div>');
-  $('#msP', sh).onclick = function () { S.massaPre = s.produto; go('massa'); };
-  $('#msD', sh).onclick = function () { S.massaPre = s.produto; go('massaAjuste'); };
+function prodCarregar(depois) {
+  if (S.prodCarregando) return;
+  if (!S.prod && typeof lerCache === 'function') S.prod = lerCache('getProducao', []);
+  S.prodCarregando = true;
+  call('getProducao').then(function (r) { S.prodCarregando = false; S.prod = r; if (depois) depois(); })
+    .catch(function () { S.prodCarregando = false; });
 }
 
-/* ---------- Registrar (Produzir, Descartar, Ajustar) com Desfazer ---------- */
-function massaRegistrar(dados, msg, bt, txtBt) {
-  bt.disabled = true; bt.textContent = 'Salvando…';
-  call('registrarMassa', dados).then(function (r) {
-    S.massa = r.estoque; if (typeof guardarCache === 'function') guardarCache('lerEstoqueMassa', [], r.estoque);
-    S.massaPre = null; go(S.prev || 'hoje');
-    toast(msg, false, { label: 'Desfazer', fn: function () {
-      call('desfazerMassa', r.id).then(function (x) { S.massa = x.estoque; if (typeof guardarCache === 'function') guardarCache('lerEstoqueMassa', [], x.estoque); toast('Desfeito'); if (S.view === 'hoje' && S.h) renderHoje(); }).catch(fail);
-    } });
-  }).catch(function (e) { bt.disabled = false; bt.textContent = txtBt; fail(e); });
+/* ---------- Cartão na tela Hoje ---------- */
+function prodCardHtml() {
+  if (!S.prodT || Date.now() - S.prodT > 60000) { S.prodT = Date.now(); setTimeout(function () { prodCarregar(function () { if (S.view === 'hoje' && S.h) renderHoje(); }); }, 2500); }   // depois da Hoje, para não disputar o servidor
+  var m = prodMapa(), cab = '<div class="sec"><h2>Produção</h2><button class="lk" onclick="prodSheet()">+ Lançar</button></div>';
+  if (!m) return '';
+  if (!S.prod.inicio) return cab + '<div class="card flat"><p class="muted" style="margin:0 0 12px">Lance o que foi produzido (congelado ou pronto) e o app mostra quanto ainda dá para vender. Os pedidos descontam sozinhos.</p><button class="btn sec" onclick="prodSheet()">' + ic('plus', 's') + 'Lançar produção</button></div>';
+  var linhas = prodControlados().map(function (nome) { return m[norm(nome)] ? Object.assign({ rotulo: nome }, m[norm(nome)]) : null; })
+    .filter(function (x) { return x && (x.lancado || x.reservado > 0); });
+  if (!linhas.length) return cab + '<div class="card flat"><p class="muted" style="margin:0">Nada produzido nem reservado agora.</p></div>';
+  return cab + '<div class="list prod-est">' + linhas.map(function (x) {
+    var num = x.lancado ? (x.livre >= 0 ? '<b>' + x.livre + '</b><span>livre' + (x.livre === 1 ? '' : 's') + '</span>' : '<b class="neg">' + (-x.livre) + '</b><span>faltam</span>') : '<b class="nd">—</b><span>sem lançamento</span>';
+    var sub = x.lancado ? x.estoque + ' no estoque · ' + x.reservado + ' em pedidos' : x.reservado + ' em pedidos';
+    return '<div class="li tap" onclick="prodSheet(\'producao\', this.dataset.n)" data-n="' + esc(x.rotulo) + '"><div class="tx"><span>' + esc(x.rotulo) + '</span><small class="muted">' + sub + '</small></div><div class="pe-n">' + num + '</div></div>';
+  }).join('') + '</div><div class="btns" style="margin-top:10px"><button class="btn sec" onclick="prodSheet(\'producao\')">Produzi</button><button class="btn ghost" onclick="prodSheet(\'contagem\')">Contar o estoque</button></div>';
 }
-function massaSemSaborTela() {
-  return '<div class="card flat">' + vazio('cake', 'Nenhum sabor com massa', 'Na aba Fichas técnicas, preencha "Bolinhas por unidade vendida" nos cookies (1 por cookie). Depois toque em atualizar.') + '</div>';
-}
-function massaPasso(id, min) {
-  var q = $('#' + id), passo = function (d) { var v = (parseInt(q.value.replace(/[^\d-]/g, ''), 10) || 0) + d; q.value = min === null ? v : Math.max(min, v); q.dispatchEvent(new Event('input')); };
-  return passo;
-}
-function vMassa() {
-  if (!S.massa) { $('#app').innerHTML = esqueleto([60, 120, 200]); return massaCarregar(function () { if (S.view !== 'massa') return; if (S.massa) vMassa(); else erroTela(S.massaErro, vMassa); }); }
-  var hoje = S.boot.hoje, cfg = massaCfg(), nomes = massaSaboresNomes(), f = { produto: nomes.indexOf(S.massaPre) >= 0 ? S.massaPre : (nomes.length === 1 ? nomes[0] : ''), data: hoje, validade: isoAdd(hoje, cfg.validadeDias), valManual: false };
-  var html = '<div class="page"><div class="lt" style="padding-top:4px"><h1>Produzir massa</h1><p>Lote de bolinhas cruas que foi para o congelador. Os pedidos baixam sozinhos, do lote mais antigo.</p></div>';
-  if (!nomes.length) { $('#app').innerHTML = html + massaSemSaborTela() + '</div>'; return; }
-  html += '<div class="sec" style="margin-top:4px"><h2>Sabor</h2></div>' + chipsHtml('mxP', nomes.map(function (n) { return [n, massaCurto(n)]; }), f.produto) + '<p class="muted" id="mxSaldo" style="margin:8px 2px 0"></p>' +
-    '<div class="card" style="margin-top:14px"><div class="fld"><label for="mxQ">Bolinhas</label><div class="step big"><button type="button" class="mn" id="mxMn" aria-label="Menos">' + ic('plus').replace('M12 5v14', '') + '</button><input id="mxQ" inputmode="numeric" pattern="[0-9]*" placeholder="0"><button type="button" class="plus" id="mxMa" aria-label="Mais">' + ic('plus') + '</button></div></div>' +
-    '<div class="row"><div class="grow fld"><label for="mxD">Data</label><input id="mxD" type="date" value="' + f.data + '" max="' + hoje + '"></div><div class="grow fld"><label for="mxV">Validade</label><input id="mxV" type="date" value="' + f.validade + '"></div></div>' +
-    '<div class="fld" style="margin:0"><label for="mxO">Observação <span class="muted" style="font-weight:600">(opcional)</span></label><input id="mxO" maxlength="200" placeholder="Ex.: receita nova, gotas maiores"></div></div></div>' +
-    '<div class="actbar"><div class="in"><div class="sum"><b id="mxTot">0 bolinhas</b><span id="mxFalta">Escolha o sabor</span></div><button class="btn" id="mxOk">Salvar lote</button></div></div>';
-  $('#app').innerHTML = html;
-  var q = $('#mxQ'), passo = massaPasso('mxQ', 0);
-  var atu = function () {
-    var n = parseInt(q.value, 10) || 0, s = f.produto && massaSabor(f.produto);
-    $('#mxSaldo').textContent = s ? 'No congelador agora: ' + s.saldo + ' bolinha' + (Math.abs(s.saldo) === 1 ? '' : 's') + '.' : '';
-    $('#mxTot').textContent = n + ' bolinha' + (n === 1 ? '' : 's');
-    $('#mxFalta').textContent = !f.produto ? 'Escolha o sabor' : !n ? 'Quantas bolinhas?' : 'Salvar lote · ' + n + ' bolinha' + (n === 1 ? '' : 's') + ' de ' + massaCurto(f.produto);
+
+/* ---------- Lançar produção ou contagem ---------- */
+function prodSheet(tipo, produto) {
+  tipo = tipo === 'contagem' ? 'contagem' : 'producao';
+  var nomes = prodControlados(), sel = produto && nomes.indexOf(produto) >= 0 ? produto : '', m = prodMapa() || {};
+  var html = '<h3>Produção</h3>' + seg('pTipo', [['producao', 'Produzi'], ['contagem', 'Contei o estoque']], tipo) +
+    '<p class="desc" id="pDesc"></p><div class="fld"><span class="lab">Produto</span>' + chipsHtml('pProd', nomes, sel) + '</div>' +
+    '<div class="fld"><label for="pQ" id="pQl"></label><div class="step big"><button type="button" class="mn" id="pMn" aria-label="Menos">' + ic('plus').replace('M12 5v14', '') + '</button><input id="pQ" inputmode="numeric" placeholder="0"><button type="button" class="plus" id="pMa" aria-label="Mais">' + ic('plus') + '</button></div><p class="muted" id="pInfo" style="margin:8px 0 0"></p></div>' +
+    '<div class="btns"><button class="btn" id="pOk">Salvar</button><button class="btn ghost" id="pNo">Voltar</button></div>';
+  var sh = sheet(html);
+  var info = function () {
+    var x = sel && m[norm(sel)];
+    $('#pDesc', sh).textContent = tipo === 'producao' ? 'Quantas unidades ficaram prontas ou congeladas agora. Soma no estoque.' : 'Quantas unidades existem agora, contando no congelador. O app corrige a diferença.';
+    $('#pQl', sh).textContent = tipo === 'producao' ? 'Quantidade produzida' : 'Quantidade contada';
+    $('#pInfo', sh).textContent = !sel ? '' : !x || !x.lancado ? 'Primeiro lançamento deste produto.' : 'Hoje o app conta ' + x.estoque + ' no estoque, ' + x.reservado + ' em pedidos e ' + x.livre + ' livres.';
   };
-  chipsSel($('#mxP'), function (v) { f.produto = v; atu(); });
-  q.oninput = atu; $('#mxMn').onclick = function () { passo(-1); }; $('#mxMa').onclick = function () { passo(1); };
-  $('#mxD').onchange = function () { f.data = this.value; if (!f.valManual && f.data) { f.validade = isoAdd(f.data, cfg.validadeDias); $('#mxV').value = f.validade; } };
-  $('#mxV').onchange = function () { f.validade = this.value; f.valManual = true; };
-  atu();
-  $('#mxOk').onclick = function () {
-    var n = parseInt(q.value, 10);
-    if (!f.produto) { $('#mxP').classList.add('falta'); setTimeout(function () { $('#mxP').classList.remove('falta'); }, 600); return toast('Escolha o sabor', true); }
-    if (!/^\d+$/.test(q.value.trim()) || !n) { q.classList.add('falta'); q.focus(); setTimeout(function () { q.classList.remove('falta'); }, 600); return toast('Quantas bolinhas?', true); }
-    if (!f.data || !f.validade || f.validade < f.data) return toast('Confira a data e a validade', true);
-    massaRegistrar({ tipo: 'Produção', produto: f.produto, unidades: n, data: f.data, validade: f.validade, obs: $('#mxO').value.trim(), pessoa: S.pessoa },
-      'Lote salvo: ' + n + ' bolinha' + (n === 1 ? '' : 's') + ' de ' + massaCurto(f.produto), this, 'Salvar lote');
-  };
-}
-function vMassaAjuste() {
-  if (!S.massa) { $('#app').innerHTML = esqueleto([60, 120, 200]); return massaCarregar(function () { if (S.view !== 'massaAjuste') return; if (S.massa) vMassaAjuste(); else erroTela(S.massaErro, vMassaAjuste); }); }
-  var nomes = massaSaboresNomes(), f = { tipo: 'Descarte', produto: nomes.indexOf(S.massaPre) >= 0 ? S.massaPre : (nomes.length === 1 ? nomes[0] : ''), sinal: -1, motivo: '' };
-  var html = '<div class="page"><div class="lt" style="padding-top:4px"><h1>Descartar ou ajustar</h1><p>Descarte: massa que estragou ou passou da validade. Ajuste: o congelador tem mais ou menos do que o app mostra.</p></div>';
-  if (!nomes.length) { $('#app').innerHTML = html + massaSemSaborTela() + '</div>'; return; }
-  html += seg('mxT', [['Descarte', 'Descarte'], ['Ajuste', 'Ajuste de contagem']], f.tipo) +
-    '<div class="sec" style="margin-top:4px"><h2>Sabor</h2></div>' + chipsHtml('mxP', nomes.map(function (n) { return [n, massaCurto(n)]; }), f.produto) + '<div id="mxSaldo"></div>' +
-    '<div class="card" style="margin-top:14px"><div class="fld" id="mxSin"><span class="lab">O congelador tem</span>' + chipsHtml('mxS', [['-1', 'Menos que o app (−)'], ['1', 'Mais que o app (+)']], '-1') + '</div>' +
-    '<div class="fld"><label for="mxQ">Bolinhas</label><div class="step big"><button type="button" class="mn" id="mxMn" aria-label="Menos">' + ic('plus').replace('M12 5v14', '') + '</button><input id="mxQ" inputmode="numeric" pattern="[0-9]*" placeholder="0"><button type="button" class="plus" id="mxMa" aria-label="Mais">' + ic('plus') + '</button></div></div>' +
-    '<div class="fld"><span class="lab">Motivo</span><div id="mxMw"></div></div>' +
-    '<div class="fld" style="margin:0"><label for="mxO">Observação <span class="muted" style="font-weight:600">(opcional)</span></label><input id="mxO" maxlength="200"></div></div></div>' +
-    '<div class="actbar"><div class="in"><div class="sum"><b id="mxTot">0</b><span id="mxFalta"></span></div><button class="btn" id="mxOk">Salvar</button></div></div>';
-  $('#app').innerHTML = html;
-  var q = $('#mxQ'), passo = massaPasso('mxQ', 0);
-  var motivos = function () {
-    var l = f.tipo === 'Descarte' ? ['Vencido', 'Qualidade', 'Outro'] : ['Contagem', 'Outro'];
-    if (l.indexOf(f.motivo) < 0) f.motivo = f.tipo === 'Ajuste' ? 'Contagem' : '';
-    $('#mxMw').innerHTML = chipsHtml('mxM', l, f.motivo); chipsSel($('#mxM'), function (v) { f.motivo = v; atu(); });
-  };
-  var atu = function () {
-    var n = parseInt(q.value, 10) || 0, s = f.produto && massaSabor(f.produto), u = f.tipo === 'Descarte' ? -n : f.sinal * n;
-    $('#mxSin').classList.toggle('hide', f.tipo !== 'Ajuste');
-    $('#mxSaldo').innerHTML = s ? '<div class="aviso' + (s.saldo < 0 ? '' : ' av') + '" style="background:var(--papel);color:var(--tinta)">' + ic('box', 's') + '<span>Saldo atual de ' + esc(massaCurto(s.produto)) + ': <b>' + s.saldo + '</b> bolinha' + (Math.abs(s.saldo) === 1 ? '' : 's') + (n ? ' · depois: <b>' + (s.saldo + u) + '</b>' : '') + '</span></div>' : '';
-    $('#mxTot').textContent = (u > 0 ? '+' : '') + u + ' bolinha' + (Math.abs(u) === 1 ? '' : 's');
-    $('#mxFalta').textContent = !f.produto ? 'Escolha o sabor' : !n ? 'Quantas bolinhas?' : !f.motivo ? 'Escolha o motivo' : (f.tipo === 'Descarte' ? 'Descarte' : 'Ajuste') + ' de ' + massaCurto(f.produto);
-  };
-  $$('#mxT button').forEach(function (b) { b.onclick = function () { f.tipo = b.dataset.k; $$('#mxT button').forEach(function (o) { var on = o === b; o.classList.toggle('on', on); o.setAttribute('aria-selected', on); }); motivos(); atu(); }; });
-  chipsSel($('#mxP'), function (v) { f.produto = v; atu(); });
-  chipsSel($('#mxS'), function (v) { f.sinal = +v; atu(); });
-  q.oninput = atu; $('#mxMn').onclick = function () { passo(-1); }; $('#mxMa').onclick = function () { passo(1); };
-  motivos(); atu();
-  $('#mxOk').onclick = function () {
-    var n = parseInt(q.value, 10);
-    if (!f.produto) return toast('Escolha o sabor', true);
-    if (!/^\d+$/.test(q.value.trim()) || !n) { q.classList.add('falta'); q.focus(); setTimeout(function () { q.classList.remove('falta'); }, 600); return toast('Quantas bolinhas?', true); }
-    if (!f.motivo) return toast('Escolha o motivo', true);
-    var u = f.tipo === 'Descarte' ? n : f.sinal * n;
-    massaRegistrar({ tipo: f.tipo, produto: f.produto, unidades: u, motivo: f.motivo, obs: $('#mxO').value.trim(), pessoa: S.pessoa },
-      (f.tipo === 'Descarte' ? 'Descarte: ' + n : 'Ajuste: ' + (u > 0 ? '+' : '') + u) + ' de ' + massaCurto(f.produto), this, 'Salvar');
+  info();
+  $$('#pTipo button', sh).forEach(function (b) { b.onclick = function () { tipo = b.dataset.k; $$('#pTipo button', sh).forEach(function (o) { o.classList.toggle('on', o === b); o.setAttribute('aria-selected', o === b); }); info(); }; });
+  chipsSel($('#pProd', sh), function (v) { sel = v; info(); });
+  var q = $('#pQ', sh), passo = function (d) { var v = Math.max(0, (parseInt(q.value, 10) || 0) + d); q.value = v; };
+  $('#pMn', sh).onclick = function () { passo(-1); }; $('#pMa', sh).onclick = function () { passo(1); };
+  $('#pNo', sh).onclick = fecharSheet;
+  $('#pOk', sh).onclick = function () {
+    var v = q.value.trim(), n = parseInt(v, 10);
+    if (!sel) return toast('Escolha o produto', true);
+    if (!/^\d+$/.test(v) || (tipo === 'producao' && n === 0)) { q.classList.add('falta'); setTimeout(function () { q.classList.remove('falta'); }, 600); return toast('Quantidade inválida', true); }
+    var bt = this; bt.disabled = true; bt.textContent = 'Salvando…';
+    call('salvarProducao', { produto: sel, q: n, tipo: tipo, pessoa: S.pessoa }).then(function (r) {
+      prodGuardar(r); fecharSheet();
+      toast(tipo === 'producao' ? 'Lançado: ' + n + ' ' + sel : 'Contagem salva: ' + n + ' ' + sel, false, r.desfazer ? { label: 'Desfazer', fn: function () {
+        call('desfazerProducao', r.desfazer).then(function (x) { prodGuardar(x); toast('Desfeito'); }).catch(fail);
+      } } : null);
+    }).catch(function (e) { bt.disabled = false; bt.textContent = 'Salvar'; fail(e); });
   };
 }
 
-/* ---------- Pedido: tipo, disponível por sabor e sabores das caixas ---------- */
-function massaFormIni(f, b, pre, ed) {
-  f.sab = pre ? massaSaboresDe(pre.obs) : {};
-  f.massaEd = ed && ed.status !== 'Cancelado' ? massaUsoPedido(ed.itens, ed.obs) : {};   // edição: o próprio pedido já baixou do saldo
-  if (!S.massa || !S.massaT || Date.now() - S.massaT > 60000) massaCarregar(function () { if ($('#prods') && f.atu) f.atu(); });
+function prodGuardar(r) { S.prod = r; if (typeof guardarCache === 'function') guardarCache('getProducao', [], r); if (S.view === 'hoje' && S.h) renderHoje(); }
+function prodCfg() { var c = (S.prod && S.prod.cfg) || {}; return { minimo: c.minimo == null ? 12 : c.minimo, antecedenciaBolo: c.antecedenciaBolo == null ? 2 : c.antecedenciaBolo }; }
+/* Tipo padrão do pedido: pronta-entrega (cookie, inclusive em caixa); encomenda se houver bolo, pudim ou item fora do cardápio */
+function tipoAuto(f, b, nExtras) {
+  var algum = false, encomenda = !!nExtras;
+  b.produtos.forEach(function (p, i) { if (!f.qt[i]) return; algum = true; if (/bolo|pudim/.test(norm(p.nome))) encomenda = true; });
+  return algum || nExtras ? (encomenda ? 'Encomenda' : 'Pronta-entrega') : null;
 }
-function massaKitsSel(f, b) { var F = massaFichas(); return b.produtos.map(function (p, i) { var x = F[norm(p.nome)]; return f.qt[i] && x && x.kit ? { nome: p.nome, q: f.qt[i], bolinhas: f.qt[i] * x.bpu } : null; }).filter(Boolean); }
-function massaSabFalta(f, b) { if (!massaKitsSel(f, b).length) return false; for (var k in f.sab) if (f.sab[k] > 0) return false; return true; }
-function massaObs(obs, f, b) {
-  obs = massaSemSabores(obs);
-  if (!massaKitsSel(f, b).length) return obs;
+
+/* ---------- Pedido novo: livres por produto e sabores das caixas ---------- */
+function prodFormIni(f, b, pre, ed) {
+  f.sab = pre ? prodSaboresDe(pre.obs) : {};
+  f.prodEd = ed && emAberto(ed) ? prodItensPed(ed.itens, ed.obs) : [];   // edição: o próprio pedido já está reservado
+  if (!S.prod || !S.prodT || Date.now() - S.prodT > 60000) { S.prodT = Date.now(); prodCarregar(function () { if ($('#prods') && f.atu) f.atu(); }); }
+}
+function prodKitsSel(f, b) { return b.produtos.filter(function (p, i) { return f.qt[i] && prodKit(p.nome) && !/^assinatura/.test(norm(p.nome)); }).map(function (p) { return { nome: p.nome, q: f.qt[b.produtos.indexOf(p)] }; }); }
+function prodPrecisa(kits) {
+  var c = 0, bo = 0;
+  kits.forEach(function (k) { if (/assinatura/i.test(k.nome)) return; var m = k.nome.match(/(\d+)\s*(un|cookies)/i); c += k.q * (m ? +m[1] : 0); if (/bolo/i.test(k.nome)) bo += k.q; });
+  return { cookies: c, bolos: bo };
+}
+function prodSabFalta(f, b) { var kits = prodKitsSel(f, b).filter(function (k) { return !/assinatura/i.test(k.nome); }); if (!kits.length) return false; for (var k in f.sab) if (f.sab[k] > 0) return false; return true; }
+function prodObs(obs, f, b) {
+  obs = prodSemSabores(obs);
+  if (!prodKitsSel(f, b).length) return obs;
   var l = Object.keys(f.sab).filter(function (k) { return f.sab[k] > 0; }).map(function (k) { return f.sab[k] + 'x ' + k; });
   return l.length ? (obs ? obs + '\n' : '') + 'Sabores: ' + l.join('; ') : obs;
 }
-/* Padrão: pronta-entrega se todos os itens usam massa; encomenda se houver bolo ou outro item sem massa */
-function massaTipoAuto(f, b, nExtras) {
-  var F = massaFichas(), algum = false, todos = true;
-  b.produtos.forEach(function (p, i) { if (!f.qt[i]) return; algum = true; if (!F[norm(p.nome)]) todos = false; });
-  if (nExtras) { algum = true; todos = false; }
-  return algum ? (todos ? 'Pronta-entrega' : 'Encomenda') : null;
-}
-function massaForm(f, b, atualizar) {
+function prodForm(f, b, atualizar) {
   f.atu = atualizar;
-  var F = massaFichas(), disp = massaDisponivel(), pe = f.tipo === 'Pronta-entrega';
-  // o que este pedido usa, por sabor
-  var uso = {};
-  b.produtos.forEach(function (p, i) { var x = F[norm(p.nome)]; if (f.qt[i] && x && !x.kit) uso[norm(x.nome)] = (uso[norm(x.nome)] || 0) + f.qt[i] * x.bpu; });
-  if (massaKitsSel(f, b).length) Object.keys(f.sab).forEach(function (n) { var x = F[norm(n)]; if (f.sab[n] > 0 && x && !x.kit) uso[norm(x.nome)] = (uso[norm(x.nome)] || 0) + f.sab[n] * x.bpu; });
-  var livre = function (nome) { var k = norm(nome); return k in disp ? disp[k] + ((f.massaEd || {})[k] || 0) : null; };
+  var m = prodMapa(), ed = {};
+  (f.prodEd || []).forEach(function (x) { ed[norm(x.nome)] = (ed[norm(x.nome)] || 0) + x.q; });
+  var resta = function (nome, usado) { var x = m && m[norm(nome)]; if (!x || !x.lancado) return null; return x.livre + (ed[norm(nome)] || 0) - usado; };
   b.produtos.forEach(function (p, i) {
     var el = $('#est' + i); if (!el) return;
-    var x = F[norm(p.nome)], r = pe && x && !x.kit ? livre(x.nome) : null;
-    el.textContent = r === null ? '' : 'disponível: ' + r;
-    el.className = 'pr-est' + (r !== null && r < (uso[norm(x.nome)] || 0) ? ' neg' : '');
+    var r = prodKit(p.nome) ? null : resta(p.nome, (f.qt[i] || 0) + (f.sab[p.nome] || 0));
+    el.textContent = r === null ? '' : r >= 0 ? r + ' livre' + (r === 1 ? '' : 's') : 'faltam ' + (-r);
+    el.className = 'pr-est' + (r !== null && r < 0 ? ' neg' : '');
   });
-  var av = $('#massaAv');
-  if (av) {
-    var passa = pe ? Object.keys(uso).map(function (k) { var l = livre(k); return l === null || uso[k] <= l ? null : { nome: (F[k] || {}).nome || k, n: uso[k] - Math.max(0, l) }; }).filter(Boolean) : [];
-    av.innerHTML = passa.map(function (x) { return '<div class="aviso av" style="margin:10px 0 0">' + ic('alert', 's') + '<span>Passa do estoque de ' + esc(massaCurto(x.nome)) + ' em ' + x.n + '; registre um lote ou ajuste.</span></div>'; }).join('');
-  }
   var box = $('#sabBox'); if (!box) return;
-  var kits = massaKitsSel(f, b);
+  var kits = prodKitsSel(f, b);
   if (!kits.length) { box.classList.add('hide'); box.innerHTML = ''; return; }
-  var precisa = kits.reduce(function (a, k) { return a + k.bolinhas; }, 0), nomes = massaSaboresNomes(), c = 0;
-  nomes.forEach(function (n) { c += (f.sab[n] || 0) * ((F[norm(n)] || {}).bpu || 1); });
+  var pr = prodPrecisa(kits), nomes = prodControlados(), c = 0, bo = 0;
+  nomes.forEach(function (n) { var q = f.sab[n] || 0; if (/cookie/i.test(n)) c += q; else if (/bolo/i.test(n)) bo += q; });
+  var alvo = [pr.cookies ? c + ' de ' + pr.cookies + ' cookies' : '', pr.bolos ? bo + ' de ' + pr.bolos + ' bolo' + (pr.bolos === 1 ? '' : 's') : ''].filter(String).join(' · ');
   box.classList.remove('hide');
-  box.innerHTML = '<div class="sec" style="margin-top:14px"><h2>O que vai nas caixas</h2><span class="cnt">' + c + ' de ' + precisa + ' cookies</span></div><div class="list">' + nomes.map(function (n, k) {
-    var q = f.sab[n] || 0, r = livre(n);
-    return '<div class="prod' + (q ? ' sel' : '') + '"><div class="grow"><div class="nm">' + esc(n) + '</div><div class="pr">' + (r === null ? '' : '<span class="pr-est' + (r < (uso[norm(n)] || 0) ? ' neg' : '') + '">disponível: ' + r + '</span>') + '</div></div>' +
+  box.innerHTML = '<div class="sec" style="margin-top:14px"><h2>O que vai nas caixas</h2>' + (alvo ? '<span class="cnt">' + alvo + '</span>' : '') + '</div><div class="list">' + nomes.map(function (n, k) {
+    var q = f.sab[n] || 0, i = b.produtos.map(function (p) { return p.nome; }).indexOf(n), r = resta(n, q + (f.qt[i] || 0));
+    return '<div class="prod' + (q ? ' sel' : '') + '"><div class="grow"><div class="nm">' + esc(n) + '</div><div class="pr">' + (r === null ? '' : '<span class="pr-est' + (r < 0 ? ' neg' : '') + '">' + (r >= 0 ? r + ' livre' + (r === 1 ? '' : 's') : 'faltam ' + (-r)) + '</span>') + '</div></div>' +
       '<div class="step"><button type="button" class="mn" data-sm="' + k + '" aria-label="Menos ' + esc(n) + '">' + ic('plus').replace('M12 5v14', '') + '</button><output>' + q + '</output><button type="button" class="plus" data-sp="' + k + '" aria-label="Mais ' + esc(n) + '">' + ic('plus') + '</button></div></div>';
   }).join('') + '</div>';
   $$('[data-sp], [data-sm]', box).forEach(function (bt) { bt.onclick = function () {
@@ -1518,7 +1437,7 @@ function vSemana(w) {
       '<div class="card"><div class="fld"><label for="sU">Unidades produzidas</label><input id="sU" inputmode="numeric" value="' + v(s.unidades) + '"></div>' +
       '<div class="row"><div class="grow fld"><label for="sS">Sobra (un)</label><input id="sS" inputmode="numeric" value="' + v(s.sobra) + '"></div><div class="grow fld"><label for="sQ">Quebra (un)</label><input id="sQ" inputmode="numeric" value="' + v(s.quebra) + '"></div></div>' +
       '<p class="muted" style="margin:0 0 14px">Custo dos itens vendidos na semana, pelas fichas técnicas: ' + brl(s.custo || 0) + '</p>' +
-      (s.massa ? '<p class="muted" style="margin:-6px 0 14px">Massa: ' + (s.massa.produzido || 0) + ' bolinha' + (s.massa.produzido === 1 ? '' : 's') + ' produzida' + (s.massa.produzido === 1 ? '' : 's') + ', ' + (s.massa.descartado || 0) + ' descartada' + (s.massa.descartado === 1 ? '' : 's') + ' na semana</p>' : '') +
+      (s.producao ? '<p class="muted" style="margin:-6px 0 14px">Produção lançada na semana: ' + (s.producao.produzido || 0) + ' unidade' + (s.producao.produzido === 1 ? '' : 's') + (s.producao.perdido ? ' · ' + s.producao.perdido + ' a menos na contagem' : '') + '</p>' : '') +
       '<div class="fld" style="margin:0"><label for="sN">O que faltou, o que sobrou, decisões</label><textarea id="sN">' + esc(v(s.notas)) + '</textarea></div></div></div>' +
       '<div class="actbar"><div class="in"><div class="sum"><b>Semana ' + w + '</b><span>Salva unidades, sobra e quebra</span></div><button class="btn" id="sOk">Salvar</button></div></div>';
     $('#app').innerHTML = html;
@@ -1538,19 +1457,19 @@ function vEstoque(ref) {
   call('getEstoque').then(function (e) {
     ref = ref || e.padrao;
     var refInfo = e.refs.filter(function (r) { return r.ref === ref; })[0] || e.refs[1];
-    var html = '<div class="page"><div class="lt" style="padding-top:4px"><h1>Contar o estoque</h1><p>Conte a massa do congelador e pese ou conte o que sobrou de cada insumo, na unidade indicada. Leva uns 10 minutos.</p></div>';
+    var html = '<div class="page"><div class="lt" style="padding-top:4px"><h1>Contar o estoque</h1><p>Conte a produção no congelador e pese ou conte o que sobrou de cada insumo, na unidade indicada. Leva uns 10 minutos.</p></div>';
     html += '<div class="fld"><span class="lab">Estoque do fim de</span>' + seg('eRef', e.refs.map(function (r) { return [r.ref, r.nome.replace(/ de \d{4}$/, '') + (r.contado ? ' ✓' : '')]; }), ref) + '</div>';
     var mx = e.massa || [];
     if (!e.itens.length && !mx.length) {
       html += '<div class="card flat">' + vazio('box', 'Nenhum insumo marcado', 'Na aba Insumos da planilha, escreva Sim na coluna "Contar no estoque" dos insumos caros.') + '</div></div>';
       $('#app').innerHTML = html; ligarRef(); return;
     }
-    /* Versão 10: massa no congelador, preenchida com o saldo do app. Corrigir gera um Ajuste (motivo Contagem). */
-    if (mx.length) html += '<div class="sec" style="margin-top:6px"><h2>Massa no congelador</h2><span class="cnt">bolinhas</span></div><div class="card">' + mx.map(function (m, k) {
+    /* Versão 10: estoque de produção, preenchido com o que o app conta. Corrigir grava a diferença no controle de produção. */
+    if (mx.length) html += '<div class="sec" style="margin-top:6px"><h2>Produção no estoque</h2><span class="cnt">unidades</span></div><div class="card">' + mx.map(function (m, k) {
       var salvo = ref === e.refs[1].ref ? m.salvo.atual : m.salvo.anterior, v = salvo === undefined || salvo === null ? Math.max(0, m.saldo) : salvo;
       return '<div class="fld"' + (k === mx.length - 1 ? ' style="margin:0"' : '') + '><label for="mq' + k + '">' + esc(m.produto) + ' <span class="muted" style="font-weight:600">· app: ' + m.saldo + '</span></label>' +
-        '<div class="row" style="gap:8px"><input id="mq' + k + '" class="mq" inputmode="numeric" value="' + v + '"><span class="muted" style="min-width:28px">bolinhas</span></div></div>';
-    }).join('') + '<p class="muted" style="margin:10px 0 0">Confira e corrija se for diferente: a diferença vira um ajuste de contagem. Os insumos guardados na massa entram no estoque final.</p></div>' +
+        '<div class="row" style="gap:8px"><input id="mq' + k + '" class="mq" inputmode="numeric" value="' + v + '"><span class="muted" style="min-width:28px">unid.</span></div></div>';
+    }).join('') + '<p class="muted" style="margin:10px 0 0">Bolinhas de massa contam como unidade. Confira e corrija se for diferente: a diferença entra no controle de produção como contagem. Os insumos guardados aqui entram no estoque final.</p></div>' +
       (e.itens.length ? '<div class="sec"><h2>Insumos</h2></div>' : '');
     if (e.itens.length) html += '<div class="card">' + e.itens.map(function (it, k) {
       var salvo = ref === e.refs[1].ref ? it.salvo.atual : it.salvo.anterior;
@@ -1561,7 +1480,7 @@ function vEstoque(ref) {
     html += resultadoHtml(e.resultado);
     html += '</div><div class="actbar"><div class="in"><div class="sum"><b id="eCnt">0 de ' + e.itens.length + '</b><span id="eFalta">' + esc('Fim de ' + refInfo.nome) + '</span></div><button class="btn" id="eOk">Salvar</button></div></div>';
     $('#app').innerHTML = html;
-    var conta = function () { var n = $$('#app .eq').filter(function (i) { return i.value.trim() !== ''; }).length; $('#eCnt').textContent = n + ' de ' + e.itens.length + (mx.length ? ' · massa' : ''); return n; };
+    var conta = function () { var n = $$('#app .eq').filter(function (i) { return i.value.trim() !== ''; }).length; $('#eCnt').textContent = n + ' de ' + e.itens.length + (mx.length ? ' · produção' : ''); return n; };
     $$('#app .eq').forEach(function (i) { i.oninput = conta; }); conta();
     ligarRef();
     $('#eOk').onclick = function () {
@@ -1573,7 +1492,7 @@ function vEstoque(ref) {
         var massa = mx.map(function (m, k) { return { produto: m.produto, q: parseInt($('#mq' + k).value, 10) }; });
         if (!itens.length && !massa.length) return toast('Preencha pelo menos um insumo', true);
         var bt = $('#eOk'); bt.disabled = true; bt.textContent = 'Salvando…';
-        call('salvarContagem', ref, itens, S.pessoa, massa).then(function (r) { S.massaT = 0; toast('Contagem salva: ' + r.gravados + ' item(ns)' + (r.ajustes ? ' · ' + r.ajustes + ' ajuste(s) de massa' : '')); vEstoque(ref); })
+        call('salvarContagem', ref, itens, S.pessoa, massa).then(function (r) { S.prodT = 0; toast('Contagem salva: ' + r.gravados + ' item(ns)' + (r.ajustes ? ' · ' + r.ajustes + ' correção(ões) na produção' : '')); vEstoque(ref); })
           .catch(function (er) { bt.disabled = false; bt.textContent = 'Salvar'; fail(er); });
       };
       if (vazios.length) confirmar('Faltam ' + vazios.length + ' insumo(s)', 'Os que ficarem em branco não entram nesta contagem e o consumo real deles não será calculado. Salvar assim mesmo?', 'Salvar assim').then(function (ok) { if (ok) salvar(); });
@@ -1588,7 +1507,7 @@ function resultadoHtml(r) {
   if (!r.completo) h += '<div class="aviso av" style="margin:0 0 10px">' + ic('alert', 's') + '<span>' + (r.temIni ? 'Falta a contagem do fim do mês.' : 'Falta a contagem do mês anterior, que é o estoque inicial deste mês.') + ' Sem ela, o consumo real não é calculado.</span></div>';
   h += '<table class="tbl"><tr class="b"><td>Insumo</td><td>Previsto · real</td></tr>' + r.itens.slice().sort(function (a, b) { return a.nome.localeCompare(b.nome); }).map(function (i) {
     var negativo = i.real !== null && i.real < 0, alerta = negativo || (i.dif !== null && i.previsto > 0 && i.dif > i.previsto * 0.1);
-    var nm = i.naMassa ? '<div class="muted" style="font-size:13px">inclui ' + fmtQ(i.naMassa, i.un) + ' guardados na massa congelada</div>' : '';
+    var nm = i.naMassa ? '<div class="muted" style="font-size:13px">inclui ' + fmtQ(i.naMassa, i.un) + ' guardados na produção</div>' : '';
     var nota = nm + (negativo ? '<div style="font-size:13px;color:var(--err)">Sobrou mais do que havia: falta lançar uma compra deste insumo?</div>'
       : i.dif !== null ? '<div class="muted" style="font-size:13px">' + (i.dif > 0 ? 'usou ' + fmtQ(i.dif, i.un) + ' a mais' : i.dif < 0 ? 'usou ' + fmtQ(-i.dif, i.un) + ' a menos' : 'igual ao previsto') + '</div>' : '');
     return '<tr><td>' + esc(i.nome) + nota + '</td>' +
@@ -1754,7 +1673,7 @@ function gGraf() {
     if (tc.length) h += grCard('Clientes que mais compraram', 'No período', '<table class="gr-tab"><tr><th>Cliente</th><th>Pedidos</th><th>Receita</th></tr>' + tc.map(function (c) { return '<tr><td>' + esc(c.nome) + '</td><td>' + c.n + '</td><td>' + grBrl(c.v) + '</td></tr>'; }).join('') + '</table>');
     var mp = (ind && ind.margemProdutos) || [];
     if (mp.length) h += grCard('Margem de contribuição por produto', 'R$ por unidade (preço − custo da ficha técnica), da maior para a menor', grBarras(mp.slice(0, 12).map(function (x) { return { lab: x.nome, v: Math.max(0, x.margem), txt: grBrl(x.margem) + ' · ' + Math.round(x.pct * 100) + '%' }; })),
-      'É o indicador de decisão do mix: priorize no cardápio e na massa os produtos do topo.');
+      'É o indicador de decisão do mix: priorize no cardápio e na produção os produtos do topo.');
     h += '<p class="gr-nota" style="margin:4px 2px 20px">Toque numa coluna ou ponto para ver o valor. Pedidos cancelados ficam fora.</p>';
     $('#gBody').innerHTML = h;
     chipsSel($('#grSem'), function (v) { S.gr.sem = Number(v); gGraf(); });
@@ -1840,13 +1759,13 @@ function dreHtml(r) {
   }).join('') + '</table>' + (r.semCusto && r.semCusto.length ? '<div class="aviso">' + ic('alert', 's') + '<span>Vendidos sem custo cadastrado: ' + esc(r.semCusto.join(', ')) + '. A margem do mês aparece maior do que é até esses itens terem ficha técnica completa com o mesmo nome do pedido.</span></div>' : '') + '</div>';
 }
 function prodHtml(r) { return '<div class="sec"><h2>Produtos no mês</h2></div><div class="card"><table class="tbl"><tr class="b"><td>Produto</td><td>Qtd</td></tr>' + r.produtos.map(function (p) { return '<tr><td>' + esc(p.nome) + '</td><td>' + p.qtd + '</td></tr>'; }).join('') + '</table></div>'; }
-/* Versão 10: estoque de massa, perda de massa e margem de contribuição por produto (o indicador de decisão do mix) */
+/* Versão 10: estoque de produção, perda na contagem e margem de contribuição por produto (o indicador de decisão do mix) */
 function massaGestaoHtml(r) {
   var h = '', m = r.massa;
-  if (m && m.sabores && m.sabores.length) {
-    h += '<div class="sec"><h2>Massa no congelador</h2><span class="cnt">' + m.total + ' bolinhas</span></div><div class="card"><table class="tbl"><tr class="b"><td>Sabor</td><td>Saldo · dias de estoque</td></tr>' +
-      m.sabores.map(function (x) { var al = x.saldo < (m.minimo || 0); return '<tr><td>' + esc(x.produto) + '</td><td' + (al ? ' style="color:var(--err);font-weight:800"' : '') + '>' + x.saldo + ' · ' + (x.diasEstoque === null || x.diasEstoque === undefined ? '—' : x.diasEstoque + ' d') + '</td></tr>'; }).join('') + '</table>' +
-      '<p class="muted" style="margin:10px 0 0">Dias de estoque = saldo ÷ média diária vendida nas últimas 4 semanas.' + (m.perda !== null && m.perda !== undefined ? ' Perda de massa no mês: <b' + (m.perda > 0.05 ? ' style="color:var(--err)"' : '') + '>' + String(Math.round(m.perda * 1000) / 10).replace('.', ',') + '%</b> (' + m.descartadoMes + ' de ' + m.produzidoMes + '; meta abaixo de 5%).' : '') + '</p></div>';
+  if (m && m.itens && m.itens.length) {
+    h += '<div class="sec"><h2>Produção no estoque</h2><span class="cnt">' + m.total + ' unidades</span></div><div class="card"><table class="tbl"><tr class="b"><td>Produto</td><td>Livres · dias de estoque</td></tr>' +
+      m.itens.map(function (x) { var al = x.lancado && x.livre < (m.minimo || 0); return '<tr><td>' + esc(x.produto) + '<div class="muted" style="font-size:13px">' + x.estoque + ' no estoque · ' + x.reservado + ' em pedidos</div></td><td' + (al ? ' style="color:var(--err);font-weight:800"' : '') + '>' + x.livre + ' · ' + (x.diasEstoque === null || x.diasEstoque === undefined ? '—' : x.diasEstoque + ' d') + '</td></tr>'; }).join('') + '</table>' +
+      '<p class="muted" style="margin:10px 0 0">Livres = no estoque − em pedidos. Dias de estoque = livres ÷ média diária vendida nas últimas 4 semanas.' + (m.perda !== null && m.perda !== undefined ? ' Perda na contagem do mês: <b' + (m.perda > 0.05 ? ' style="color:var(--err)"' : '') + '>' + String(Math.round(m.perda * 1000) / 10).replace('.', ',') + '%</b> (' + m.perdidoMes + ' de ' + m.produzidoMes + '; meta abaixo de 5%).' : '') + '</p></div>';
   }
   if (r.margemProdutos && r.margemProdutos.length) {
     h += '<div class="sec"><h2>Margem de contribuição por produto</h2></div><div class="card"><table class="tbl"><tr class="b"><td>Produto</td><td>Por unidade · %</td></tr>' +
@@ -2101,7 +2020,7 @@ function detalheSheet(x) {
 
 /* =================== AJUDA =================== */
 S.aj = { chat: [], faq: null, ia: false };
-var AJ_SUG = ['Como edito um pedido?', 'Como o app calcula o custo de um bolo?', 'Como registro um lote de massa?', 'Como lanço uma compra de ingrediente?', 'O que é ponto de equilíbrio?'];
+var AJ_SUG = ['Como edito um pedido?', 'Como o app calcula o custo de um bolo?', 'Como lanço a produção?', 'Como lanço uma compra de ingrediente?', 'O que é ponto de equilíbrio?'];
 function ajScore(q, x) {
   var t = norm(x.p + ' ' + x.k + ' ' + x.c), r = norm(x.r), sc = 0;
   norm(q).split(/[^a-z0-9%]+/).filter(function (w) { return w.length > 2 && ['como', 'que', 'por', 'para', 'uma', 'com', 'onde', 'qual', 'quais', 'meu', 'minha', 'faco', 'isso', 'esta', 'sao', 'dos', 'das', 'nos', 'nas'].indexOf(w) < 0; })

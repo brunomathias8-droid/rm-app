@@ -54,7 +54,7 @@ function painelSemana_(iso) {
   var reuniao = ult ? { data: iso_(ult[0]), tipo: String(ult[1]), decisoes: String(ult[6] || '') } : null;
   var pausa = inPause_(ini) && inPause_(fim);
   // versão 10: massa no congelador e margem de contribuição por produto
-  var massa = null; if (typeof estoqueMassa_ === 'function') { try { massa = estoqueMassa_(); } catch (e) { Logger.log('massa no painel: ' + e.message); } }
+  var massa = null; if (typeof estoqueProducao_ === 'function') { try { massa = estoqueProducao_(); } catch (e) { Logger.log('produção no painel: ' + e.message); } }
   return { semana: w, ini: ini, fim: fim, fase: fase, meta: meta, prioridades: prio.slice(0, 6), totalPendentes: prio.length,
     dias: dias, anterior: ant, marcos: marcos, reuniao: reuniao, acoesAbertas: acoesAbertas_().length, pausa: pausa,
     massa: massa, margens: margemProdutosSeguro_().slice(0, 6) };
@@ -130,12 +130,12 @@ function painelHtml_(p, appUrl) {
     }).join('') + '</tr>';
   }
   h += '</table></td></tr>';
-  // massa no congelador (versão 10)
-  if (p.massa && p.massa.sabores.length) {
-    h += '<tr><td style="padding:18px 20px 6px"><div style="' + SERIF + 'font-size:21px;color:' + V + '">Massa no congelador</div><div style="font-size:13px;color:' + S + '">' + p.massa.total + ' bolinhas · mínimo ' + p.massa.cfg.minimo + ' por sabor</div></td></tr><tr><td style="padding:6px 20px">' +
-      p.massa.sabores.map(function (x) {
-        var al = x.alertas.map(function (a) { return a.texto; }).join(' · '), cor = x.saldo < p.massa.cfg.minimo ? ER : T;
-        return '<div style="font-size:14px;margin:4px 0;color:' + cor + '"><b>' + esc_(x.produto) + '</b>: ' + x.saldo + ' bolinha(s)' + (x.diasEstoque !== null ? ' · ~' + x.diasEstoque + ' dia(s) de venda' : '') + (al ? '<br><span style="font-size:12px">' + esc_(al) + '</span>' : '') + '</div>';
+  // estoque de produção (versão 10)
+  if (p.massa && p.massa.itens.length) {
+    h += '<tr><td style="padding:18px 20px 6px"><div style="' + SERIF + 'font-size:21px;color:' + V + '">Produção no estoque</div><div style="font-size:13px;color:' + S + '">Livres = no estoque − em pedidos · mínimo ' + p.massa.cfg.minimo + ' livres</div></td></tr><tr><td style="padding:6px 20px">' +
+      p.massa.itens.map(function (x) {
+        var al = x.alertas.map(function (a) { return a.texto; }).join(' · '), cor = x.lancado && x.livre < p.massa.cfg.minimo ? ER : T;
+        return '<div style="font-size:14px;margin:4px 0;color:' + cor + '"><b>' + esc_(x.produto) + '</b>: ' + x.livre + ' livre(s) · ' + x.estoque + ' no estoque · ' + x.reservado + ' em pedidos' + (x.diasEstoque !== null ? ' · ~' + x.diasEstoque + ' dia(s) de venda' : '') + (al ? '<br><span style="font-size:12px">' + esc_(al) + '</span>' : '') + '</div>';
       }).join('') + '</td></tr>';
   }
   if (p.margens && p.margens.length) {

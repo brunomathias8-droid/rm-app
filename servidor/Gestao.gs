@@ -20,7 +20,7 @@ var DRE_NOTA = 'Regime de competência: Insumos e Embalagem = custo dos itens ve
   'Perda = consumo real dos insumos marcados para contagem (estoque inicial + compras − estoque final) menos o previsto pela ficha. Valores calculados pelo script (não editar): atualizam a cada registro no app, no botão Recalcular agora e todo dia às 5h.';
 var REPASSE_RE = /\b(entrega|frete|uber|motoboy|99\s*pop|corrida)\b/i;
 var ACAO_STATUS = ['Aberta', 'Em andamento', 'Concluída', 'Cancelada'];
-var METAS = { ticket: 85, sobra: 0.05, canal: 0.6, insumo: 0.5, perdaMassa: 0.05 };   // margem por hora saiu em 22/10/2026 (decisão 37)
+var METAS = { ticket: 85, sobra: 0.05, canal: 0.6, insumo: 0.5, perdaMassa: 0.05 };   // perdaMassa: perda na contagem da produção   // margem por hora saiu em 22/10/2026 (decisão 37)
 /* Linhas da DRE que saíram de uso na versão 10 (ficam ocultas na planilha e o recálculo não escreve nelas) */
 var DRE_SEM_USO = ['Horas trabalhadas', 'Margem de contribuição por hora'];
 
@@ -348,21 +348,19 @@ function indicadoresMes_(iso) {
     massa: mx.massa, margemProdutos: margemProdutosSeguro_() };
 }
 
-/* Versão 10: estoque de massa, dias de estoque, lotes perto de vencer e perda de massa (Massa.gs) para Números e Reunião.
-   Pontos de atenção: sabor zerado (ou negativo), lote perto de vencer e, no mês, perda de massa acima de 5%. */
+/* Versão 10: estoque de produção (Producao.gs), dias de estoque e perda na contagem para Números e Reunião.
+   Pontos de atenção: produto sem livres (ou faltando para os pedidos) e, no mês, perda na contagem acima de 5% do produzido. */
 function massaGestao_(ini, fim, doMes) {
   var out = { indicadores: [], massa: null };
-  if (typeof estoqueMassa_ !== 'function') return out;
+  if (typeof estoqueProducao_ !== 'function') return out;
   try {
-    var est = estoqueMassa_(), per = massaPeriodo_(ini, fim);
-    var zerados = est.sabores.filter(function (s) { return s.saldo <= 0 && (s.produzido || s.vendido); });
-    var lotes = 0; est.sabores.forEach(function (s) { lotes += s.lotes.filter(function (l) { return l.perto || l.vencido; }).length; });
-    out.massa = { total: est.total, minimo: est.cfg.minimo, perda: per.perda, produzidoMes: per.produzido, descartadoMes: per.descartado,
-      sabores: est.sabores.map(function (s) { return { produto: s.produto, saldo: s.saldo, diasEstoque: s.diasEstoque }; }) };
-    if (!est.sabores.length) return out;
-    out.indicadores.push({ id: 'massa', nome: 'Massa no congelador', valor: est.total, fmt: 'int', metaTxt: zerados.length ? 'sem massa: ' + zerados.map(function (s) { return massaSabor_(s.produto); }).join(', ') : 'bolinhas · mínimo ' + est.cfg.minimo + ' por sabor', st: zerados.length ? 'atenção' : 'ok' });
-    out.indicadores.push({ id: 'lotes', nome: 'Lotes perto de vencer', valor: lotes, fmt: 'int', metaTxt: 'lotes com ' + est.cfg.alertaDias + ' dias ou mais', st: lotes ? 'atenção' : 'ok' });
-    if (doMes) out.indicadores.push({ id: 'perdaMassa', nome: 'Perda de massa', valor: per.perda, fmt: 'pct', metaTxt: per.produzido ? per.descartado + ' de ' + per.produzido + ' bolinhas · meta < 5%' : 'sem lote no mês', st: per.perda === null ? 'sem dado' : status_(per.perda < METAS.perdaMassa) });
+    var est = estoqueProducao_(), per = producaoPeriodo_(ini, fim);
+    var zerados = est.itens.filter(function (x) { return x.lancado && x.livre <= 0; });
+    out.massa = { total: est.total, minimo: est.cfg.minimo, perda: per.perda, produzidoMes: per.produzido, perdidoMes: per.perdido,
+      itens: est.itens.map(function (x) { return { produto: x.produto, estoque: x.estoque, reservado: x.reservado, livre: x.livre, lancado: x.lancado, diasEstoque: x.diasEstoque }; }) };
+    if (!est.itens.length) return out;
+    out.indicadores.push({ id: 'estoque', nome: 'Produção no estoque', valor: est.total, fmt: 'int', metaTxt: zerados.length ? 'sem livres: ' + zerados.map(function (x) { return v10Curto_(x.produto); }).join(', ') : 'unidades · mínimo ' + est.cfg.minimo + ' livres por produto', st: zerados.length ? 'atenção' : 'ok' });
+    if (doMes) out.indicadores.push({ id: 'perdaProducao', nome: 'Perda na contagem', valor: per.perda, fmt: 'pct', metaTxt: per.produzido ? per.perdido + ' de ' + per.produzido + ' produzidas · meta < 5%' : 'sem produção lançada no mês', st: per.perda === null ? 'sem dado' : status_(per.perda < METAS.perdaMassa) });
   } catch (e) { Logger.log('massaGestao_: ' + e.message); }
   return out;
 }
@@ -376,15 +374,15 @@ function getIndicadores(pin, tipo, iso) {
 
 /* ---------------- Reuniões ---------------- */
 var PAUTAS = {
-  Semanal: ['Números da semana (5 min): receita x meta, ticket, massa no congelador, Pix pendente',
+  Semanal: ['Números da semana (5 min): receita x meta, ticket, produção no estoque, Pix pendente',
     'Lançar unidades, sobra e quebra',
     'O que funcionou e o que não funcionou (causa, não culpa)',
     'Revisar as ações abertas: concluir, ajustar prazo ou cancelar',
-    'Decidir: sabores e lotes de massa da próxima semana e até 2 ações novas'],
+    'Decidir: o que produzir na próxima semana e até 2 ações novas'],
   Mensal: ['DRE do mês: receita, margem de contribuição, resultado após pró-labore',
     'Indicadores x metas: o que ficou em atenção e por quê',
     'Produtos: quanto vendeu cada um e a margem de contribuição por produto — qual sai, qual testar',
-    'Massa: perda do mês (meta < 5%), lotes perto de vencer e dias de estoque por sabor',
+    'Produção: perda na contagem (meta < 5%) e dias de estoque por produto',
     'Clientes e canais: ativos, recompra, assinantes, origem dos pedidos',
     'Preço e custo: custo real x teórico; algum preço precisa mudar?',
     'Plano de ação: fechar as do mês, criar até 3 novas com dono e prazo'],
@@ -634,9 +632,9 @@ function abaEstoque_() {
   }
   return sh;
 }
-/* Insumos contados: { ref: { chaveInsumo: q } }. Linhas de Tipo "Massa" (versão 10) ficam de fora: são lidas por readEstoqueMassa_. */
+/* Insumos contados: { ref: { chaveInsumo: q } }. Linhas de Tipo "Produção" (versão 10) ficam de fora: são lidas por readEstoqueMassa_. */
 function readEstoque_() { return lerEstoque_(false); }
-/* Massa contada no congelador: { ref: { nome do sabor: bolinhas } } */
+/* Produção contada no fim do mês: { ref: { produto: unidades } } */
 function readEstoqueMassa_() { return lerEstoque_(true); }
 function lerEstoque_(massa) {
   var sh = ss_().getSheetByName('Estoque'), out = {};
@@ -644,7 +642,7 @@ function lerEstoque_(massa) {
   sh.getRange(2, 1, sh.getLastRow() - 1, 9).getValues().forEach(function (r) {
     var ref = isDate_(r[0]) ? fmt_(r[0], 'yyyy-MM') : String(r[0] || '').trim().slice(0, 7), q = numG_(r[2]);
     if (!/^\d{4}-\d{2}$/.test(ref) || !r[1] || isNaN(q)) return;
-    if ((String(r[8] || '').trim() === 'Massa') !== massa) return;
+    if (/^(Produção|Massa)$/.test(String(r[8] || '').trim()) !== massa) return;
     (out[ref] = out[ref] || {})[massa ? String(r[1]).trim() : chave_(r[1])] = q;
   });
   return out;
@@ -659,11 +657,11 @@ function estoqueMes_(ref, ctx) {
   var pm = peds.filter(function (p) { return p.data >= ini && p.data < fimEx; });
   var prev = consumoPrevisto_(base, pm);
   var refIni = refAnterior_(ref), temIni = !!est[refIni] || refIni <= ESTOQUE_INICIO, temFim = !!est[ref];
-  // versão 10: insumo guardado na massa congelada também é estoque (bolinhas × quantidade do insumo por bolinha)
-  var estM = ctx.estMassa || readEstoqueMassa_(), pb = null, guardIni = {}, guardFim = {};
-  if ((estM[ref] || estM[refIni]) && typeof massaInsumosPorBolinha_ === 'function') {
-    pb = ctx.porBolinha || massaInsumosPorBolinha_();
-    guardIni = massaInsumosGuardados_(estM[refIni] || {}, pb); guardFim = massaInsumosGuardados_(estM[ref] || {}, pb);
+  // versão 10: insumo guardado no estoque de produção (massa congelada, produto pronto) também é estoque, pela receita
+  var estM = ctx.estMassa || readEstoqueMassa_(), avisosMassa = [], guardIni = {}, guardFim = {};
+  if ((estM[ref] || estM[refIni]) && typeof v10InsumosGuardados_ === 'function') {
+    var gi = v10InsumosGuardados_(estM[refIni] || {}, base), gf = v10InsumosGuardados_(estM[ref] || {}, base);
+    guardIni = gi.porInsumo; guardFim = gf.porInsumo; avisosMassa = gf.avisos;
   }
   var itens = [], tot = { ini: 0, compras: 0, fim: 0, real: 0, prev: 0 }, semPreco = [];
   Object.keys(base.ins).forEach(function (k) {
@@ -679,7 +677,7 @@ function estoqueMes_(ref, ctx) {
     if (real !== null) tot.real += real * i.custo;
   });
   var completo = temIni && temFim;
-  return { ref: ref, nome: nomeRef_(ref), temIni: temIni, temFim: temFim, completo: completo, itens: itens, semPreco: semPreco, avisosMassa: pb ? pb.avisos : [],
+  return { ref: ref, nome: nomeRef_(ref), temIni: temIni, temFim: temFim, completo: completo, itens: itens, semPreco: semPreco, avisosMassa: avisosMassa,
     massa: estM[ref] || null,
     ini: temIni ? round2_(tot.ini) : null, fim: temFim ? round2_(tot.fim) : null, real: completo ? round2_(tot.real) : null, previsto: round2_(tot.prev),
     perda: completo ? round2_(tot.real - tot.prev) : null, perdaPct: completo && tot.prev > 0 ? Math.round((tot.real - tot.prev) / tot.prev * 10000) / 10000 : null };
@@ -693,15 +691,15 @@ function getEstoque(pin) {
   var itens = Object.keys(base.ins).filter(function (k) { return base.ins[k].contar; }).map(function (k) { var i = base.ins[k]; return { nome: i.nome, un: i.un || 'g', temPreco: i.custo !== null, salvo: { atual: (est[atual] || {})[k], anterior: (est[anterior] || {})[k] } }; })
     .sort(function (a, b) { return a.nome.localeCompare(b.nome); });
   var refs = Object.keys(est).sort(), ultimo = refs.length ? refs[refs.length - 1] : null;
-  // versão 10: massa no congelador, preenchida com o saldo do app (a Raquel confirma ou corrige)
+  // versão 10: estoque de produção, preenchido com o que o app conta (a Raquel confirma ou corrige)
   var estM = readEstoqueMassa_(), massa = [];
-  if (typeof estoqueMassa_ === 'function') { try { massa = estoqueMassa_().sabores.filter(function (s) { return s.cadastrado || s.produzido; }).map(function (s) { return { produto: s.produto, saldo: s.saldo, salvo: { atual: (estM[atual] || {})[s.produto], anterior: (estM[anterior] || {})[s.produto] } }; }); } catch (e) { Logger.log('massa na contagem: ' + e.message); } }
+  if (typeof estoqueProducao_ === 'function') { try { massa = estoqueProducao_().itens.filter(function (x) { return x.lancado; }).map(function (x) { return { produto: x.produto, saldo: x.estoque, salvo: { atual: (estM[atual] || {})[x.produto], anterior: (estM[anterior] || {})[x.produto] } }; }); } catch (e) { Logger.log('produção na contagem: ' + e.message); } }
   return { massa: massa, itens: itens, refs: [{ ref: anterior, nome: nomeRef_(anterior), contado: !!est[anterior] }, { ref: atual, nome: nomeRef_(atual), contado: !!est[atual] }], padrao: padrao,
     resultado: ultimo ? estoqueMes_(ultimo, { base: base, est: est, estMassa: estM }) : null };
 }
 
-/* massa (versão 10) = [{ produto, q }]: bolinhas contadas no congelador. Gravadas no Estoque com Tipo "Massa" e,
-   se a contagem for diferente do saldo do app, viram um Ajuste com motivo Contagem na aba Massa. */
+/* massa (versão 10) = [{ produto, q }]: unidades do estoque de produção contadas no congelador. Gravadas no Estoque com
+   Tipo "Produção" e, se a contagem for diferente do que o app conta, a diferença vai para a aba Producao (Contagem). */
 function salvarContagem(pin, ref, itens, pessoa, massa) {
   checkPin_(pin);
   ref = String(ref || '');
@@ -734,25 +732,19 @@ function salvarContagem(pin, ref, itens, pessoa, massa) {
 }
 
 function salvarContagemMassa_(sh, ref, massa, pessoa) {
-  if (typeof estoqueMassa_ !== 'function') throw new Error('Falta o arquivo Massa.gs no servidor.');
-  var F = massaFichas_(), est = estoqueMassa_(), saldo = {}, ajustes = 0;
-  est.sabores.forEach(function (s) { saldo[massaChave_(s.produto)] = s.saldo; });
+  if (typeof prodContagem_ !== 'function') throw new Error('Falta o arquivo Massa.gs no servidor.');
+  var nomes = {}, ajustes = 0;
+  estoqueProducao_().itens.forEach(function (x) { nomes[prodChave_(x.produto)] = x.produto; });
   var n = Math.max(sh.getLastRow() - 1, 0);
-  var atuais = n ? sh.getRange(2, 1, n, 9).getValues().map(function (r) { return String(r[0]).trim().slice(0, 7) + '|' + String(r[1]).trim() + '|' + String(r[8]).trim(); }) : [];
+  var atuais = n ? sh.getRange(2, 1, n, 9).getValues().map(function (r) { return String(r[0]).trim().slice(0, 7) + '|' + String(r[1]).trim() + '|' + (/^(Produção|Massa)$/.test(String(r[8]).trim()) ? 'P' : ''); }) : [];
   massa.forEach(function (m) {
-    var q = Number(String(m && m.q).replace(',', '.')), f = F[massaChave_(m && m.produto)];
-    if (!m || m.q === '' || m.q === null || isNaN(q) || q < 0 || q !== Math.round(q) || !f || !(f.bpu > 0) || f.kit) return;
-    var linha = [ref, f.nome, q, 'bolinhas', '', '', new Date(), pessoa || '', 'Massa'];
-    var pos = atuais.indexOf(ref + '|' + f.nome + '|Massa'), row = pos >= 0 ? pos + 2 : sh.getLastRow() + 1;
-    sh.getRange(row, 1, 1, 9).setValues([linha]);
+    var q = Number(String(m && m.q).replace(',', '.')), nome = m && nomes[prodChave_(m.produto)];
+    if (!m || m.q === '' || m.q === null || isNaN(q) || q < 0 || q !== Math.round(q) || !nome) return;
+    var pos = atuais.indexOf(ref + '|' + nome + '|P'), row = pos >= 0 ? pos + 2 : sh.getLastRow() + 1;
+    sh.getRange(row, 1, 1, 9).setValues([[ref, nome, q, 'unidades', '', '', new Date(), pessoa || '', 'Produção']]);
     sh.getRange(row, 1).setNumberFormat('@'); sh.getRange(row, 7).setNumberFormat('dd/mm/yyyy HH:mm');
-    if (pos < 0) atuais.push(ref + '|' + f.nome + '|Massa');
-    var dif = q - (saldo[massaChave_(f.nome)] || 0);
-    if (dif) {
-      massaAba_().appendRow(['M' + fmt_(new Date(), 'yyMMddHHmmss') + Math.floor(Math.random() * 90 + 10), today_(), 'Ajuste', f.nome, dif, '', 'Contagem',
-        'Contagem do fim de ' + nomeRef_(ref) + ': ' + q + ' (o app esperava ' + (saldo[massaChave_(f.nome)] || 0) + ')', pessoa || '', fmt_(new Date(), 'yyyy-MM-dd HH:mm')]);
-      ajustes++;
-    }
+    if (pos < 0) atuais.push(ref + '|' + nome + '|P');
+    if (prodContagem_(nome, q, pessoa, 'Contagem do fim de ' + nomeRef_(ref))) ajustes++;
   });
   return ajustes;
 }
