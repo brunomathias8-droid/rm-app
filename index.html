@@ -236,7 +236,7 @@ details.more[open]>summary svg{transform:rotate(90deg)}
 
 /* ============ Tab bar ============ */
 .tabs{position:fixed;left:0;right:0;bottom:var(--kb,0px);z-index:15;background:rgba(255,252,248,.97);backdrop-filter:blur(8px);border-top:1px solid var(--linha);display:flex;justify-content:space-around;padding:6px 4px calc(6px + var(--safe));height:calc(var(--tab) + var(--safe))}
-body.form .tabs{display:none}
+body.form .tabs,body.digitando .tabs{display:none}
 .tabs button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:700;color:var(--sub2);min-width:0}
 .tabs button.on{color:var(--ameixa)}
 .tabs button.on svg{stroke-width:2.3}
@@ -2216,16 +2216,18 @@ function renderMensagens() {
 
 /* iPhone (22/10/2026): depois de fechar o teclado, e ao rolar no app instalado, o iOS às vezes desloca a área do app e as
    barras fixas de baixo (abas e a barra de Salvar) ficavam soltas no meio da tela. Elas passam a seguir a parte visível
-   da tela (visualViewport). Com o teclado aberto, ficam no lugar de sempre (atrás do teclado). */
+   da tela (visualViewport), só para baixo: logo depois de fechar o teclado o iOS ainda pode informar a área encolhida, e
+   subir a barra deixava as abas no meio da tela (23/10). Com o teclado aberto, as abas somem e voltam quando ele fecha. */
 (function () {
   var vv = window.visualViewport; if (!vv) return;
   var pedido = 0, raiz = document.documentElement;
   var digitando = function () { var a = document.activeElement; return !!a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && !/^(button|checkbox|radio|submit)$/.test(a.type || ''); };
   function ajustar() {
     pedido = 0;
-    var d = digitando() ? 0 : Math.round(window.innerHeight - (vv.offsetTop + vv.height));
-    if (Math.abs(d) < 2 || Math.abs(d) > window.innerHeight / 2) d = 0;
+    var dig = digitando(), d = dig ? 0 : Math.round(window.innerHeight - (vv.offsetTop + vv.height));
+    if (d > -2 || d < -window.innerHeight / 2) d = 0;   // nunca para cima
     raiz.style.setProperty('--kb', d + 'px');
+    document.body.classList.toggle('digitando', dig);
   }
   function agendar() { if (!pedido) pedido = requestAnimationFrame(ajustar); }
   vv.addEventListener('resize', agendar); vv.addEventListener('scroll', agendar);
