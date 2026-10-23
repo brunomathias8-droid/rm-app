@@ -12,8 +12,13 @@ var PAUSA_INI = '2027-03-29', PAUSA_FIM = '2027-04-18';
 var JANELAS = ['Qui 16-19h', 'Sex 8-11h', 'Motoboy', 'Horário combinado', 'Outro'];
 var CANAIS = ['Base antiga', 'Indicação', 'Instagram', 'B2B', 'Assinatura', 'Outro'];
 
-/* ---------------- Web app ---------------- */
-function doGet() {
+/* ---------------- Web app ----------------
+ * 23/10/2026: o link /exec deixa de abrir o app antigo (que esperava o servidor a cada registro) e mostra um aviso com o
+ * botão para o app novo, que salva no aparelho na hora. O app antigo continua em /exec?antigo=1, para emergência. */
+var APP_NOVO_URL = 'https://brunomathias8-droid.github.io/rm-app/';
+function linkApp_(url) { return !url || /script\.google(usercontent)?\.com/.test(String(url)) ? APP_NOVO_URL : String(url); }
+function doGet(e) {
+  if (!(e && e.parameter && e.parameter.antigo)) return paginaAppNovo_();
   return HtmlService.createTemplateFromFile('Index').evaluate()
     .setTitle('RM')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1')
@@ -23,6 +28,21 @@ function doGet() {
 /* Planilha, Config e Pedidos lidos uma vez por execução (antes cada leitura reabria a planilha: deixava o app lento).
    Quem grava em Pedidos chama pedidosAlterados_() para a próxima leitura vir da planilha. */
 var SS_CACHE_ = null, CONFIG_CACHE_ = null, PEDIDOS_CACHE_ = null;
+function paginaAppNovo_() {
+  var u = APP_NOVO_URL;
+  var html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
+    '<style>body{margin:0;background:#F4ECE2;font:16px/1.45 -apple-system,BlinkMacSystemFont,"Nunito Sans",sans-serif;color:#231318;display:flex;min-height:100vh;align-items:center;justify-content:center}' +
+    '.c{max-width:420px;margin:24px 16px;background:#FFFCF8;border-radius:20px;padding:28px 22px;box-shadow:0 2px 12px rgba(35,19,24,.08);text-align:center}' +
+    'h1{font:28px/1.15 Georgia,serif;color:#4E1730;margin:0 0 10px}p{color:#6B5560;margin:0 0 14px}' +
+    'a.b{display:block;background:#4E1730;color:#fff;text-decoration:none;font-weight:800;padding:15px;border-radius:14px;margin:18px 0 10px;font-size:17px}' +
+    'ol{text-align:left;color:#6B5560;padding-left:20px;margin:6px 0 0;font-size:15px}small{display:block;color:#8C7A80;margin-top:14px;font-size:13px}</style></head><body><div class="c">' +
+    '<h1>O app RM mudou de endereço</h1><p>Este link é do app antigo, que demorava para salvar. O app novo salva os pedidos na hora, mesmo sem internet.</p>' +
+    '<a class="b" href="' + u + '" target="_top">Abrir o app novo</a>' +
+    '<p style="margin:16px 0 4px;font-weight:700;color:#231318">No iPhone, para ficar na tela de início:</p><ol><li>Toque em "Abrir o app novo" (abre no Safari)</li><li>Compartilhar (quadrado com seta) › <b>Adicionar à Tela de Início</b></li><li>Apague o ícone antigo e use o novo</li></ol>' +
+    '<small>Endereço: ' + u.replace(/^https:\/\//, '') + '</small></div></body></html>';
+  return HtmlService.createHtmlOutput(html).setTitle('RM: app novo').addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
 function ss_() { return SS_CACHE_ || (SS_CACHE_ = SpreadsheetApp.openById(SHEET_ID)); }
 function pedidosAlterados_() { PEDIDOS_CACHE_ = null; }
 function sh_(name) { return ss_().getSheetByName(name); }
@@ -274,7 +294,7 @@ function emailDiario() {
     }
     var cl = clubeDoDia_(hoje);
     if (pp[0] === 'Raquel' && cl.frequentes.length) html += secao_(CLUBE.nome + ': reserva antecipada (mandar o cardápio às 18h)', cl.frequentes.map(function (f) { return esc_(f.nome) + ' — ' + f.n + ' pedidos'; }));
-    html += fechaEmail_(c.app_url);
+    html += fechaEmail_(linkApp_(c.app_url));
     enviarEmail_({ to: pp[1], subject: 'RM · Hoje: ' + t.length + ' tarefa(s), ' + retHoje.length + ' retirada(s)', htmlBody: html });
   });
 }
@@ -307,7 +327,7 @@ function emailFechamento() {
   html += secao_('Sem Pix confirmado (não produzir)', ps.filter(function (p) { return p.pix !== 'Sim'; }).map(linhaPed_));
   var rec = ps.reduce(function (s, p) { return s + p.receita; }, 0);
   html += secao_(CLUBE.nome + ': mimos desta semana', mimos.map(function (p) { return esc_(p.cliente) + ' — ' + CLUBE.mimo; }));
-  html += '<p style="font-size:15px">' + ps.length + ' pedidos · ' + brl_(rec) + ' · ticket médio ' + brl_(ps.length ? rec / ps.length : 0) + '</p>' + fechaEmail_(c.app_url);
+  html += '<p style="font-size:15px">' + ps.length + ' pedidos · ' + brl_(rec) + ' · ticket médio ' + brl_(ps.length ? rec / ps.length : 0) + '</p>' + fechaEmail_(linkApp_(c.app_url));
   [c.email_raquel, c.email_bruno].filter(String).forEach(function (to) {
     enviarEmail_({ to: to, subject: 'RM · Lista de produção da semana ' + weekOf_(hoje), htmlBody: html });
   });

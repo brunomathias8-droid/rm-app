@@ -167,7 +167,7 @@ function emailPainel() {
   var c = config_(), hoje = today_();
   if (hoje > '2027-05-02') return;
   var p = painelSemana_(addDays_(hoje, 1));
-  var html = painelHtml_(p, c.app_url);
+  var html = painelHtml_(p, linkApp_(c.app_url));
   var n = p.prioridades.length;
   var assunto = 'RM · ' + (p.semana >= 1 ? 'Semana ' + p.semana : 'Semana') + ': ' + (p.pausa ? 'pausa' : n + ' prioridade(s)' + (n ? ' — ' + p.prioridades[0].txt.slice(0, 60) : ''));
   [c.email_raquel, c.email_bruno].filter(String).forEach(function (to) {
