@@ -51,7 +51,7 @@ function api(corpo) {
     });
 }
 /* Cache local: as telas abrem na hora com os últimos dados e atualizam quando o servidor responde */
-var CACHE_FNS = { getProducao: 1, getBootstrap: 1, getHoje: 1, getPedidosAbertos: 1, getPedidosHistorico: 1, getRoadmap: 1, getAcoes: 1, getPainel: 1, getMensagens: 1, getEstoque: 1, getAjuda: 1 };
+var CACHE_FNS = { getCustos: 1, getProducao: 1, getBootstrap: 1, getHoje: 1, getPedidosAbertos: 1, getPedidosHistorico: 1, getRoadmap: 1, getAcoes: 1, getPainel: 1, getMensagens: 1, getEstoque: 1, getAjuda: 1 };
 function chaveCache(fn, args) { return 'c_' + fn + ':' + JSON.stringify(args || []); }
 function guardarCache(fn, args, d) { if (CACHE_FNS[fn]) store(chaveCache(fn, args), JSON.stringify({ t: Date.now(), d: d })); }
 function lerCache(fn, args) { try { var o = JSON.parse(store(chaveCache(fn, args)) || 'null'); return o && o.d; } catch (e) { return null; } }
@@ -252,8 +252,8 @@ document.addEventListener('visibilitychange', function () {
 rep('<button data-v="plano"></button>', '<button data-v="mural"></button>')
 rep("var tabs = { hoje: ['home', 'Hoje'], pedidos: ['bag', 'Pedidos'], plano: ['cal', 'Plano'], gestao: ['chart', 'Gestão'] };",
     "var tabs = { hoje: ['home', 'Hoje'], pedidos: ['bag', 'Pedidos'], mural: ['mega', 'Mural'], plano: ['cal', 'Plano'], gestao: ['chart', 'Gestão'] };")
-rep("({ hoje: vHoje, pedidos: vPedidos,", "({ mural: vMural, cartao: vCartao, cardapio: vCardapio, hoje: vHoje, pedidos: vPedidos,")
-rep("var FORM = { novo: 'Novo pedido',", "var FORM = { cartao: 'Recado', cardapio: 'Cardápio da semana', novo: 'Novo pedido',")
+rep("({ custos: vCustos, ficha: vFicha, hoje: vHoje, pedidos: vPedidos,", "({ mural: vMural, cartao: vCartao, cardapio: vCardapio, custos: vCustos, ficha: vFicha, hoje: vHoje, pedidos: vPedidos,")
+rep("var FORM = { custos: 'Custos e fichas',", "var FORM = { cartao: 'Recado', cardapio: 'Cardápio da semana', custos: 'Custos e fichas',")
 rep("$$('#tabs [data-v]').forEach(function (b) { var on = b.dataset.v === v;", "$$('#tabs [data-v]').forEach(function (b) { var on = b.dataset.v === v || (b.dataset.v === 'mural' && (v === 'plano' || ((v === 'cartao' || v === 'cardapio') && S.prev === 'mural')));")
 # 4c. Arquivos de extras/ (fila de pedidos e Mural) e o estilo deles
 EXTRAS = ''.join('<script>\n' + (pathlib.Path(__file__).with_name('extras') / n).read_text() + '</script>\n' for n in ['fila.js', 'mural.js'])

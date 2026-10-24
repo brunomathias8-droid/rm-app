@@ -74,8 +74,8 @@ function checkPin_(pin) {
 /* ---------------- Leitura para o app ---------------- */
 function getBootstrap(pin) {
   checkPin_(pin);
-  var fichas = sh_('Fichas técnicas').getRange(2, 1, 20, 2).getValues()
-    .filter(function (r) { return r[0] && typeof r[1] === 'number' && String(r[0]).indexOf('Assinatura') !== 0; })
+  var fichas = fichasLinhas_().linhas.map(function (l) { return l.v; })   // todos os produtos; "Fora do cardápio" não aparece no pedido
+    .filter(function (r) { return r[0] && typeof r[1] === 'number' && String(r[0]).indexOf('Assinatura') !== 0 && String(r[11] || '').trim() !== 'Fora do cardápio'; })
     .map(function (r) { return { nome: String(r[0]), preco: r[1] }; });
   var cli = sh_('Clientes');
   var clientes = cli.getLastRow() > 1 ? cli.getRange(2, 1, cli.getLastRow() - 1, 2).getValues()

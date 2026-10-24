@@ -365,6 +365,14 @@ body.form .toast{bottom:calc(var(--safe) + 96px + var(--kb,0px))}
 .prod-est .li{align-items:center}.prod-est .tx small{display:block;font-size:13px;margin-top:2px}.pe-n{text-align:right;min-width:72px}.pe-n b{display:block;font:26px/1 var(--serif);color:var(--ameixa)}.pe-n b.neg{color:var(--err)}.pe-n b.av{color:var(--av)}.pe-n span{font-size:12px;color:var(--sub)}
 .mx-al{display:flex!important;gap:4px;align-items:flex-start;color:var(--av);font-weight:700}.mx-al.err{color:var(--err)}.mx-al svg{width:15px;height:15px;flex:0 0 15px;margin-top:1px}
 .pr-est{font-size:13px;color:var(--ok);margin-left:6px;font-weight:600}.pr-est.neg{color:var(--err)}.step.big{justify-content:flex-start;gap:12px}.step.big input{width:96px;text-align:center;font-size:22px;padding:8px}
+/* ============ Custos e fichas (24/10/2026) ============ */
+.cu-li{align-items:center}.cu-li .tx b{display:block;font-size:15px;font-weight:700}.cu-li .tx small{display:block;margin-top:2px}
+.cu-mg{text-align:right;flex:0 0 auto}.cu-mg b{display:block;font:20px/1.1 var(--serif);color:var(--ameixa);font-weight:400}.cu-mg span{font-size:12px;color:var(--sub)}
+.cu-bar{height:6px;border-radius:3px;background:var(--linha);margin-top:7px;overflow:hidden;max-width:180px}.cu-bar i{display:block;height:100%;background:var(--ok)}.cu-bar.av i{background:var(--av)}
+.cu-res{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:14px 0 0}.cu-res div{background:var(--rosaC);border-radius:12px;padding:9px 10px}.cu-res span{font-size:12px;color:var(--sub);display:block}.cu-res b{font:19px/1.2 var(--serif);color:var(--ameixa);font-weight:400}
+.cu-rc{display:grid;grid-template-columns:1fr 104px 66px 32px;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid var(--linha);font-size:14px}
+.cu-q{display:flex;align-items:center;gap:4px}.cu-q input{width:100%;min-width:0;padding:7px 8px;text-align:right;font-size:15px}.cu-q small{font-size:12px;color:var(--sub);min-width:18px}
+.cu-c{text-align:right;color:var(--sub);font-variant-numeric:tabular-nums}.cu-x{width:32px;height:32px;color:var(--sub)}
 /* ============ Gestão ============ */
 /* Gráficos (Gestão › Gráficos) */
 #gSeg button{font-size:13.5px;padding:0 2px}
@@ -519,7 +527,7 @@ function toast(m, err, acao) {
 
 var REPASSE_RE = /\b(entrega|frete|uber|motoboy|99\s*pop|corrida)\b/i;   // igual ao Gestao.gs
 /* =================== Servidor =================== */
-var RECALC = { salvarPedido: 1, atualizarPedido: 1, editarPedido: 1, salvarDespesa: 1, salvarSemana: 1, salvarReuniao: 1, salvarContagem: 1, salvarProducao: 1, desfazerProducao: 1 };
+var RECALC = { salvarPedido: 1, atualizarPedido: 1, editarPedido: 1, salvarDespesa: 1, salvarSemana: 1, salvarReuniao: 1, salvarContagem: 1, salvarProducao: 1, desfazerProducao: 1, salvarFicha: 1, desfazerFichaNova: 1, salvarInsumo: 1, desfazerInsumoNovo: 1 };
 var recT = null;
 function agendarRecalc() { clearTimeout(recT); recT = setTimeout(function () { call('posAlteracao').catch(function () {}); }, 1500); }
 function call(fn) {
@@ -550,7 +558,7 @@ function api(corpo) {
     });
 }
 /* Cache local: as telas abrem na hora com os últimos dados e atualizam quando o servidor responde */
-var CACHE_FNS = { getProducao: 1, getBootstrap: 1, getHoje: 1, getPedidosAbertos: 1, getPedidosHistorico: 1, getRoadmap: 1, getAcoes: 1, getPainel: 1, getMensagens: 1, getEstoque: 1, getAjuda: 1 };
+var CACHE_FNS = { getCustos: 1, getProducao: 1, getBootstrap: 1, getHoje: 1, getPedidosAbertos: 1, getPedidosHistorico: 1, getRoadmap: 1, getAcoes: 1, getPainel: 1, getMensagens: 1, getEstoque: 1, getAjuda: 1 };
 function chaveCache(fn, args) { return 'c_' + fn + ':' + JSON.stringify(args || []); }
 function guardarCache(fn, args, d) { if (CACHE_FNS[fn]) store(chaveCache(fn, args), JSON.stringify({ t: Date.now(), d: d })); }
 function lerCache(fn, args) { try { var o = JSON.parse(store(chaveCache(fn, args)) || 'null'); return o && o.d; } catch (e) { return null; } }
@@ -656,7 +664,7 @@ function montarChrome() {
   $('#bRef').onclick = function () { var b = this; b.classList.add('spin'); setTimeout(function () { b.classList.remove('spin'); }, 700); go(S.view, true); };
   $('#bBack').onclick = function () { go(S.prev || 'hoje'); };
 }
-var FORM = { cartao: 'Recado', cardapio: 'Cardápio da semana', novo: 'Novo pedido', editar: 'Editar pedido', despesa: 'Nova despesa', semana: 'Fechar a semana', estoque: 'Contar o estoque', ajuda: 'Ajuda', mensagens: 'Mensagens do WhatsApp' };
+var FORM = { cartao: 'Recado', cardapio: 'Cardápio da semana', custos: 'Custos e fichas', ficha: 'Ficha técnica', novo: 'Novo pedido', editar: 'Editar pedido', despesa: 'Nova despesa', semana: 'Fechar a semana', estoque: 'Contar o estoque', ajuda: 'Ajuda', mensagens: 'Mensagens do WhatsApp' };
 function go(v, refresh) {
   if (FORM[v] && !FORM[S.view]) S.prev = S.view;
   S.view = v; fecharSheet();
@@ -667,7 +675,7 @@ function go(v, refresh) {
   $('#bRef').classList.toggle('hide', form); $('#bHelp').classList.toggle('hide', form); $('#bAvisos').classList.toggle('hide', form);
   $$('#tabs [data-v]').forEach(function (b) { var on = b.dataset.v === v || (b.dataset.v === 'mural' && (v === 'plano' || ((v === 'cartao' || v === 'cardapio') && S.prev === 'mural'))); b.classList.toggle('on', on); if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   if (!refresh) window.scrollTo(0, 0);
-  ({ mural: vMural, cartao: vCartao, cardapio: vCardapio, hoje: vHoje, pedidos: vPedidos, novo: vNovo, editar: vEditar, despesa: vDespesa, gestao: vGestao, semana: vSemana, estoque: vEstoque, plano: vPlano, ajuda: vAjuda, mensagens: vMensagens })[v]();
+  ({ mural: vMural, cartao: vCartao, cardapio: vCardapio, custos: vCustos, ficha: vFicha, hoje: vHoje, pedidos: vPedidos, novo: vNovo, editar: vEditar, despesa: vDespesa, gestao: vGestao, semana: vSemana, estoque: vEstoque, plano: vPlano, ajuda: vAjuda, mensagens: vMensagens })[v]();
 }
 function menuRegistrar() {
   var sex = S.boot && dow(S.boot.hoje) >= 5;
@@ -679,6 +687,7 @@ function menuRegistrar() {
     mi('tarefa', 'task', 'Tarefa', 'Algo para fazer, com data') +
     mi('semana', 'week', 'Fechar a semana', sex ? 'Hoje é dia: sobra, quebra e notas' : 'Sobra, quebra e notas (sexta)') + '</div>' +
     '<div class="stg"><span class="lab">Mais</span><div class="menu" style="margin:0">' +
+    mi('custos', 'chart', 'Custos e fichas técnicas', 'Custo e margem por produto, receitas e insumos') +
     mi('estoque', 'box', 'Contar o estoque', S.boot && fimMes(S.boot.hoje) ? 'Hoje é dia: insumos caros e produção no congelador' : 'Insumos caros e produção, no fim do mês') + '</div></div>');
   $$('[data-g]', sh).forEach(function (b) { b.onclick = function () { if (b.dataset.g === 'tarefa' || b.dataset.g === 'producao') { var g = b.dataset.g; fecharSheet(); setTimeout(function () { if (g === 'tarefa') tarefaSheet(); else prodSheet(); }, 260); } else go(b.dataset.g); }; });
 }
@@ -1426,6 +1435,230 @@ function prodForm(f, b, atualizar) {
   }; });
 }
 
+/* =================== CUSTOS E FICHAS (24/10/2026) ===================
+   Custo e margem por produto (SKU), fichas técnicas (preço, rendimento, receita) e insumos, editados no app.
+   O servidor (Custos.gs) calcula; aqui a ficha recalcula na hora enquanto se edita (simulador) e só grava ao salvar.
+   Toda gravação tem Desfazer. Produto "Fora do cardápio" sai da tela de pedido, sem apagar. */
+S.cu = { aba: 'produtos', q: '' };
+function cuNum(v) { var s = String(v == null ? '' : v).trim(); if (/\./.test(s) && !/,/.test(s) && !/\.\d{3}$/.test(s)) s = s.replace('.', ','); return num(s); }
+function cuFmt(v, d) { if (v === null || v === undefined || isNaN(v)) return ''; return Number(v).toLocaleString('pt-BR', { maximumFractionDigits: d === undefined ? 2 : d }); }
+function cuBrlUn(v) { if (v === null || v === undefined) return 'sem preço'; return 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: v < 1 ? 4 : 2, maximumFractionDigits: v < 1 ? 4 : 2 }); }
+function cuPct(p) { return p === null || p === undefined ? '—' : Math.round(p * 100) + '%'; }
+function cuProd(nome) { var k = norm(nome); return ((S.cu.d && S.cu.d.produtos) || []).filter(function (p) { return norm(p.nome) === k; })[0] || null; }
+function cuIns(nome) { var k = norm(nome); return ((S.cu.d && S.cu.d.insumos) || []).filter(function (i) { return norm(i.nome) === k; })[0] || null; }
+function cuCarregar(depois) {
+  if (!S.cu.d && typeof lerCache === 'function') S.cu.d = lerCache('getCustos', []);
+  call('getCustos').then(function (r) { S.cu.d = r; if (depois) depois(); }).catch(function (e) { if (!S.cu.d) erroTela(e, vCustos); else fail(e); });
+}
+function cuAtualizado(r) {
+  S.cu.d = r; if (typeof guardarCache === 'function') guardarCache('getCustos', [], r);
+  call('getBootstrap').then(function (b) { S.boot = b; }).catch(function () {});   // preços novos na tela de pedido
+}
+
+/* ---------- Lista: produtos e insumos ---------- */
+function vCustos() {
+  if (!S.cu.d && typeof lerCache === 'function') S.cu.d = lerCache('getCustos', []);
+  if (S.cu.d) cuRender(); else $('#app').innerHTML = esqueleto([60, 44, 120, 300]);
+  cuCarregar(function () { if (S.view === 'custos') cuRender(); });
+}
+function cuRender() {
+  var d = S.cu.d, aba = S.cu.aba;
+  var html = '<div class="page"><div class="lt" style="padding-top:4px"><small>Gestão</small><h1>Custos e fichas</h1><p>Custo e margem de cada produto, pelas receitas e preços dos insumos.</p></div>' +
+    seg('cuAba', [['produtos', 'Produtos'], ['insumos', 'Insumos']], aba);
+  if (aba === 'produtos') {
+    var ativos = d.produtos.filter(function (p) { return p.status !== 'Fora do cardápio'; }), fora = d.produtos.filter(function (p) { return p.status === 'Fora do cardápio'; });
+    var com = ativos.filter(function (p) { return p.custo !== null && p.preco > 0; }).sort(function (a, b) { return b.margem - a.margem; }), sem = ativos.filter(function (p) { return p.custo === null || !(p.preco > 0); });
+    var media = com.length ? com.reduce(function (a, p) { return a + p.pct; }, 0) / com.length : null;
+    html += '<div class="kpis" style="margin-bottom:12px"><div class="kpi"><div class="n">Margem média</div><div class="v">' + cuPct(media) + '</div><div class="m">' + com.length + ' produto' + (com.length === 1 ? '' : 's') + ' com custo</div></div>' +
+      '<div class="kpi"><div class="n">Sem custo</div><div class="v"' + (sem.length ? ' style="color:var(--av)"' : '') + '>' + sem.length + '</div><div class="m">falta receita ou preço</div></div></div>';
+    html += '<div class="sec" style="margin-top:4px"><h2>Margem por unidade</h2><button class="lk" id="cuNova">+ Nova ficha</button></div>' +
+      (com.length ? '<div class="list">' + com.map(cuLiProd).join('') + '</div>' : '<div class="card flat"><p class="muted" style="margin:0">Nenhum produto com custo calculado ainda.</p></div>');
+    if (sem.length) html += '<div class="sec"><h2>Precisam de atenção</h2><span class="cnt">' + sem.length + '</span></div><div class="list">' + sem.map(cuLiProd).join('') + '</div>';
+    if (fora.length) html += '<details class="more"><summary>' + ic('chev', 's') + 'Fora do cardápio (' + fora.length + ')</summary><div class="list" style="margin-top:8px">' + fora.map(cuLiProd).join('') + '</div></details>';
+  } else {
+    var q = norm(S.cu.q), ins = d.insumos.filter(function (i) { return !q || norm(i.nome).indexOf(q) >= 0; });
+    html += '<div class="fld" style="position:relative"><input id="cuQ" type="search" placeholder="Buscar insumo" value="' + esc(S.cu.q) + '" style="padding-left:42px"><span style="position:absolute;left:14px;top:14px;color:var(--sub)">' + ic('search', 's') + '</span></div>' +
+      '<div class="sec" style="margin-top:4px"><h2>Insumos e embalagens</h2><button class="lk" id="cuNovoI">+ Novo insumo</button></div>' +
+      (ins.length ? '<div class="list">' + ins.map(function (i) {
+        var sub = (i.ultima ? 'compra ' + i.ultima.slice(8) + '/' + i.ultima.slice(5, 7) : 'sem compra') + (i.cat === 'Embalagem' ? ' · embalagem' : '');
+        return '<div class="li tap cu-li" data-ci="' + esc(i.nome) + '"><div class="tx"><b>' + esc(i.nome) + '</b><small class="muted">' + esc(sub) + (i.contar ? ' <span class="pill nd">contagem</span>' : '') + '</small></div>' +
+          '<div class="cu-mg"><b' + (i.custo === null ? ' style="color:var(--av)"' : '') + '>' + cuBrlUn(i.custo) + (i.custo === null ? '' : '/' + esc(i.un || 'un')) + '</b><span>' + (i.usadoEm.length ? 'em ' + i.usadoEm.length + ' produto' + (i.usadoEm.length === 1 ? '' : 's') : 'sem uso') + '</span></div>' + ic('chev', 's chev') + '</div>';
+      }).join('') + '</div>' : '<div class="card flat"><p class="muted" style="margin:0">Nenhum insumo encontrado.</p></div>') +
+      '<p class="muted" style="margin:10px 2px">Comprou mais caro? Mude o preço aqui ou lance a compra em + › Despesa: o custo dos produtos que usam o insumo é recalculado.</p>';
+  }
+  $('#app').innerHTML = html + '</div>';
+  $$('#cuAba button').forEach(function (b) { b.onclick = function () { S.cu.aba = b.dataset.k; cuRender(); }; });
+  $$('[data-cp]').forEach(function (el) { el.onclick = function () { cuAbrirFicha(el.dataset.cp); }; });
+  $$('[data-ci]').forEach(function (el) { el.onclick = function () { cuInsSheet(el.dataset.ci); }; });
+  var nv = $('#cuNova'); if (nv) nv.onclick = function () { cuAbrirFicha(null); };
+  var ni = $('#cuNovoI'); if (ni) ni.onclick = function () { cuInsSheet(null); };
+  var qi = $('#cuQ'); if (qi) qi.oninput = function () { S.cu.q = this.value; var pos = this.selectionStart; cuRender(); var n = $('#cuQ'); n.focus(); n.setSelectionRange(pos, pos); };
+}
+function cuLiProd(p) {
+  var temCusto = p.custo !== null && p.preco > 0;
+  var sub = temCusto ? 'preço ' + brl(p.preco) + ' · custo ' + brl(p.custo) : '<span style="color:var(--av);font-weight:700">' + ic('alert', 's') + ' ' + esc((p.falta[0] || 'sem preço de venda')) + (p.falta.length > 1 ? ' e mais ' + (p.falta.length - 1) : '') + '</span>';
+  var bar = temCusto ? '<div class="cu-bar' + (p.pct < 0.5 ? ' av' : '') + '"><i style="width:' + Math.max(0, Math.min(100, Math.round(p.pct * 100))) + '%"></i></div>' : '';
+  return '<div class="li tap cu-li" data-cp="' + esc(p.nome) + '"><div class="tx"><b>' + esc(p.nome) + '</b><small class="muted">' + sub + '</small>' + bar + '</div>' +
+    '<div class="cu-mg">' + (temCusto ? '<b' + (p.margem <= 0 ? ' style="color:var(--err)"' : '') + '>' + brl(p.margem) + '</b><span>' + cuPct(p.pct) + ' · por unidade</span>' : '<b style="color:var(--sub)">—</b><span>' + (p.preco > 0 ? brl(p.preco, true) : 'sem preço') + '</span>') + '</div>' + ic('chev', 's chev') + '</div>';
+}
+
+/* ---------- Ficha técnica (nova ou edição), com simulador ---------- */
+function cuAbrirFicha(nome) {
+  var p = nome ? cuProd(nome) : null;
+  S.cuEd = p ? { nomeOriginal: p.nome, nome: p.nome, preco: p.preco, lote: p.lote, status: p.status || 'A validar', receita: p.receita.map(function (x) { return { comp: x.comp, q: x.q }; }), vendidosMes: p.vendidosMes, temPedido: p.temPedido }
+    : { nomeOriginal: '', nome: '', preco: null, lote: 1, status: 'A validar', receita: [], vendidosMes: 0, temPedido: false };
+  go('ficha');
+}
+/* Custo da ficha em edição: por linha e por unidade (mesmo cálculo do servidor) */
+function cuCalc(ed) {
+  var ins = 0, emb = 0, falta = [];
+  var linhas = ed.receita.map(function (x) {
+    var q = cuNum(x.q), i = cuIns(x.comp), p = i ? null : cuProd(x.comp), c = null, un = i ? i.un : 'un';
+    if (!(q > 0)) falta.push('quantidade de ' + x.comp);
+    else if (i) { if (i.custo === null) falta.push(x.comp + ' sem preço'); else { c = q * i.custo; if (i.cat === 'Embalagem') emb += c; else ins += c; } }
+    else if (p) { if (p.custo === null) falta.push(x.comp + ' sem custo'); else { c = q * p.custo; ins += c; } }
+    else falta.push(x.comp + ' não cadastrado');
+    return { custo: c, un: un };
+  });
+  var lote = cuNum(ed.lote), preco = cuNum(ed.preco);
+  if (!ed.receita.length) falta.unshift('sem receita');
+  if (!(lote > 0)) falta.unshift('sem unidades por lote');
+  var custo = falta.length ? null : (ins + emb) / lote, margem = custo !== null && preco !== null ? preco - custo : null;
+  return { linhas: linhas, custo: custo, margem: margem, pct: margem !== null && preco > 0 ? margem / preco : null, falta: falta, lote: ins + emb };
+}
+/* Insumos que todos os produtos parecidos (mesma primeira palavra) usam e esta receita não tem */
+function cuFaltaParecido(ed) {
+  var pal = norm(ed.nome).split(' ')[0]; if (!pal) return [];
+  var irmaos = ((S.cu.d && S.cu.d.produtos) || []).filter(function (p) { return norm(p.nome).split(' ')[0] === pal && norm(p.nome) !== norm(ed.nomeOriginal || ed.nome) && p.receita.length; });
+  if (irmaos.length < 2) return [];
+  var meus = {}; ed.receita.forEach(function (x) { meus[norm(x.comp)] = 1; });
+  var cont = {}; irmaos.forEach(function (p) { var vis = {}; p.receita.forEach(function (x) { var k = norm(x.comp); if (!vis[k]) { vis[k] = 1; cont[k] = cont[k] || { n: 0, nome: x.comp, qs: [] }; cont[k].n++; cont[k].qs.push(x.q); } }); });
+  return Object.keys(cont).filter(function (k) { return cont[k].n === irmaos.length && !meus[k]; }).map(function (k) { return cont[k]; });
+}
+function vFicha() {
+  var ed = S.cuEd; if (!ed) return go('custos');
+  if (!S.cu.d) { $('#app').innerHTML = esqueleto([60, 160, 300]); return cuCarregar(function () { if (S.view === 'ficha') vFicha(); }); }
+  var nova = !ed.nomeOriginal, sts = (S.cu.d.status || ['Praticado', 'A validar', 'Fora do cardápio']).slice();
+  if (ed.status && sts.indexOf(ed.status) < 0) sts.unshift(ed.status);
+  var p0 = nova ? null : cuProd(ed.nomeOriginal);
+  var html = '<div class="page"><div class="lt" style="padding-top:4px"><h1>' + (nova ? 'Nova ficha técnica' : esc(ed.nomeOriginal)) + '</h1><p>' +
+    (nova ? 'Preço, quanto o lote rende e o que vai na receita.' : 'Vendeu ' + (ed.vendidosMes || 0) + ' no mês' + (p0 && p0.margem !== null ? ' · margem total ' + brl((ed.vendidosMes || 0) * p0.margem) : '')) + '</p></div>' +
+    '<div class="card"><div class="fld"><label for="cuN">Nome do produto</label><input id="cuN" value="' + esc(ed.nome) + '" maxlength="80" autocapitalize="words" placeholder="Ex.: Cookie de Pistache"><div id="cuNAv"></div></div>' +
+    '<div class="row"><div class="grow fld" style="margin:0"><label for="cuP">Preço de venda</label><input id="cuP" inputmode="decimal" value="' + (ed.preco === null ? '' : cuFmt(ed.preco, 2)) + '" placeholder="0,00"></div>' +
+    '<div class="grow fld" style="margin:0"><label for="cuL">Rende (unid. por lote)</label><input id="cuL" inputmode="decimal" value="' + (ed.lote === null ? '' : cuFmt(ed.lote, 3)) + '"></div></div>' +
+    '<div class="cu-res" id="cuRes"></div><p class="muted" style="margin:10px 0 0">Mude o preço ou a receita para simular: a margem atualiza na hora. Só grava ao salvar.</p></div>' +
+    '<div class="sec"><h2>Receita do lote</h2><span class="cnt">quantidade · custo</span></div><div class="card" style="padding-top:4px"><div id="cuRec"></div>' +
+    '<button type="button" class="lk" id="cuAdd" style="border:0;background:none;color:var(--ameixa);font-weight:700;padding:12px 0 2px;display:flex;gap:6px;align-items:center">' + ic('plus', 's') + 'Adicionar insumo ou produto</button></div>' +
+    '<div id="cuAv"></div>' +
+    '<div class="fld" style="margin-top:14px"><span class="lab">Situação</span>' + chipsHtml('cuSt', sts, ed.status) + '<p class="muted" style="margin:8px 0 0;font-size:13px">"Fora do cardápio" tira o produto da tela de pedido, sem apagar.</p></div></div>' +
+    '<div class="actbar"><div class="in"><div class="sum"><b id="cuTot">—</b><span id="cuSum"></span></div><button class="btn" id="cuOk">Salvar ficha</button></div></div>';
+  $('#app').innerHTML = html;
+  function receitaHtml() {
+    var c = cuCalc(ed);
+    $('#cuRec').innerHTML = ed.receita.length ? ed.receita.map(function (x, k) {
+      var l = c.linhas[k];
+      return '<div class="cu-rc"><span>' + esc(x.comp) + '</span><span class="cu-q"><input data-q="' + k + '" inputmode="decimal" value="' + (x.q === null || x.q === '' ? '' : esc(typeof x.q === 'number' ? cuFmt(x.q, 3) : x.q)) + '" aria-label="Quantidade de ' + esc(x.comp) + '"><small>' + esc(l.un) + '</small></span>' +
+        '<span class="cu-c" id="cuC' + k + '">' + (l.custo === null ? '—' : brl(l.custo)) + '</span><button type="button" class="ib cu-x" data-rm="' + k + '" aria-label="Tirar ' + esc(x.comp) + '">' + ic('x', 's') + '</button></div>';
+    }).join('') : '<p class="muted" style="margin:10px 0 0">Nenhum item ainda. Toque em "Adicionar insumo ou produto".</p>';
+    $$('#cuRec [data-q]').forEach(function (inp) { inp.oninput = function () { ed.receita[+inp.dataset.q].q = inp.value; resumo(); }; });
+    $$('#cuRec [data-rm]').forEach(function (b) { b.onclick = function () { ed.receita.splice(+b.dataset.rm, 1); receitaHtml(); }; });
+    resumo();
+  }
+  function resumo() {
+    var c = cuCalc(ed);
+    c.linhas.forEach(function (l, k) { var el = $('#cuC' + k); if (el) el.textContent = l.custo === null ? '—' : brl(l.custo); });
+    $('#cuRes').innerHTML = '<div><span>Custo/un</span><b>' + (c.custo === null ? '—' : brl(c.custo)) + '</b></div><div><span>Margem/un</span><b' + (c.margem !== null && c.margem <= 0 ? ' style="color:var(--err)"' : '') + '>' + (c.margem === null ? '—' : brl(c.margem)) + '</b></div><div><span>Margem</span><b>' + cuPct(c.pct) + '</b></div>';
+    $('#cuTot').textContent = c.margem === null ? '—' : brl(c.margem);
+    $('#cuSum').textContent = c.margem === null ? (c.falta[0] ? 'Falta: ' + c.falta[0] : 'Informe o preço') : 'margem por unidade · ' + cuPct(c.pct) + (c.lote ? ' · lote ' + brl(c.lote) : '');
+    var av = [], par = cuFaltaParecido(ed);
+    c.falta.filter(function (f) { return / sem preço$| sem custo$/.test(f); }).forEach(function (f) { av.push(f + ': ' + (/ sem preço$/.test(f) ? 'cadastre o preço em Insumos.' : 'complete a ficha dele antes.')); });
+    par.forEach(function (x) { av.push('Sem ' + x.nome + ' nesta receita. Os outros parecidos usam ' + x.qs.map(function (q) { return cuFmt(q, 2); }).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(' ou ') + '.'); });
+    if (c.pct !== null && c.pct < 0.5) av.push('Margem abaixo de 50%, a referência do plano.');
+    $('#cuAv').innerHTML = av.map(function (t) { return '<div class="aviso av" style="margin:0 0 8px">' + ic('alert', 's') + '<span>' + esc(t) + '</span></div>'; }).join('');
+    var nm = $('#cuN').value.trim(), avN = '';
+    if (!nova && nm && nm !== ed.nomeOriginal && ed.temPedido) avN = 'Os pedidos antigos continuam como "' + ed.nomeOriginal + '" e saem das contas deste produto. Caixas e kits que usam o produto são atualizados.';
+    $('#cuNAv').innerHTML = avN ? '<div class="aviso av" style="margin:8px 0 0">' + ic('alert', 's') + '<span>' + esc(avN) + '</span></div>' : '';
+  }
+  $('#cuN').oninput = function () { ed.nome = this.value; resumo(); };
+  $('#cuP').oninput = function () { ed.preco = this.value; resumo(); };
+  $('#cuL').oninput = function () { ed.lote = this.value; resumo(); };
+  chipsSel($('#cuSt'), function (v) { ed.status = v; });
+  $('#cuAdd').onclick = function () { cuEscolherComp(ed, function (nome) { ed.receita.push({ comp: nome, q: '' }); receitaHtml(); var ins = $$('#cuRec [data-q]'); if (ins.length) ins[ins.length - 1].focus(); }); };
+  receitaHtml();
+  $('#cuOk').onclick = function () {
+    var bt = this, payload = { nomeOriginal: ed.nomeOriginal, nome: $('#cuN').value.trim(), preco: cuNum($('#cuP').value), lote: cuNum($('#cuL').value), status: ed.status,
+      receita: ed.receita.map(function (x) { return { comp: x.comp, q: cuNum(x.q) }; }) };
+    if (!payload.nome) { $('#cuN').focus(); return toast('Informe o nome do produto', true); }
+    if (payload.preco === null) { $('#cuP').focus(); return toast('Informe o preço de venda', true); }
+    if (!(payload.lote > 0)) { $('#cuL').focus(); return toast('Informe quantas unidades o lote rende', true); }
+    var semQ = payload.receita.filter(function (x) { return !(x.q > 0); })[0];
+    if (semQ) return toast('Informe a quantidade de ' + semQ.comp, true);
+    bt.disabled = true; bt.textContent = 'Salvando…';
+    call('salvarFicha', payload).then(function (r) {
+      cuAtualizado(r.custos); S.cuEd = null; S.cu.aba = 'produtos'; go('custos');
+      toast((nova ? 'Ficha criada: ' : 'Ficha salva: ') + payload.nome, false, { label: 'Desfazer', fn: function () {
+        (r.anterior ? call('salvarFicha', r.anterior) : call('desfazerFichaNova', payload.nome)).then(function (x) { cuAtualizado(x.custos); toast('Desfeito'); if (S.view === 'custos') cuRender(); }).catch(fail);
+      } });
+    }).catch(function (e) { bt.disabled = false; bt.textContent = 'Salvar ficha'; fail(e); });
+  };
+}
+/* Escolher insumo ou produto para a receita */
+function cuEscolherComp(ed, pronto) {
+  var ja = {}; ed.receita.forEach(function (x) { ja[norm(x.comp)] = 1; }); ja[norm(ed.nomeOriginal || ed.nome)] = 1;
+  var itens = S.cu.d.insumos.map(function (i) { return { nome: i.nome, sub: (i.cat === 'Embalagem' ? 'embalagem · ' : '') + (i.custo === null ? 'sem preço' : cuBrlUn(i.custo) + '/' + (i.un || 'un')) }; })
+    .concat(S.cu.d.produtos.filter(function (p) { return p.status !== 'Fora do cardápio'; }).map(function (p) { return { nome: p.nome, sub: 'produto · ' + (p.custo === null ? 'sem custo' : brl(p.custo) + '/un') }; }))
+    .filter(function (x) { return !ja[norm(x.nome)]; });
+  var sh = sheet('<h3>Adicionar à receita</h3><div class="fld" style="position:relative"><input id="cuBq" type="search" placeholder="Buscar insumo ou produto" style="padding-left:42px"><span style="position:absolute;left:14px;top:14px;color:var(--sub)">' + ic('search', 's') + '</span></div><div class="list" id="cuBl"></div>' +
+    '<p class="muted" style="margin:10px 2px 0">Não achou? Cadastre em Custos › Insumos › + Novo insumo.</p>');
+  var lista = function () {
+    var q = norm($('#cuBq', sh).value), l = itens.filter(function (x) { return !q || norm(x.nome).indexOf(q) >= 0; }).slice(0, 40);
+    $('#cuBl', sh).innerHTML = l.length ? l.map(function (x) { return '<div class="li tap" data-pk="' + esc(x.nome) + '"><div class="tx"><span>' + esc(x.nome) + '</span><div class="meta">' + esc(x.sub) + '</div></div>' + ic('plus', 's chev') + '</div>'; }).join('') : '<div class="li"><div class="tx muted">Nada encontrado.</div></div>';
+    $$('[data-pk]', sh).forEach(function (el) { el.onclick = function () { fecharSheet(); setTimeout(function () { pronto(el.dataset.pk); }, 260); }; });
+  };
+  $('#cuBq', sh).oninput = lista; lista();
+}
+
+/* ---------- Insumo (novo ou edição), com o impacto antes de salvar ---------- */
+function cuInsSheet(nome) {
+  var i = nome ? cuIns(nome) : null, nova = !i, f = i ? { cat: i.cat || 'Ingrediente', un: i.un || 'g', contar: i.contar } : { cat: 'Ingrediente', un: 'g', contar: false };
+  var sh = sheet('<h3>' + (nova ? 'Novo insumo' : esc(i.nome)) + '</h3>' + (i && i.usadoEm.length ? '<p class="desc">Usado em: ' + esc(i.usadoEm.map(function (u) { return u.produto + ' (' + cuFmt(u.q, 2) + ' ' + (i.un || '') + ')'; }).join(', ')) + '</p>' : (nova ? '' : '<p class="desc">Ainda não está em nenhuma receita.</p>')) +
+    '<div class="fld"><label for="ciN">Nome</label><input id="ciN" value="' + esc(i ? i.nome : '') + '" maxlength="80" placeholder="Ex.: Pistache"></div>' +
+    '<div class="fld"><span class="lab">Categoria</span>' + chipsHtml('ciC', [['Ingrediente', 'Ingrediente'], ['Embalagem', 'Embalagem']], f.cat) + '</div>' +
+    '<div class="fld"><span class="lab">Unidade</span>' + chipsHtml('ciU', ['g', 'ml', 'un'], f.un) + '</div>' +
+    '<div class="row"><div class="grow fld"><label for="ciQ" id="ciQl">Embalagem (' + esc(f.un) + ')</label><input id="ciQ" inputmode="decimal" value="' + (i && i.qtdEmb !== null ? cuFmt(i.qtdEmb, 3) : '') + '"></div>' +
+    '<div class="grow fld"><label for="ciP">Preço pago</label><input id="ciP" inputmode="decimal" value="' + (i && i.preco !== null ? cuFmt(i.preco, 2) : '') + '"></div></div>' +
+    '<div id="ciImp"></div><div class="fld"><label for="ciF">Fornecedor <span class="muted" style="font-weight:600">(opcional)</span></label><input id="ciF" value="' + esc(i ? i.fornecedor : '') + '" maxlength="80"></div>' +
+    '<div class="tog" style="margin:0 0 12px"><div class="tx"><b>Contar no fim do mês</b><span class="muted" style="display:block;font-size:13px">Insumos caros: entram na contagem do estoque</span></div><button type="button" class="sw' + (f.contar ? ' on' : '') + '" id="ciSw" role="switch" aria-checked="' + f.contar + '"></button></div>' +
+    '<div class="btns"><button class="btn" id="ciOk">Salvar insumo</button></div>');
+  var imp = function () {
+    var q = cuNum($('#ciQ', sh).value), p = cuNum($('#ciP', sh).value), novo = q > 0 && p !== null ? p / q : null, el = $('#ciImp', sh);
+    if (!i || novo === null || i.custo === null || Math.abs(novo - i.custo) < 1e-9 || !i.usadoEm.length) { el.innerHTML = novo !== null && !i ? '<p class="muted" style="margin:-4px 0 12px">Custo: ' + cuBrlUn(novo) + '/' + esc(f.un) + '</p>' : ''; return; }
+    var lin = i.usadoEm.map(function (u) {
+      var pr = cuProd(u.produto); if (!pr || pr.custo === null || !(pr.lote > 0)) return null;
+      var c2 = pr.custo + u.q * (novo - i.custo) / pr.lote, m1 = pr.pct, m2 = pr.preco > 0 ? (pr.preco - c2) / pr.preco : null;
+      return esc(pr.nome) + ': custo ' + (c2 >= pr.custo ? 'sobe ' : 'desce ') + brl(Math.abs(c2 - pr.custo)) + ' (margem ' + cuPct(m1) + ' → ' + cuPct(m2) + ')';
+    }).filter(Boolean);
+    el.innerHTML = '<div class="aviso" style="margin:0 0 12px">' + ic('alert', 's') + '<span>De ' + cuBrlUn(i.custo) + ' para ' + cuBrlUn(novo) + '/' + esc(f.un) + '.' + (lin.length ? '<br>' + lin.slice(0, 4).join('<br>') + (lin.length > 4 ? '<br>e mais ' + (lin.length - 4) + ' produto(s)' : '') : '') + '</span></div>';
+  };
+  chipsSel($('#ciC', sh), function (v) { f.cat = v; });
+  chipsSel($('#ciU', sh), function (v) { f.un = v; $('#ciQl', sh).textContent = 'Embalagem (' + v + ')'; imp(); });
+  $('#ciQ', sh).oninput = imp; $('#ciP', sh).oninput = imp; imp();
+  $('#ciSw', sh).onclick = function () { f.contar = !f.contar; this.classList.toggle('on', f.contar); this.setAttribute('aria-checked', f.contar); };
+  $('#ciOk', sh).onclick = function () {
+    var bt = this, payload = { nomeOriginal: i ? i.nome : '', nome: $('#ciN', sh).value.trim(), cat: f.cat, un: f.un, qtdEmb: $('#ciQ', sh).value.trim() === '' ? null : cuNum($('#ciQ', sh).value),
+      preco: $('#ciP', sh).value.trim() === '' ? null : cuNum($('#ciP', sh).value), fornecedor: $('#ciF', sh).value.trim(), contar: f.contar };
+    if (!payload.nome) { $('#ciN', sh).focus(); return toast('Informe o nome do insumo', true); }
+    if ((payload.qtdEmb === null) !== (payload.preco === null)) return toast('Informe a embalagem e o preço pago juntos', true);
+    bt.disabled = true; bt.textContent = 'Salvando…';
+    call('salvarInsumo', payload).then(function (r) {
+      cuAtualizado(r.custos); fecharSheet(); if (S.view === 'custos') cuRender();
+      toast((nova ? 'Insumo criado: ' : 'Insumo salvo: ') + payload.nome, false, { label: 'Desfazer', fn: function () {
+        (r.anterior ? call('salvarInsumo', r.anterior) : call('desfazerInsumoNovo', payload.nome)).then(function (x) { cuAtualizado(x.custos); toast('Desfeito'); if (S.view === 'custos') cuRender(); }).catch(fail);
+      } });
+    }).catch(function (e) { bt.disabled = false; bt.textContent = 'Salvar insumo'; fail(e); });
+  };
+}
+
 /* =================== DESPESA =================== */
 var CAT_IC = { 'Insumo': 'bag', 'Embalagem': 'box', 'Taxas e outros variáveis': 'receipt', 'Gás e energia': 'flame', 'Marketing': 'mega', 'Equipamentos e manutenção': 'tool', 'Imposto (DAS)': 'bank', 'Outras fixas': 'dots' };
 var CAT_TX = { 'Insumo': 'Ingredientes', 'Embalagem': 'Caixas, sacos, rótulos', 'Taxas e outros variáveis': 'Taxas, motoboy', 'Gás e energia': 'Botijão, luz', 'Marketing': 'Anúncio, fotos, cartões', 'Equipamentos e manutenção': 'Formas, conserto', 'Imposto (DAS)': 'Guia do MEI', 'Outras fixas': 'Outras contas' };
@@ -1743,7 +1976,7 @@ function nomeMes(ym) { var m = ['janeiro', 'fevereiro', 'março', 'abril', 'maio
 S.g = { sub: 'pai', per: 'semana' };
 function vGestao(sub) {
   if (sub) S.g.sub = sub;
-  $('#app').innerHTML = '<div class="page"><div class="lt"><small>Números e decisões</small><h1>Gestão</h1></div>' + pdfBtn('Estratégia, metas, marca e o mês a mês') + seg('gSeg', [['pai', 'Semana'], ['ind', 'Números'], ['gra', 'Gráficos'], ['reu', 'Reunião'], ['aco', 'Ações']], S.g.sub) + '<div id="gBody">' + esqueleto([140, 140, 200]).replace('class="page"', '') + '</div></div>';
+  $('#app').innerHTML = '<div class="page"><div class="lt"><small>Números e decisões</small><h1>Gestão</h1></div>' + pdfBtn('Estratégia, metas, marca e o mês a mês') + '<button class="mi" style="margin:0 0 12px" onclick="go(\'custos\')"><span class="ic">' + ic('chart') + '</span><span class="grow"><b>Custos e fichas técnicas</b><span>Custo e margem por produto · receitas e insumos</span></span>' + ic('chev', 's') + '</button>' + seg('gSeg', [['pai', 'Semana'], ['ind', 'Números'], ['gra', 'Gráficos'], ['reu', 'Reunião'], ['aco', 'Ações']], S.g.sub) + '<div id="gBody">' + esqueleto([140, 140, 200]).replace('class="page"', '') + '</div></div>';
   $$('#gSeg button').forEach(function (b) { b.onclick = function () { vGestao(b.dataset.k); }; });
   ({ pai: gPai, ind: gInd, gra: gGraf, reu: gReu, aco: gAco })[S.g.sub]();
 }

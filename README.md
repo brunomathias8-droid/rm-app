@@ -47,6 +47,7 @@ A pasta `servidor/` guarda todos os arquivos `.gs` do Apps Script (a partir da v
 | `servidor/Api.gs` | Porta de entrada do app (login, sessões, funções permitidas, rotas dos avisos) |
 | `servidor/Push.gs` | Avisos no celular pelo Firebase Cloud Messaging e o gatilho de hora em hora `verificarAvisos` |
 | `servidor/Producao.gs` | Controle de produção: aba Producao, `getProducao`, `salvarProducao` e `desfazerProducao` |
+| `servidor/Custos.gs` | Custos e fichas técnicas no app: `getCustos`, `salvarFicha`, `salvarInsumo` (e os Desfazer). Custo e margem por produto, receita, preço dos insumos |
 | `servidor/Mural.gs` | Aba Mural do app: recados dos agentes, pedidos ao assistente, cardápio da semana e o gatilho de 5 em 5 minutos `verificarMural` |
 
 Para copiar pelo celular: abrir o arquivo em `raw.githubusercontent.com/brunomathias8-droid/rm-app/main/servidor/<arquivo>` no Safari, tocar e segurar › Selecionar tudo › Copiar.
@@ -91,3 +92,12 @@ Versão 10 (decisões 36 e 37 de 22/10/2026), em `servidor/Massa.gs`:
 - Sugestão de produção na segunda às 7h quando um produto fica abaixo de Config › `estoque_minimo_massa` livres (cartão no Mural e aviso "producao").
 - Contagem do fim do mês: seção "Produção no estoque" (linhas de Tipo "Produção" no Estoque; a diferença vai para a aba Producao). Os insumos guardados nessas unidades entram no estoque final, pela receita.
 - Testes: `testarV10` no editor.
+
+## Custos e fichas técnicas (24/10/2026)
+
+Gestão › Custos e fichas técnicas (ou + › Mais). Mostra o custo e a margem de cada produto, as fichas sem receita ou com insumo sem preço, e os insumos com o custo por unidade.
+
+- **Ficha**: preço, rendimento (lote), status e receita. A margem muda na hora conforme o preço ou a receita mudam. Ao trocar o nome de um produto que já tem pedidos, o app avisa que os pedidos antigos continuam com o nome anterior.
+- **Insumo**: embalagem, preço e fornecedor. Antes de salvar, o app mostra quanto o custo e a margem de cada produto vão mudar.
+- Grava nas abas Fichas, Receitas e Insumos (sem fórmulas: `recalcular` escreve os custos). Toda gravação tem Desfazer.
+- Raquel e Bruno têm acesso total.

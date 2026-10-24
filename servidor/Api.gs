@@ -27,6 +27,7 @@ function apiFuncoes_() {
     getAjuda: getAjuda, perguntarAjuda: perguntarAjuda, registrarPergunta: registrarPergunta,
     getMensagens: getMensagens, salvarMensagem: salvarMensagem
   };
+  if (typeof getCustos === 'function') { m.getCustos = getCustos; m.salvarFicha = salvarFicha; m.desfazerFichaNova = desfazerFichaNova; m.salvarInsumo = salvarInsumo; m.desfazerInsumoNovo = desfazerInsumoNovo; }   // Custos.gs
   if (typeof getProducao === 'function') { m.getProducao = getProducao; m.salvarProducao = salvarProducao; m.desfazerProducao = desfazerProducao; }   // Producao.gs
   // Arquivos novos do servidor registram as próprias funções em apiExtras_ (ex.: Mural.gs): não é preciso mexer neste arquivo
   if (typeof apiExtras_ === 'function') { var x = apiExtras_(); Object.keys(x).forEach(function (k) { if (typeof x[k] === 'function') m[k] = x[k]; }); }

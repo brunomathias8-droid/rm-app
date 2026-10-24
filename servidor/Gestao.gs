@@ -188,8 +188,8 @@ function readDespesas_() {
 /* Lê todos os produtos de Fichas técnicas (antes lia só 8 linhas e os cookies ficavam de fora). */
 function fichas_() {
   var out = {};
-  sh_('Fichas técnicas').getRange(2, 1, 19, 13).getValues().forEach(function (r) {
-    if (!r[0]) return;
+  fichasLinhas_().linhas.forEach(function (l) {
+    var r = l.v;
     out[String(r[0]).trim()] = { preco: Number(r[1]) || 0, custo: typeof r[12] === 'number' ? r[12] : null,
       ins: typeof r[2] === 'number' ? r[2] : null, emb: typeof r[3] === 'number' ? r[3] : null };
   });
@@ -501,61 +501,21 @@ function gatilhoEdicao_() {
 
 function numG_(v) { return typeof v === 'number' ? v : (v === '' || v === null ? NaN : Number(String(v).replace(/[R$\s.]/g, '').replace(',', '.'))); }   // num_ (Code.gs) é outra função: não renomear
 
+/* Fichas técnicas C, D, E e M: custo por unidade pelo mesmo cálculo da tela de custos (custosCalcular_, em Custos.gs).
+   Lê todos os produtos (antes, só as 19 primeiras linhas até a primeira em branco). */
 function recalcFichas_() {
-  var ft = sh_('Fichas técnicas');
-  var linhas = ft.getRange(2, 1, 19, 8).getValues();
-  var prods = [];
-  for (var i = 0; i < linhas.length; i++) { if (!linhas[i][0]) break; prods.push({ row: i + 2, nome: String(linhas[i][0]).trim(), preco: numG_(linhas[i][1]), lote: numG_(linhas[i][6]) }); }
-  // insumos: custo por unidade e categoria
-  var ins = {};
-  var ni = sh_('Insumos').getLastRow() - 1;
-  if (ni > 0) sh_('Insumos').getRange(2, 1, ni, 5).getValues().forEach(function (r) {
-    if (!r[0]) return;
-    var q = numG_(r[3]), p = numG_(r[4]);
-    ins[String(r[0]).trim()] = { cat: String(r[1] || ''), custo: (q > 0 && p >= 0 && !isNaN(p)) ? p / q : null };
+  var d = custosLer_(), c = custosCalcular_(d), ft = sh_('Fichas técnicas'), lin = d.fichas.linhas;
+  if (!lin.length) return;
+  var ini = lin[0].row, fim = lin[lin.length - 1].row, n = fim - ini + 1;
+  var cd = ft.getRange(ini, 3, n, 3).getValues(), m = ft.getRange(ini, 13, n, 1).getValues();
+  lin.forEach(function (l) {
+    var k = chave_(l.v[0]), x = c[k], p = d.produtos[k], i = l.row - ini;
+    if (!x || (x.total === null && !x.falta.some(function (f) { return /sem preço|sem custo|não cadastrado|quantidade/.test(f); }))) { cd[i] = ['', '', '']; m[i] = ['']; return; }
+    if (x.total === null) { cd[i] = ['falta preço', 'falta preço', '']; m[i] = ['']; return; }
+    cd[i] = [round2_(x.ins), round2_(x.emb), p.preco === null ? '' : round2_(p.preco - x.total)]; m[i] = [round2_(x.total)];
   });
-  // receitas por produto
-  var rec = {};
-  var nr = sh_('Receitas').getLastRow() - 1;
-  if (nr > 0) sh_('Receitas').getRange(2, 1, nr, 3).getValues().forEach(function (r) {
-    var prod = String(r[0] || '').trim(), comp = String(r[1] || '').trim(), q = numG_(r[2]);
-    if (!prod || !comp || isNaN(q)) return;
-    (rec[prod] = rec[prod] || []).push({ comp: comp, q: q });
-  });
-  var porNome = {}; prods.forEach(function (p) { porNome[p.nome] = p; });
-  var memo = {};
-  function custo(nome, pilha) {           // {ins, emb} por unidade; null = sem receita/lote; 'falta' = falta preço
-    if (memo[nome] !== undefined) return memo[nome];
-    var p = porNome[nome];
-    if (!p || !rec[nome] || !(p.lote > 0)) return (memo[nome] = null);
-    if (pilha[nome]) return 'falta';
-    pilha[nome] = true;
-    var si = 0, se = 0, falta = false;
-    rec[nome].forEach(function (x) {
-      if (ins[x.comp]) {
-        if (ins[x.comp].custo === null) { falta = true; return; }
-        if (ins[x.comp].cat === 'Embalagem') se += x.q * ins[x.comp].custo; else si += x.q * ins[x.comp].custo;
-      } else {
-        var c = custo(x.comp, pilha);
-        if (c === null || c === 'falta') { falta = true; return; }
-        si += x.q * (c.ins + c.emb);    // produto usado como componente entra como insumo (igual à aba Receitas)
-      }
-    });
-    delete pilha[nome];
-    return (memo[nome] = falta ? 'falta' : { ins: si / p.lote, emb: se / p.lote });
-  }
-  var cd = [], e = [], m = [];
-  prods.forEach(function (p) {
-    var c = custo(p.nome, {});
-    if (c === null) { cd.push(['', '']); m.push(['']); e.push(['']); return; }
-    if (c === 'falta') { cd.push(['falta preço', 'falta preço']); m.push(['']); e.push(['']); return; }
-    var tot = c.ins + c.emb;
-    cd.push([round2_(c.ins), round2_(c.emb)]); m.push([round2_(tot)]); e.push([isNaN(p.preco) ? '' : round2_(p.preco - tot)]);
-  });
-  if (!prods.length) return;
-  ft.getRange(2, 3, prods.length, 2).setValues(cd).setNumberFormat('"R$" #,##0.00');
-  ft.getRange(2, 5, prods.length, 1).setValues(e).setNumberFormat('"R$" #,##0.00');
-  ft.getRange(2, 13, prods.length, 1).setValues(m).setNumberFormat('"R$" #,##0.00');
+  ft.getRange(ini, 3, n, 3).setValues(cd).setNumberFormat('"R$" #,##0.00');
+  ft.getRange(ini, 13, n, 1).setValues(m).setNumberFormat('"R$" #,##0.00');
 }
 function round2_(x) { return Math.round(x * 100) / 100; }
 
@@ -591,7 +551,7 @@ function baseCustos_() {
     (rec[prod] = rec[prod] || []).push({ comp: comp, q: q });
   });
   var lote = {};
-  sh_('Fichas técnicas').getRange(2, 1, 19, 7).getValues().forEach(function (r) { if (r[0]) lote[chave_(r[0])] = numG_(r[6]); });
+  fichasLinhas_().linhas.forEach(function (l) { lote[chave_(l.v[0])] = numG_(l.v[6]); });
   return { ins: ins, rec: rec, lote: lote };
 }
 /* Soma em acc[insumo] a quantidade de insumo consumida por q unidades do produto (caixas e kits abrem nos produtos componentes) */
