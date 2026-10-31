@@ -1,5 +1,5 @@
 {
- "atualizado": "2026-10-21",
+ "atualizado": "2026-10-31",
  "marca": "RM Confeitaria Artesanal",
  "instagram": "@rm_confeitari4",
  "arquivos": [
@@ -44,6 +44,13 @@
    "titulo": "Capa de destaque: Portfólio",
    "uso": "1080 × 1920.",
    "arquivo": "marca/destaque-portfolio.png"
+  },
+  {
+   "grupo": "Instagram",
+   "chave": "destaque-cardapio-bolos",
+   "titulo": "Destaque Cardápio: bolos",
+   "uso": "1080 × 1920. Story para o destaque Cardápio: bolos caseirinhos P, M e G, com preços.",
+   "arquivo": "marca/destaque-cardapio-bolos.png"
   },
   {
    "grupo": "Logotipos",
