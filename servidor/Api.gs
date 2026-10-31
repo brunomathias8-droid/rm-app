@@ -35,6 +35,8 @@ function apiFuncoes_() {
 }
 
 function doPost(e) {
+  var enc = typeof ponteEncaminhar_ === 'function' ? ponteEncaminhar_(e) : null;   // depois da virada (Ponte.gs): a chamada vai para o banco
+  if (enc) return enc;
   var req;
   try { req = JSON.parse((e && e.postData && e.postData.contents) || '{}'); }
   catch (x) { return apiSaida_({ ok: false, erro: 'Pedido inválido.', codigo: 'JSON' }); }

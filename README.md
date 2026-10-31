@@ -52,6 +52,17 @@ A pasta `servidor/` guarda todos os arquivos `.gs` do Apps Script (a partir da v
 
 Para copiar pelo celular: abrir o arquivo em `raw.githubusercontent.com/brunomathias8-droid/rm-app/main/servidor/<arquivo>` no Safari, tocar e segurar › Selecionar tudo › Copiar.
 
+## Banco de dados (RM Gestão, 31/10/2026)
+
+O servidor está migrando da planilha para um banco (Supabase), no repositório `rm-gestao`. As telas deste app não mudam.
+
+| Arquivo | Para quê |
+|---|---|
+| `servidor/Ponte.gs` | Virada para o banco (`ponteVirada`), cópia noturna do banco para a planilha, cartões do Drive para o Mural, e-mails do banco pelo Gmail, volta ao Apps Script (`ponteVoltar`) |
+| `servidor/Api.gs` | Com a ponte ativa, o `doPost` encaminha a chamada ao banco (quem ainda usa o endereço /exec continua funcionando) |
+
+Depois da virada, `config.js` passa a apontar para a função `api` do Supabase. Passo a passo no README do `rm-gestao`.
+
 ## Mural
 
 Substitui os e-mails dos agentes. Fluxo:
